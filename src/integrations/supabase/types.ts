@@ -205,12 +205,14 @@ export type Database = {
           course_label: string | null
           cover_image: string | null
           created_at: string
+          created_by: string | null
           description: string | null
           discounted_price: number | null
           exam_id: string | null
           format: string
           id: string
           is_active: boolean
+          is_archived: boolean
           is_demo: boolean
           is_featured: boolean
           is_free: boolean
@@ -232,12 +234,14 @@ export type Database = {
           course_label?: string | null
           cover_image?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           discounted_price?: number | null
           exam_id?: string | null
           format?: string
           id?: string
           is_active?: boolean
+          is_archived?: boolean
           is_demo?: boolean
           is_featured?: boolean
           is_free?: boolean
@@ -259,12 +263,14 @@ export type Database = {
           course_label?: string | null
           cover_image?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           discounted_price?: number | null
           exam_id?: string | null
           format?: string
           id?: string
           is_active?: boolean
+          is_archived?: boolean
           is_demo?: boolean
           is_featured?: boolean
           is_free?: boolean
@@ -332,6 +338,24 @@ export type Database = {
           full_name?: string | null
           id?: string
           whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: string | null
         }
         Relationships: []
       }
