@@ -10,11 +10,13 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as FreeResourcesRouteImport } from './routes/free-resources'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as CheckoutSlugRouteImport } from './routes/checkout.$slug'
 import { Route as ShopIndexRouteImport } from './routes/shop.index'
 import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
@@ -22,6 +24,11 @@ import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -49,6 +56,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
+} as any)
 const CheckoutSlugRoute = CheckoutSlugRouteImport.update({
   id: '/checkout/$slug',
   path: '/checkout/$slug',
@@ -67,6 +79,7 @@ const ShopSlugRoute = ShopSlugRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/free-resources': typeof FreeResourcesRoute
   '/login': typeof LoginRoute
@@ -74,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/checkout/$slug': typeof CheckoutSlugRoute
   '/shop/$slug': typeof ShopSlugRoute
+  '/admin/': typeof AdminIndexRoute
   '/shop/': typeof ShopIndexRoute
 }
 export interface FileRoutesByTo {
@@ -85,11 +99,13 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/checkout/$slug': typeof CheckoutSlugRoute
   '/shop/$slug': typeof ShopSlugRoute
+  '/admin': typeof AdminIndexRoute
   '/shop': typeof ShopIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/forgot-password': typeof ForgotPasswordRoute
   '/free-resources': typeof FreeResourcesRoute
   '/login': typeof LoginRoute
@@ -97,12 +113,14 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/checkout/$slug': typeof CheckoutSlugRoute
   '/shop/$slug': typeof ShopSlugRoute
+  '/admin/': typeof AdminIndexRoute
   '/shop/': typeof ShopIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/forgot-password'
     | '/free-resources'
     | '/login'
@@ -110,6 +128,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/checkout/$slug'
     | '/shop/$slug'
+    | '/admin/'
     | '/shop/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -121,10 +140,12 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/checkout/$slug'
     | '/shop/$slug'
+    | '/admin'
     | '/shop'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/forgot-password'
     | '/free-resources'
     | '/login'
@@ -132,11 +153,13 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/checkout/$slug'
     | '/shop/$slug'
+    | '/admin/'
     | '/shop/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   FreeResourcesRoute: typeof FreeResourcesRoute
   LoginRoute: typeof LoginRoute
@@ -154,6 +177,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -191,6 +221,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/checkout/$slug': {
       id: '/checkout/$slug'
       path: '/checkout/$slug'
@@ -215,8 +252,19 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminRouteChildren {
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   ForgotPasswordRoute: ForgotPasswordRoute,
   FreeResourcesRoute: FreeResourcesRoute,
   LoginRoute: LoginRoute,
