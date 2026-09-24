@@ -38,7 +38,7 @@ export const defaultSettings: SiteSettings = {
   brandName: siteConfig.brandName,
   tagline: siteConfig.tagline,
   contactEmail: siteConfig.contactEmail,
-  whatsappNumber: siteConfig.whatsappNumber,
+  whatsappNumber: "",
   upiId: siteConfig.upiId,
   upiPayeeName: siteConfig.upiPayeeName,
   qrCodeUrl: siteConfig.qrCodeUrl,

@@ -12,7 +12,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { productBySlugQuery } from "@/lib/catalog";
 import { effectivePrice, formatPrice } from "@/lib/format";
 import { useSession } from "@/lib/auth";
-import { siteConfig, upiPayLink } from "@/config/site";
+import { siteConfig } from "@/config/site";
+import { useSiteSettings, upiLink } from "@/lib/settings";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/checkout/$slug")({
@@ -31,6 +32,7 @@ function Checkout() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useSession();
   const product = useQuery(productBySlugQuery(slug));
+  const siteSettings = useSiteSettings();
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +49,7 @@ function Checkout() {
 
   const p = product.data;
   const amount = p ? effectivePrice(p) : 0;
+  
 
   useEffect(() => {
     if (!user) return;
@@ -135,9 +138,12 @@ function Checkout() {
             <Button asChild>
               <Link to="/shop">Continue browsing</Link>
             </Button>
-            <Button variant="outline" asChild>
-              <Link to="/contact">Contact support</Link>
-            </Button>
+            <Button
+  variant="outline"
+  onClick={() => navigate({ to: "/shop" })}
+>
+  Continue shopping
+</Button>
           </div>
         </div>
       </div>
@@ -145,13 +151,13 @@ function Checkout() {
   }
 
   const copyUpi = async () => {
-    try {
-      await navigator.clipboard.writeText(siteConfig.upiId);
-      toast.success("UPI ID copied");
-    } catch {
-      toast.error("Could not copy. Please note the UPI ID manually.");
-    }
-  };
+  try {
+    await navigator.clipboard.writeText(siteSettings.upiId);
+    toast.success("UPI ID copied");
+  } catch {
+    toast.error("Could not copy. Please note the UPI ID manually.");
+  }
+};
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -251,28 +257,35 @@ function Checkout() {
             </ol>
 
             <div className="mt-5 flex flex-col items-center gap-4 rounded-md border border-border bg-background p-5">
-              {siteConfig.qrCodeUrl ? (
+              {siteSettings.qrCodeUrl ? (
                 <img
-                  src={siteConfig.qrCodeUrl}
+                  src={siteSettings.qrCodeUrl}
                   alt="UPI QR code for Edu Wallet"
                   className="h-56 w-56"
                 />
               ) : (
                 <QRCodeSVG
-                  value={upiPayLink(amount, p.title.slice(0, 40))}
-                  size={224}
-                  includeMargin
-                  aria-label="UPI payment QR code"
+                  value={upiLink(
+  siteSettings.upiId,
+  siteSettings.upiPayeeName,
+  amount,
+  p.title.slice(0, 40)
+)}
                 />
               )}
               <div className="flex w-full items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
-                <span className="truncate text-sm font-medium">{siteConfig.upiId}</span>
+                <span className="truncate text-sm font-medium">{siteSettings.upiId}</span>
                 <Button type="button" variant="ghost" size="sm" onClick={copyUpi}>
                   <Copy className="mr-1.5 h-4 w-4" /> Copy
                 </Button>
               </div>
               <a
-                href={upiPayLink(amount, p.title.slice(0, 40))}
+               href={upiLink(
+  siteSettings.upiId,
+  siteSettings.upiPayeeName,
+  amount,
+  p.title.slice(0, 40)
+)}
                 className="text-sm font-medium text-primary hover:underline sm:hidden"
               >
                 Open UPI app

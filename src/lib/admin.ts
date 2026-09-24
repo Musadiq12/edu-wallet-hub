@@ -43,7 +43,7 @@ export async function uploadFile(bucket: string, file: File, folder: string): Pr
   const { error } = await supabase.storage.from(bucket).upload(path, file, {
     cacheControl: "3600",
     upsert: false,
-    contentType: file.type || undefined,
+    contentType: file.type || "application/octet-stream"
   });
   if (error) throw error;
   return { path };

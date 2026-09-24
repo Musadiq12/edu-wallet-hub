@@ -289,19 +289,19 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         <AdminFileField
           id="cover" label="Product cover image" kind="image" accept="image/*"
           maxBytes={LIMITS.coverBytes} help="JPG or PNG, up to 5 MB."
-          existingPath={paths.cover_image} picked={cover} busy={busy} status={status ?? undefined}
+          existingPath={paths.cover_image} picked={cover} busy={busy} status={status ?? ""}
           onPick={setCover} onRemoveExisting={() => setPaths((p) => ({ ...p, cover_image: null }))}
         />
         <AdminFileField
           id="pdf" label="Product PDF (private)" kind="pdf" accept="application/pdf"
           maxBytes={LIMITS.fileBytes} help="Stored privately. Delivered manually after payment verification. Up to 50 MB."
-          existingPath={paths.pdf_file} picked={pdf} busy={busy} status={status ?? undefined}
+          existingPath={paths.pdf_file} picked={pdf} busy={busy} status={status ?? ""}
           onPick={setPdf} onRemoveExisting={() => setPaths((p) => ({ ...p, pdf_file: null }))}
         />
         <AdminFileField
           id="preview" label="Preview / sample PDF (optional)" kind="pdf" accept="application/pdf"
           maxBytes={LIMITS.previewBytes} help="Shown to students as a free sample. Up to 20 MB."
-          existingPath={paths.preview_file} picked={preview} busy={busy} status={status ?? undefined}
+          existingPath={paths.preview_file} picked={preview} busy={busy} status={status ?? ""}
           onPick={setPreview} onRemoveExisting={() => setPaths((p) => ({ ...p, preview_file: null }))}
         />
       </section>

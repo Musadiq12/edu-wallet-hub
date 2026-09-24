@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { Mail, MessageCircle } from "lucide-react";
+import { Mail } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { siteConfig, whatsappLink } from "@/config/site";
+import { siteConfig } from "@/config/site";
 
 const SITE_LINKS = [
   { to: "/", label: "Home" },
@@ -37,13 +37,11 @@ export function SiteFooter() {
               {siteConfig.contactEmail}
             </a>
             <a
-              href={whatsappLink()}
-              target="_blank"
-              rel="noreferrer"
+              href={`mailto:${siteConfig.secondaryContactEmail}`}
               className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
             >
-              <MessageCircle className="h-4 w-4" aria-hidden="true" />
-              WhatsApp {siteConfig.whatsappNumber}
+              <Mail className="h-4 w-4" aria-hidden="true" />
+              {siteConfig.secondaryContactEmail}
             </a>
           </div>
         </div>
