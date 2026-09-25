@@ -77,13 +77,22 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
+  loader: async ({ context }) => {
+    try {
+      return await context.queryClient.ensureQueryData(settingsQuery());
+    } catch {
+      return defaultSettings;
+    }
+  },
+  head: ({ loaderData }) => ({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: `${siteConfig.brandName} — ${siteConfig.tagline}` },
+      {
+        title: `${loaderData?.brandName ?? defaultSettings.brandName} — ${loaderData?.tagline ?? defaultSettings.tagline}`,
+      },
       { name: "description", content: siteConfig.shortDescription },
-      { property: "og:site_name", content: siteConfig.brandName },
+      { property: "og:site_name", content: loaderData?.brandName ?? defaultSettings.brandName },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -118,8 +127,22 @@ function RootShell({ children }: { children: ReactNode }) {
   );
 }
 
+function BrandTitleSync() {
+  const { brandName, tagline } = useSiteSettings();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  useEffect(() => {
+    const fb = siteConfig.fallbackBrand;
+    let t = document.title;
+    if (tagline && fb.tagline !== tagline) t = t.split(fb.tagline).join(tagline);
+    if (brandName && fb.brandName !== brandName) t = t.split(fb.brandName).join(brandName);
+    if (t !== document.title) document.title = t;
+  }, [brandName, tagline, pathname]);
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
 
   return (
     <QueryClientProvider client={queryClient}>

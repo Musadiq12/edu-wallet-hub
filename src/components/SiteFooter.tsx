@@ -91,7 +91,7 @@ export function SiteFooter() {
       <div className="border-t border-border">
         <div className="page-container flex flex-col gap-3 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © {siteConfig.copyrightYear} {siteConfig.brandName}. All rights reserved.
+            © {siteConfig.copyrightYear} {s.brandName}. All rights reserved.
           </p>
           <p className="max-w-xl sm:text-right">{siteConfig.disclaimer}</p>
         </div>

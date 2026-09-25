@@ -4,6 +4,7 @@ import { Menu, Search, X } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useSiteSettings } from "@/lib/settings";
 import { useIsAdmin, useSession, signOutCleanly } from "@/lib/auth";
 
 const NAV = [
@@ -20,6 +21,7 @@ export function SiteHeader() {
   const [term, setTerm] = useState("");
   const navigate = useNavigate();
   const { user } = useSession();
+  const { brandName } = useSiteSettings();
   const { data: isAdmin } = useIsAdmin(user?.id);
 
   const submitSearch = (e: React.FormEvent) => {
@@ -32,7 +34,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85">
       <div className="page-container flex h-16 items-center justify-between gap-4">
-        <Link to="/" aria-label="Edu Wallet home" className="shrink-0">
+        <Link to="/" aria-label={`${brandName} home`} className="shrink-0">
           <Logo />
         </Link>
 
