@@ -4,6 +4,7 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -15,6 +16,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config/site";
+import { defaultSettings, settingsQuery, useSiteSettings } from "@/lib/settings";
 
 function NotFoundComponent() {
   return (
@@ -146,6 +148,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <BrandTitleSync />
       <div className="flex min-h-screen flex-col">
         <SiteHeader />
         <main className="flex-1">
