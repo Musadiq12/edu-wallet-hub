@@ -11,6 +11,7 @@ import {
   Settings,
   ShoppingCart,
   Users,
+  MessageSquare,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,7 @@ const NAV = [
   { to: "/admin/products", label: "Products", icon: Package, exact: false },
   { to: "/admin/orders", label: "Orders", icon: ShoppingCart, exact: false },
   { to: "/admin/customers", label: "Customers", icon: Users, exact: false },
+  { to: "/admin/messages", label: "Messages", icon: MessageSquare, exact: false },
   { to: "/admin/free-resources", label: "Free Resources", icon: Gift, exact: false },
   { to: "/admin/settings", label: "Settings", icon: Settings, exact: false },
 ] as const;
