@@ -129,7 +129,7 @@ function Checkout() {
           <h1 className="mt-4 font-serif text-2xl font-semibold">Payment confirmation received.</h1>
           <p className="mt-3 text-sm text-muted-foreground">
             We will verify your payment and deliver your digital product to your registered email
-            address or WhatsApp number. {siteConfig.deliveryEstimate}.
+            address or WhatsApp number. {siteSettings.deliveryEstimate ? `${siteSettings.deliveryEstimate}.` : ""}
           </p>
           <p className="mt-3 text-xs text-muted-foreground">
             Your payment is not confirmed until our team verifies it.

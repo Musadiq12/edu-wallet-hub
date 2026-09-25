@@ -1,7 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { Mail } from "lucide-react";
+import { Instagram, Mail, MessageCircle, Send, Youtube } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { siteConfig } from "@/config/site";
+import { isEmail, safeUrl, useSiteSettings, waLink } from "@/lib/settings";
 
 const SITE_LINKS = [
   { to: "/", label: "Home" },
@@ -20,6 +21,16 @@ const LEGAL_LINKS = [
 ] as const;
 
 export function SiteFooter() {
+  const s = useSiteSettings();
+  const wa = waLink(s.whatsappNumber);
+  const contacts = [
+    isEmail(s.contactEmail) && { href: `mailto:${s.contactEmail}`, label: s.contactEmail, Icon: Mail },
+    wa && { href: wa, label: "WhatsApp", Icon: MessageCircle },
+    safeUrl(s.instagram) && { href: safeUrl(s.instagram), label: "Instagram", Icon: Instagram },
+    safeUrl(s.telegram) && { href: safeUrl(s.telegram), label: "Telegram", Icon: Send },
+    safeUrl(s.youtube) && { href: safeUrl(s.youtube), label: "YouTube", Icon: Youtube },
+  ].filter(Boolean) as { href: string; label: string; Icon: typeof Mail }[];
+
   return (
     <footer className="mt-auto border-t border-border bg-surface">
       <div className="page-container grid gap-10 py-12 md:grid-cols-4">
@@ -28,22 +39,22 @@ export function SiteFooter() {
           <p className="mt-4 max-w-sm text-sm text-muted-foreground">
             {siteConfig.shortDescription}
           </p>
-          <div className="mt-4 flex flex-col gap-2 text-sm">
-            <a
-              href={`mailto:${siteConfig.contactEmail}`}
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
-            >
-              <Mail className="h-4 w-4" aria-hidden="true" />
-              {siteConfig.contactEmail}
-            </a>
-            <a
-              href={`mailto:${siteConfig.secondaryContactEmail}`}
-              className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
-            >
-              <Mail className="h-4 w-4" aria-hidden="true" />
-              {siteConfig.secondaryContactEmail}
-            </a>
-          </div>
+          {contacts.length > 0 && (
+            <div className="mt-4 flex flex-col gap-2 text-sm">
+              {contacts.map(({ href, label, Icon }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target={href.startsWith("mailto:") ? undefined : "_blank"}
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                >
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                  {label}
+                </a>
+              ))}
+            </div>
+          )}
         </div>
 
         <nav aria-label="Footer navigation">
