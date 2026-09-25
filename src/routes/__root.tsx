@@ -17,6 +17,9 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config/site";
 import { defaultSettings, settingsQuery, useSiteSettings } from "@/lib/settings";
+import { supabase } from "@/integrations/supabase/client";
+
+const RECOVERY_FLAG = "edu-wallet-password-recovery";
 
 function NotFoundComponent() {
   return (
@@ -142,17 +145,39 @@ function BrandTitleSync() {
   return null;
 }
 
+function RecoveryRedirectHandler() {
+  useEffect(() => {
+    let active = true;
+
+    const handleRecovery = () => {
+      if (!active || window.location.pathname === "/reset-password") return;
+      window.sessionStorage.setItem(RECOVERY_FLAG, "1");
+      window.location.replace("/reset-password");
+    };
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") handleRecovery();
+    });
+
+    return () => {
+      active = false;
+      subscription.subscription.unsubscribe();
+    };
+  }, []);
+
+  return null;
+}
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
-
   return (
     <QueryClientProvider client={queryClient}>
+      <RecoveryRedirectHandler />
       <BrandTitleSync />
       <div className="flex min-h-screen flex-col">
         <SiteHeader />
         <main className="flex-1">
-          {/* Required: nested routes render here. */}
           <Outlet />
         </main>
         <SiteFooter />
