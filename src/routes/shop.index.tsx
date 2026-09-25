@@ -7,7 +7,7 @@ import { EmptyState, LoadingGrid } from "@/components/EmptyState";
 import { categoriesQuery, matchesSearch, productsQuery } from "@/lib/catalog";
 import { siteConfig } from "@/config/site";
 
-type ShopSearch = { q?: string; category?: string };
+type ShopSearch = { q?: string | undefined; category?: string | undefined };
 
 export const Route = createFileRoute("/shop/")({
   validateSearch: (search: Record<string, unknown>): ShopSearch => ({
