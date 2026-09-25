@@ -11,9 +11,9 @@ import { friendlyError } from "@/lib/admin";
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: `Set a new password — ${siteConfig.brandName}` },
+      { title: `Set a new password — ${siteConfig.fallbackBrand.brandName}` },
       { name: "description", content: "Choose a new password for your Edu Wallet account." },
-      { property: "og:title", content: `Set a new password — ${siteConfig.brandName}` },
+      { property: "og:title", content: `Set a new password — ${siteConfig.fallbackBrand.brandName}` },
       { property: "og:description", content: "Choose a new Edu Wallet password." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -30,7 +30,7 @@ function ResetPasswordPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 8) return toast.error("Password must be at least 8 characters.");
+    if (password.length < 8) return void toast.error("Password must be at least 8 characters.");
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password });
     setBusy(false);

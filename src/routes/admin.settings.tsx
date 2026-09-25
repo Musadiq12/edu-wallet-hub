@@ -28,7 +28,11 @@ function AdminSettings() {
     }
     setBusy(true);
     try {
-      await saveSettings(values);
+      // Save only the fields that changed so other settings are never overwritten.
+      const changed = Object.fromEntries(
+        Object.entries(values).filter(([k, v]) => (data?.[k as keyof SiteSettings] ?? "") !== v),
+      ) as Partial<SiteSettings>;
+      await saveSettings(changed);
       await qc.invalidateQueries({ queryKey: ["site-settings"] });
       toast.success("Settings saved.");
     } catch (err) {

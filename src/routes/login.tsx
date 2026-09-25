@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { siteConfig } from "@/config/site";
 import { friendlyError } from "@/lib/admin";
 
-type Search = { redirect?: string };
+type Search = { redirect?: string | undefined };
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>): Search => ({
@@ -16,9 +16,9 @@ export const Route = createFileRoute("/login")({
   }),
   head: () => ({
     meta: [
-      { title: `Login — ${siteConfig.brandName}` },
+      { title: `Login — ${siteConfig.fallbackBrand.brandName}` },
       { name: "description", content: "Log in to your Edu Wallet account to buy and access study resources." },
-      { property: "og:title", content: `Login — ${siteConfig.brandName}` },
+      { property: "og:title", content: `Login — ${siteConfig.fallbackBrand.brandName}` },
       { property: "og:description", content: "Log in to your Edu Wallet account." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

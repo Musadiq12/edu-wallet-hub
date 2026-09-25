@@ -7,7 +7,7 @@ import { EmptyState, LoadingGrid } from "@/components/EmptyState";
 import { categoriesQuery, matchesSearch, productsQuery } from "@/lib/catalog";
 import { siteConfig } from "@/config/site";
 
-type ShopSearch = { q?: string; category?: string };
+type ShopSearch = { q?: string | undefined; category?: string | undefined };
 
 export const Route = createFileRoute("/shop/")({
   validateSearch: (search: Record<string, unknown>): ShopSearch => ({
@@ -17,13 +17,13 @@ export const Route = createFileRoute("/shop/")({
   }),
   head: () => ({
     meta: [
-      { title: `IGNOU Study Resources — ${siteConfig.brandName}` },
+      { title: `IGNOU Study Resources — ${siteConfig.fallbackBrand.brandName}` },
       {
         name: "description",
         content:
           "Browse IGNOU notes, guess papers, assignment guidance and exam guides. Search by subject, course or keyword.",
       },
-      { property: "og:title", content: `IGNOU Study Resources — ${siteConfig.brandName}` },
+      { property: "og:title", content: `IGNOU Study Resources — ${siteConfig.fallbackBrand.brandName}` },
       {
         property: "og:description",
         content: "Browse IGNOU notes, guess papers, assignment guidance and exam guides.",

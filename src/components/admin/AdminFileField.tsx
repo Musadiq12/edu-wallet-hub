@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { humanSize } from "@/lib/admin";
 
-export type PickedFile = { file: File; previewUrl?: string };
+export type PickedFile = { file: File; previewUrl?: string | undefined };
 
 type Props = {
   id: string;

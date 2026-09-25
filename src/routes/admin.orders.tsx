@@ -1,3 +1,4 @@
+import type { Database } from "@/integrations/supabase/types";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -18,7 +19,7 @@ function AdminOrders() {
   const { data, isLoading, isError } = useQuery(adminOrdersQuery());
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const update = async (o: AdminOrder, patch: Record<string, unknown>, message: string) => {
+  const update = async (o: AdminOrder, patch: Database["public"]["Tables"]["orders"]["Update"], message: string) => {
     setBusyId(o.id);
     const { error } = await supabase.from("orders").update(patch).eq("id", o.id);
     setBusyId(null);

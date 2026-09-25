@@ -1,3 +1,4 @@
+import { useSiteSettings } from "@/lib/settings";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { FileText, ShieldCheck } from "lucide-react";
@@ -12,13 +13,13 @@ import { siteConfig } from "@/config/site";
 export const Route = createFileRoute("/shop/$slug")({
   head: ({ params }) => ({
     meta: [
-      { title: `${params.slug.replace(/-/g, " ")} — ${siteConfig.brandName}` },
+      { title: `${params.slug.replace(/-/g, " ")} — ${siteConfig.fallbackBrand.brandName}` },
       {
         name: "description",
         content:
           "Digital IGNOU study resource from Edu Wallet. See what's included, format and pricing before you buy.",
       },
-      { property: "og:title", content: `${siteConfig.brandName} study resource` },
+      { property: "og:title", content: `${siteConfig.fallbackBrand.brandName} study resource` },
       {
         property: "og:description",
         content: "Digital IGNOU study resource from Edu Wallet.",
@@ -30,6 +31,7 @@ export const Route = createFileRoute("/shop/$slug")({
 });
 
 function ProductDetail() {
+  const s = useSiteSettings();
   const { slug } = Route.useParams();
   const product = useQuery(productBySlugQuery(slug));
   const categories = useQuery(categoriesQuery());
@@ -199,7 +201,7 @@ function ProductDetail() {
                 This is a digital product. No physical item will be shipped.
               </p>
               <p>
-                Payment is made via UPI and verified manually. {siteConfig.deliveryEstimate}, the
+                Payment is made via UPI and verified manually. {s.deliveryEstimate ? `${s.deliveryEstimate}, the` : "Once verified, the"}
                 material is sent to your registered email address or WhatsApp number.
               </p>
               {isAssignment && <p>{siteConfig.assignmentDisclaimer}</p>}

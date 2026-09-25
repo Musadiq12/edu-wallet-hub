@@ -1,33 +1,19 @@
 /**
- * Central configuration for Edu Wallet.
- * Change brand, contact and payment details here only — never inline in components.
+ * Static, non-editable copy for Edu Wallet.
+ *
+ * Editable branding/contact/payment values (website name, tagline, emails,
+ * WhatsApp, social links, UPI, delivery estimate, website URL) live ONLY in the
+ * `site_settings` database table and are managed in Admin → Settings.
+ * Read them with `useSiteSettings()` from `@/lib/settings`.
+ * `fallbackBrand` is used solely if the settings cannot be loaded at all.
  */
 export const siteConfig = {
-  brandName: "Edu Wallet",
-  tagline: "Study Smart. Score Better.",
+  fallbackBrand: { brandName: "Edu Wallet", tagline: "Study Smart. Score Better." },
   shortDescription:
     "Exam-focused notes, guess papers, assignment guidance and study resources designed for IGNOU students.",
-  websiteUrl: "https://eduwallet.example",
-  contactEmail: "supporteduwallet@gmail.com",
-  secondaryContactEmail: "supporteduwallet@gmail.com",
-  upiId: "eduwallet@upi",
-  upiPayeeName: "Edu Wallet",
-  /** Optional: path/URL to a UPI QR image. Leave empty to show a generated QR. */
-  qrCodeUrl: "",
-  deliveryEstimate: "Usually within 6–12 hours of payment verification",
   copyrightYear: 2026,
-  social: {
-    instagram: "",
-    telegram: "",
-    youtube: "",
-  },
   disclaimer:
-    "Edu Wallet is an independent educational resource platform and is not affiliated with or endorsed by IGNOU.",
+    "This platform is an independent educational resource and is not affiliated with or endorsed by IGNOU.",
   assignmentDisclaimer:
-    "Edu Wallet provides original educational reference and guidance material. Students are responsible for understanding and submitting their own academic work in accordance with their institution's rules.",
+    "We provide original educational reference and guidance material. Students are responsible for understanding and submitting their own academic work in accordance with their institution's rules.",
 } as const;
-
-export const upiPayLink = (amount: number, note: string) =>
-  `upi://pay?pa=${encodeURIComponent(siteConfig.upiId)}&pn=${encodeURIComponent(
-    siteConfig.upiPayeeName,
-  )}&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
