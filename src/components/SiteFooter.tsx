@@ -12,8 +12,6 @@ const SITE_LINKS = [
   { to: "/contact", label: "Contact" },
 ] as const;
 
-const LEGAL_LINKS = [
-] as const;
 
 export function SiteFooter() {
   const s = useSiteSettings();
@@ -28,7 +26,7 @@ export function SiteFooter() {
 
   return (
     <footer className="mt-auto border-t border-border bg-surface">
-      <div className="page-container grid gap-10 py-12 md:grid-cols-4">
+      <div className="page-container grid gap-10 py-12 md:grid-cols-3">
         <div className="md:col-span-2">
           <Logo />
           <p className="mt-4 max-w-sm text-sm text-muted-foreground">
@@ -67,20 +65,6 @@ export function SiteFooter() {
           </ul>
         </nav>
 
-        <nav aria-label="Legal">
-          <h2 className="font-serif text-sm font-semibold tracking-wide text-foreground uppercase">
-            Legal
-          </h2>
-          <ul className="mt-4 space-y-2.5 text-sm">
-            {LEGAL_LINKS.map((l) => (
-              <li key={l.to}>
-                <Link to={l.to} className="text-muted-foreground hover:text-foreground">
-                  {l.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </nav>
       </div>
 
       <div className="border-t border-border">
