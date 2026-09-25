@@ -20,9 +20,9 @@ import { siteConfig } from "@/config/site";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: `${siteConfig.fallbackBrand.brandName} — ${siteConfig.fallbackBrand.tagline}` },
+      { title: "IGNOU Study Resources" },
       { name: "description", content: siteConfig.shortDescription },
-      { property: "og:title", content: `${siteConfig.fallbackBrand.brandName} — ${siteConfig.fallbackBrand.tagline}` },
+      { property: "og:title", content: "IGNOU Study Resources" },
       { property: "og:description", content: siteConfig.shortDescription },
     ],
     links: [{ rel: "canonical", href: "/" }],
@@ -135,7 +135,7 @@ function Home() {
 
       <section className="section-y">
         <div className="page-container">
-          <h2 className="text-2xl font-semibold sm:text-3xl">Why students use Edu Wallet</h2>
+          <h2 className="text-2xl font-semibold sm:text-3xl">Why students use our resources</h2>
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {VALUES.map((v) => (
               <div key={v.title} className="rounded-lg border border-border bg-card p-5">
@@ -150,7 +150,7 @@ function Home() {
 
       <section className="section-y bg-surface">
         <div className="page-container">
-          <h2 className="text-2xl font-semibold sm:text-3xl">Explore Edu Wallet</h2>
+          <h2 className="text-2xl font-semibold sm:text-3xl">Explore our resources</h2>
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {CATEGORIES.map((c) => (
               <Link
