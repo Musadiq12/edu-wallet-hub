@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/checkout/$slug")({
   head: () => ({
     meta: [
-      { title: `Checkout — ${siteConfig.fallbackBrand.brandName}` },
+      { title: "Checkout" },
       { name: "description", content: "Complete your UPI payment and submit payment confirmation." },
       { name: "robots", content: "noindex" },
     ],
