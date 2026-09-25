@@ -17,13 +17,13 @@ export const Route = createFileRoute("/shop/")({
   }),
   head: () => ({
     meta: [
-      { title: `IGNOU Study Resources — ${siteConfig.fallbackBrand.brandName}` },
+      { title: "IGNOU Study Resources" },
       {
         name: "description",
         content:
           "Browse IGNOU notes, guess papers, assignment guidance and exam guides. Search by subject, course or keyword.",
       },
-      { property: "og:title", content: `IGNOU Study Resources — ${siteConfig.fallbackBrand.brandName}` },
+      { property: "og:title", content: "IGNOU Study Resources" },
       {
         property: "og:description",
         content: "Browse IGNOU notes, guess papers, assignment guidance and exam guides.",
