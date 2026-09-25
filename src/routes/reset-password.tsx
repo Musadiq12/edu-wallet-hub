@@ -30,7 +30,7 @@ function ResetPasswordPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 8) return toast.error("Password must be at least 8 characters.");
+    if (password.length < 8) return void toast.error("Password must be at least 8 characters.");
     setBusy(true);
     const { error } = await supabase.auth.updateUser({ password });
     setBusy(false);

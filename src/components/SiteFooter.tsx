@@ -10,14 +10,9 @@ const SITE_LINKS = [
   { to: "/free-resources", label: "Free Resources" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
-  { to: "/faq", label: "FAQ" },
 ] as const;
 
 const LEGAL_LINKS = [
-  { to: "/terms", label: "Terms & Conditions" },
-  { to: "/privacy", label: "Privacy Policy" },
-  { to: "/refund-policy", label: "Refund Policy" },
-  { to: "/disclaimer", label: "Disclaimer" },
 ] as const;
 
 export function SiteFooter() {
