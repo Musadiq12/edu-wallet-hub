@@ -13,13 +13,13 @@ import { siteConfig } from "@/config/site";
 export const Route = createFileRoute("/shop/$slug")({
   head: ({ params }) => ({
     meta: [
-      { title: `${params.slug.replace(/-/g, " ")} — ${siteConfig.fallbackBrand.brandName}` },
+      { title: `${params.slug.replace(/-/g, " ")}` },
       {
         name: "description",
         content:
           "Digital IGNOU study resource from Edu Wallet. See what's included, format and pricing before you buy.",
       },
-      { property: "og:title", content: `${siteConfig.fallbackBrand.brandName} study resource` },
+      { property: "og:title", content: "Study resource" },
       {
         property: "og:description",
         content: "Digital IGNOU study resource from Edu Wallet.",
