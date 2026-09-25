@@ -53,14 +53,15 @@ export const defaultSettings: SiteSettings = {
 export const settingsQuery = () =>
   queryOptions({
     queryKey: ["site-settings"],
-    staleTime: 60 * 1000,
+    staleTime: 0,
+    refetchOnMount: "always",
     queryFn: async (): Promise<SiteSettings> => {
       const { data, error } = await supabase.from("site_settings").select("key,value");
       if (error) return defaultSettings;
       const merged = { ...defaultSettings };
       for (const row of data ?? []) {
         const k = row.key as SettingKey;
-        if (k in merged && row.value != null) merged[k] = row.value.trim() || merged[k];
+        if (k in merged && row.value != null) merged[k] = row.value.trim();
       }
       return merged;
     },
