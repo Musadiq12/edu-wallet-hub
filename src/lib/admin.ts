@@ -142,3 +142,31 @@ export const adminCustomersQuery = () =>
       return (data ?? []) as AdminCustomer[];
     },
   });
+
+
+export type AdminContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  whatsapp: string | null;
+  message: string;
+  created_at: string;
+};
+
+export const adminContactMessagesQuery = () =>
+  queryOptions({
+    queryKey: ["admin", "contact-messages"],
+    queryFn: async (): Promise<AdminContactMessage[]> => {
+      const { data, error } = await supabase
+        .from("contact_messages")
+        .select("id,name,email,whatsapp,message,created_at")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as AdminContactMessage[];
+    },
+  });
+
+export async function deleteContactMessage(id: string) {
+  const { error } = await supabase.from("contact_messages").delete().eq("id", id);
+  if (error) throw error;
+}
