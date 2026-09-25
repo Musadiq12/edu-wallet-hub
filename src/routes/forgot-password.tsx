@@ -11,9 +11,9 @@ import { friendlyError } from "@/lib/admin";
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({
     meta: [
-      { title: `Reset password — ${siteConfig.brandName}` },
+      { title: `Reset password — ${siteConfig.fallbackBrand.brandName}` },
       { name: "description", content: "Reset the password for your Edu Wallet account." },
-      { property: "og:title", content: `Reset password — ${siteConfig.brandName}` },
+      { property: "og:title", content: `Reset password — ${siteConfig.fallbackBrand.brandName}` },
       { property: "og:description", content: "Reset your Edu Wallet password." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

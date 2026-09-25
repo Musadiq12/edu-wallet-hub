@@ -20,9 +20,9 @@ export const Route = createFileRoute("/register")({
 },
   head: () => ({
     meta: [
-      { title: `Create account — ${siteConfig.brandName}` },
+      { title: `Create account — ${siteConfig.fallbackBrand.brandName}` },
       { name: "description", content: "Create an Edu Wallet account to order IGNOU notes, guess papers and study guides." },
-      { property: "og:title", content: `Create account — ${siteConfig.brandName}` },
+      { property: "og:title", content: `Create account — ${siteConfig.fallbackBrand.brandName}` },
       { property: "og:description", content: "Create your Edu Wallet student account." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

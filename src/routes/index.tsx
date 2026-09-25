@@ -19,9 +19,9 @@ import { siteConfig } from "@/config/site";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: `${siteConfig.brandName} — ${siteConfig.tagline}` },
+      { title: `${siteConfig.fallbackBrand.brandName} — ${siteConfig.fallbackBrand.tagline}` },
       { name: "description", content: siteConfig.shortDescription },
-      { property: "og:title", content: `${siteConfig.brandName} — ${siteConfig.tagline}` },
+      { property: "og:title", content: `${siteConfig.fallbackBrand.brandName} — ${siteConfig.fallbackBrand.tagline}` },
       { property: "og:description", content: siteConfig.shortDescription },
     ],
     links: [{ rel: "canonical", href: "/" }],
@@ -95,7 +95,7 @@ function Home() {
               For IGNOU students
             </p>
             <h1 className="mt-3 text-4xl leading-tight font-bold text-foreground sm:text-5xl">
-              {siteConfig.tagline}
+              {siteConfig.fallbackBrand.tagline}
             </h1>
             <p className="mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
               {siteConfig.shortDescription}

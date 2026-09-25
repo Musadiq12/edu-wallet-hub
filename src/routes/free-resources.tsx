@@ -8,13 +8,13 @@ import { siteConfig } from "@/config/site";
 export const Route = createFileRoute("/free-resources")({
   head: () => ({
     meta: [
-      { title: `Free IGNOU Study Resources — ${siteConfig.brandName}` },
+      { title: `Free IGNOU Study Resources — ${siteConfig.fallbackBrand.brandName}` },
       {
         name: "description",
         content:
           "Free IGNOU samples and study material from Edu Wallet. Preview the format before buying paid resources.",
       },
-      { property: "og:title", content: `Free IGNOU Study Resources — ${siteConfig.brandName}` },
+      { property: "og:title", content: `Free IGNOU Study Resources — ${siteConfig.fallbackBrand.brandName}` },
       {
         property: "og:description",
         content: "Free IGNOU samples and study material from Edu Wallet.",

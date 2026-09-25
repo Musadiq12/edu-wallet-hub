@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
-      { title: `Admin — ${siteConfig.brandName}` },
+      { title: `Admin — ${siteConfig.fallbackBrand.brandName}` },
       { name: "description", content: "Edu Wallet administration area." },
       { name: "robots", content: "noindex, nofollow" },
     ],
