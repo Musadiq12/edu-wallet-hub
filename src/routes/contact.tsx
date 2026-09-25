@@ -12,9 +12,9 @@ import { isEmail, safeUrl, useSiteSettings, waLink } from "@/lib/settings";
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact — Edu Wallet" },
+      { title: "Contact" },
       { name: "description", content: "Get in touch with the Edu Wallet team by email, WhatsApp or the contact form." },
-      { property: "og:title", content: "Contact — Edu Wallet" },
+      { property: "og:title", content: "Contact" },
       { property: "og:description", content: "Questions about study resources or an order? Contact us." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
