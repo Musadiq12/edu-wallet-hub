@@ -98,6 +98,15 @@ function ResetPasswordPage() {
       return;
     }
 
+    const validated = validation.data as { password: string };
+    const { error } = await supabase.auth.updateUser({ password: validated.password });
+    setBusy(false);
+
+    if (error) {
+      toast.error("Could not update your password.");
+      return;
+    }
+
     window.sessionStorage.removeItem(RECOVERY_FLAG);
     await supabase.auth.signOut();
     toast.success("Password updated successfully. Please log in with your new password.");
