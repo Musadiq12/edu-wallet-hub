@@ -2,7 +2,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Mail, MessageCircle } from "lucide-react";
+import { Loader2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,26 +34,10 @@ function AdminOrders() {
     window.open(url, "_blank", "noopener");
   };
 
-  const deliver = async (o: AdminOrder, action: "verify" | "resend") => {
-    setBusyId(o.id);
-    try {
-      const { data, error } = await supabase.functions.invoke("verify-and-deliver", {
-        body: { orderId: o.id, action },
-      });
-      if (error) throw error;
-      if (!data?.ok) throw new Error(data?.error || "Delivery failed.");
-      await qc.invalidateQueries({ queryKey: ["admin", "orders"] });
-      toast.success(data.message || (action === "verify" ? "Payment verified and document emailed." : "Document resent."));
-    } catch (err) {
-      toast.error(friendlyError(err, "Could not complete payment verification and email delivery."));
-    } finally {
-      setBusyId(null);
-    }
-  };
-
   const sendWhatsApp = async (o: AdminOrder) => {
     setBusyId(o.id);
     try {
+      if (o.payment_status !== "submitted") throw new Error("This order is no longer awaiting payment verification.");
       if (!o.whatsapp) throw new Error("This order has no WhatsApp number.");
       if (!o.product_id) throw new Error("This order is missing its product.");
 
@@ -64,9 +48,7 @@ function AdminOrders() {
         .maybeSingle();
 
       if (error) throw error;
-      if (!product?.pdf_file || product.is_free) {
-        throw new Error("A downloadable PDF is not available for this product.");
-      }
+      if (!product?.pdf_file || product.is_free) throw new Error("A downloadable PDF is not available for this product.");
 
       const downloadUrl = await signedUrl("product-files", product.pdf_file, 48 * 60 * 60);
       if (!downloadUrl) throw new Error("Could not create the document download link.");
@@ -87,10 +69,23 @@ function AdminOrders() {
         "Thank you for choosing EduWallet."
       ].join("\n");
 
+      const { error: updateError } = await supabase
+        .from("orders")
+        .update({
+          payment_status: "verified",
+          order_status: "delivered",
+          delivered_at: new Date().toISOString(),
+        })
+        .eq("id", o.id)
+        .eq("payment_status", "submitted");
+
+      if (updateError) throw updateError;
+
+      await qc.invalidateQueries({ queryKey: ["admin", "orders"] });
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
-      toast.success("WhatsApp message prepared with the document link.");
+      toast.success("Payment verified and WhatsApp delivery prepared.");
     } catch (err) {
-      toast.error(friendlyError(err, "Could not prepare the WhatsApp delivery message."));
+      toast.error(friendlyError(err, "Could not verify the payment and prepare WhatsApp delivery."));
     } finally {
       setBusyId(null);
     }
@@ -101,7 +96,7 @@ function AdminOrders() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Verify UPI payments manually. Successful verification automatically emails the purchased PDF.
+          Verify UPI payments manually and prepare the purchased PDF delivery through WhatsApp.
         </p>
       </div>
 
@@ -144,61 +139,39 @@ function AdminOrders() {
               <div className="mt-4 flex flex-wrap gap-2">
                 {busyId === o.id && <Loader2 className="h-4 w-4 animate-spin self-center" />}
                 {o.screenshot_path && (
-                  <Button size="sm" variant="outline" onClick={() => void openProof(o.screenshot_path!)}>
-                    View screenshot
-                  </Button>
+                  {o.payment_status === "submitted" && (
+                  <>
+                    <Button size="sm" disabled={busyId === o.id} onClick={() => void sendWhatsApp(o)}>
+                      <MessageCircle className="mr-1.5 h-4 w-4" /> Verify & Send via WhatsApp
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busyId === o.id}
+                      onClick={() => void update(o, { payment_status: "rejected", order_status: "payment_rejected" }, "Payment rejected.")}
+                    >
+                      Reject Payment
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={busyId === o.id}
+                      onClick={() => void update(o, { order_status: "cancelled" }, "Order cancelled.")}
+                    >
+                      Cancel Order
+                    </Button>
+                  </>
                 )}
-                <Button
-                  size="sm"
-                  disabled={busyId === o.id || o.payment_status === "verified"}
-                  onClick={() => void deliver(o, "verify")}
-                >
-                  Verify & Email Document
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={busyId === o.id}
-                  onClick={() => void sendWhatsApp(o)}
-                >
-                  <MessageCircle className="mr-1.5 h-4 w-4" /> Send via WhatsApp
-                </Button>
-                {o.payment_status === "verified" && (
+                {o.payment_status === "verified" && o.order_status !== "delivered" && (
                   <Button
                     size="sm"
                     variant="outline"
                     disabled={busyId === o.id}
-                    onClick={() => void deliver(o, "resend")}
+                    onClick={() => void update(o, { order_status: "delivered", delivered_at: new Date().toISOString() }, "Order marked delivered.")}
                   >
-                    <Mail className="mr-1.5 h-4 w-4" /> Resend Document
+                    Mark Delivered
                   </Button>
                 )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={busyId === o.id}
-                  onClick={() => void update(o, { payment_status: "rejected", order_status: "payment_rejected" }, "Payment rejected.")}
-                >
-                  Reject Payment
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  disabled={busyId === o.id}
-                  onClick={() =>
-                    void update(o, { order_status: "delivered", delivered_at: new Date().toISOString() }, "Order marked delivered.")
-                  }
-                >
-                  Mark Delivered
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={busyId === o.id}
-                  onClick={() => void update(o, { order_status: "cancelled" }, "Order cancelled.")}
-                >
-                  Cancel Order
-                </Button>
               </div>
             </article>
           ))}
