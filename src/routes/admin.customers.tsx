@@ -12,13 +12,12 @@ function AdminCustomers() {
   const { data: orders } = useQuery(adminOrdersQuery());
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"newest" | "orders">("newest");
+  const orderCount = (id: string) => (orders ?? []).filter((o) => o.user_id === id).length;
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase();
     return [...(data ?? [])].filter((c) => !term || [c.full_name, c.email, c.whatsapp].filter(Boolean).some((v) => String(v).toLowerCase().includes(term)))
       .sort((a,b) => sort === "orders" ? orderCount(b.id) - orderCount(a.id) : +new Date(b.created_at) - +new Date(a.created_at));
   }, [data, search, sort, orders]);
-
-  const orderCount = (id: string) => (orders ?? []).filter((o) => o.user_id === id).length;
 
   return (
     <div className="space-y-6">
@@ -38,6 +37,12 @@ function AdminCustomers() {
       ) : (data ?? []).length === 0 ? (
         <p className="rounded-lg border border-border p-8 text-center text-sm text-muted-foreground">No registered customers yet.</p>
       ) : (
+        <div className="space-y-3">
+          <div className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-3 sm:flex-row">
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name, email or WhatsApp" aria-label="Search customers" className="h-10 bg-background" />
+            <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label="Sort customers" className="h-10 rounded-md border border-input bg-background px-3 text-sm"><option value="newest">Newest first</option><option value="orders">Most orders</option></select>
+          </div>
+          {visible.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No customers match your search.</div> : (
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full min-w-[40rem] text-sm">
             <thead className="bg-surface text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -61,6 +66,8 @@ function AdminCustomers() {
               ))}
             </tbody>
           </table>
+        </div>
+          )}
         </div>
       )}
     </div>
