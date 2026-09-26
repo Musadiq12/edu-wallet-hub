@@ -8,7 +8,7 @@ import { adminCustomersQuery, adminOrdersQuery } from "@/lib/admin";
 export const Route = createFileRoute("/admin/customers")({ component: AdminCustomers });
 
 function AdminCustomers() {
-  const { data, isLoading, isError } = useQuery(adminCustomersQuery());
+  const { data, isLoading, isError, refetch } = useQuery(adminCustomersQuery());
   const { data: orders } = useQuery(adminOrdersQuery());
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"newest" | "orders">("newest");
@@ -31,9 +31,7 @@ function AdminCustomers() {
       {isLoading ? (
         <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
       ) : isError ? (
-        <p className="rounded-lg border border-border p-6 text-sm text-muted-foreground">
-          We could not load customers right now. Please refresh and try again.
-        </p>
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 text-sm"><p>We could not load customers right now. Please try again.</p><Button size="sm" variant="outline" className="mt-3" onClick={() => void refetch()}>Retry</Button></div>
       ) : (data ?? []).length === 0 ? (
         <p className="rounded-lg border border-border p-8 text-center text-sm text-muted-foreground">No registered customers yet.</p>
       ) : (
