@@ -93,6 +93,15 @@ function AdminProducts() {
         Include archived products
       </label>
 
+      <div className="grid gap-2 rounded-xl border border-border bg-surface p-3 sm:grid-cols-[1fr_auto_auto]">
+        <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search title, course or subject" aria-label="Search products" className="h-10 bg-background" />
+        <select value={status} onChange={(e) => { setStatus(e.target.value); if (e.target.value === "archived") setShowArchived(true); }} aria-label="Filter products" className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+          <option value="all">All products</option><option value="published">Published</option><option value="draft">Drafts</option><option value="free">Free</option><option value="archived">Archived</option>
+        </select>
+        <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label="Sort products" className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+          <option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="price">Highest price</option>
+        </select>
+      </div>
       {isLoading ? (
         <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
       ) : isError ? (
@@ -104,6 +113,8 @@ function AdminProducts() {
           <p className="text-sm text-muted-foreground">No products yet. Add your first resource to get started.</p>
         </div>
       ) : (
+        <div>
+          {visible.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No products match your filters.</div> : (
         <div className="overflow-x-auto rounded-lg border border-border">
           <table className="w-full min-w-[54rem] text-sm">
             <thead className="bg-surface text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -179,6 +190,8 @@ function AdminProducts() {
               ))}
             </tbody>
           </table>
+        </div>
+          )}
         </div>
       )}
 
