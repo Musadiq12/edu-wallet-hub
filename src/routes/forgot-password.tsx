@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { siteConfig } from "@/config/site";
 import { friendlyError } from "@/lib/admin";
+import { forgotPasswordServer } from "@/server/auth.functions";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({
@@ -31,11 +32,16 @@ function ForgotPasswordPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setBusy(true);
+    const validation = await forgotPasswordServer({ data: { email } });
+    if (!("ok" in validation) || !validation.ok) {
+      setBusy(false);
+      return void toast.error("Could not send the reset email.");
+    }
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setBusy(false);
-    if (error) return void toast.error(friendlyError(error, "Could not send the reset email."));
+    if (error) return void toast.error("Could not send the reset email.");
     setSent(true);
   };
 
