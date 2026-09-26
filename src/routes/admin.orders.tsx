@@ -146,8 +146,21 @@ function AdminOrders() {
           No orders yet.
         </p>
       ) : (
-        <div className="space-y-3">
-          {(data ?? []).map((o) => {
+        <div className="space-y-4">
+          <div className="grid gap-2 rounded-xl border border-border bg-surface p-3 sm:grid-cols-[1fr_auto_auto]">
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search customer, email, product or transaction ID" aria-label="Search orders" className="h-10 bg-background" />
+            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filter orders by status" className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+              <option value="all">All statuses</option><option value="submitted">Payment submitted</option><option value="verified">Verified</option><option value="rejected">Rejected</option><option value="cancelled">Cancelled</option>
+            </select>
+            <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label="Sort orders" className="h-10 rounded-md border border-input bg-background px-3 text-sm">
+              <option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="amount">Highest amount</option>
+            </select>
+          </div>
+          {visibleOrders.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No orders match your filters.</div>
+          ) : (
+            <div className="space-y-3">
+              {visibleOrders.map((o) => {
             const isSubmitted = o.payment_status === "submitted" && o.order_status !== "cancelled";
             const isRejected = o.payment_status === "rejected" && o.order_status !== "cancelled";
             const isCancelled = o.order_status === "cancelled";
@@ -318,7 +331,9 @@ function AdminOrders() {
                 </div>
               </article>
             );
-          })}
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>
