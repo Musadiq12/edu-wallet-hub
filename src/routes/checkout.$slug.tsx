@@ -2,7 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { CheckCircle2, Copy } from "lucide-react";
+import { CheckCircle2, Copy, Headphones, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -131,9 +131,11 @@ function Checkout() {
             We will verify your payment and deliver your digital product to your registered email
             address or WhatsApp number. {siteSettings.deliveryEstimate ? `${siteSettings.deliveryEstimate}.` : ""}
           </p>
-          <p className="mt-3 text-xs text-muted-foreground">
-            Your payment is not confirmed until our team verifies it.
-          </p>
+          <div className="mt-5 rounded-lg border border-border bg-surface p-4 text-left text-sm">
+            <p className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-success" /> Your payment is reviewed manually before delivery.</p>
+            <p className="mt-2 flex gap-2"><Headphones className="h-4 w-4 shrink-0 text-accent" /> Need help? Use the Contact page and mention your order details.</p>
+          </div>
+          <p className="mt-3 text-xs text-muted-foreground">Your payment is not confirmed until our team verifies it.</p>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
             <Button asChild>
               <Link to="/shop">Continue browsing</Link>
