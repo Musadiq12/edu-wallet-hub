@@ -2,7 +2,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import { Loader2, Mail } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,12 +34,29 @@ function AdminOrders() {
     window.open(url, "_blank", "noopener");
   };
 
+  const deliver = async (o: AdminOrder, action: "verify" | "resend") => {
+    setBusyId(o.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("verify-and-deliver", {
+        body: { orderId: o.id, action },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Delivery failed.");
+      await qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+      toast.success(data.message || (action === "verify" ? "Payment verified and document emailed." : "Document resent."));
+    } catch (err) {
+      toast.error(friendlyError(err, "Could not complete payment verification and email delivery."));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Verify UPI payments manually, then deliver the resource by email or WhatsApp.
+          Verify UPI payments manually. Successful verification automatically emails the purchased PDF.
         </p>
       </div>
 
@@ -89,16 +106,20 @@ function AdminOrders() {
                 <Button
                   size="sm"
                   disabled={busyId === o.id || o.payment_status === "verified"}
-                  onClick={() =>
-                    void update(
-                      o,
-                      { payment_status: "verified", order_status: "processing", verified_at: new Date().toISOString() },
-                      "Payment verified.",
-                    )
-                  }
+                  onClick={() => void deliver(o, "verify")}
                 >
-                  Verify Payment
+                  Verify & Email Document
                 </Button>
+                {o.payment_status === "verified" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busyId === o.id}
+                    onClick={() => void deliver(o, "resend")}
+                  >
+                    <Mail className="mr-1.5 h-4 w-4" /> Resend Document
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
