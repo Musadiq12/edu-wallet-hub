@@ -5,7 +5,8 @@ CREATE OR REPLACE FUNCTION public.strip_html_tags(value text)
 RETURNS text
 LANGUAGE plpgsql
 IMMUTABLE
-AS $$
+SET search_path = public, pg_catalog
+AS $
 BEGIN
   RETURN btrim(
     regexp_replace(
@@ -45,7 +46,11 @@ CREATE TRIGGER validate_profiles_before_write
 BEFORE INSERT OR UPDATE ON public.profiles
 FOR EACH ROW EXECUTE FUNCTION public.validate_profile_fields();
 
-DO $$
+-- These helpers are implementation details used by the trigger, not public RPC endpoints.
+REVOKE EXECUTE ON FUNCTION public.strip_html_tags(text) FROM PUBLIC, anon, authenticated;
+REVOKE EXECUTE ON FUNCTION public.validate_profile_fields() FROM PUBLIC, anon, authenticated;
+
+DO $
 BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint WHERE conname = 'profiles_full_name_length'
