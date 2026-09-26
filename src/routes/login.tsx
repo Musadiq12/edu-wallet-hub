@@ -4,8 +4,9 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { supabase } from "@/integrations/supabase/client";
 import { siteConfig } from "@/config/site";
-import { loginServer } from "@/server/auth.functions";
+import { friendlyError } from "@/lib/admin";
 
 type Search = { redirect?: string | undefined };
 
@@ -36,18 +37,15 @@ function LoginPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setBusy(true);
-    const validation = await loginServer({ data: { email, password } });
-    setBusy(false);
-    if (!("ok" in validation) || !validation.ok) {
-      toast.error("Could not log in. Please try again.");
+    if (!email.trim() || !password) {
+      toast.error("Enter your email and password.");
       return;
     }
     setBusy(true);
-    const { error } = await (await import("@/integrations/supabase/client")).supabase.auth.signInWithPassword({ email: email.trim(), password });
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
     if (error) {
-      toast.error("Could not log in. Please try again.");
+      toast.error(friendlyError(error, "Could not log in. Please try again."));
       return;
     }
     toast.success("Logged in.");
