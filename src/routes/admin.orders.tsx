@@ -155,7 +155,15 @@ function AdminOrders() {
                 >
                   Verify & Email Document
                 </Button>
-                <Button\n                  size="sm"\n                  variant="outline"\n                  disabled={busyId === o.id}\n                  onClick={() => void sendWhatsApp(o)}\n                >\n                  <MessageCircle className="mr-1.5 h-4 w-4" /> Send via WhatsApp\n                </Button>\n                {o.payment_status === "verified" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busyId === o.id}
+                  onClick={() => void sendWhatsApp(o)}
+                >
+                  <MessageCircle className="mr-1.5 h-4 w-4" /> Send via WhatsApp
+                </Button>
+                {o.payment_status === "verified" && (
                   <Button
                     size="sm"
                     variant="outline"
