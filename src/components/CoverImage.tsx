@@ -25,7 +25,7 @@ export function CoverImage({
         alt={`Cover of ${title}`}
         loading="lazy"
         decoding="async"
-        className={`w-full object-cover ${className}`}
+        className={`w-full object-cover transition-transform duration-300 ${className}`}
       />
     );
   }
