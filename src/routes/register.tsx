@@ -60,14 +60,21 @@ function RegisterPage() {
       return;
     }
 
+    const validated = validation.data as {
+      email: string;
+      password: string;
+      full_name: string;
+      whatsapp?: string;
+    };
+
     const { error } = await supabase.auth.signUp({
-      email: form.email.trim(),
-      password: form.password,
+      email: validated.email,
+      password: validated.password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
         data: {
-          full_name: form.full_name.trim(),
-          whatsapp: form.whatsapp.trim(),
+          full_name: validated.full_name,
+          whatsapp: validated.whatsapp || "",
         },
       },
     });
