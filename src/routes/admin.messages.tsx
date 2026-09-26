@@ -38,7 +38,7 @@ function AdminMessages() {
         </div>
       ) : messages.isError ? (
         <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 text-sm">
-          Could not load messages. {friendlyError(messages.error, "Please try again.")}
+          Could not load messages. {friendlyError(messages.error, "Please try again.")}<br /><Button size="sm" variant="outline" className="mt-3" onClick={() => void messages.refetch()}>Retry</Button>
         </div>
       ) : (messages.data ?? []).length === 0 ? (
         <div className="rounded-lg border border-border p-8 text-center">
