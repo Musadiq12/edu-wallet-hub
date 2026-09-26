@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { siteConfig } from "@/config/site";
 import { friendlyError } from "@/lib/admin";
+import { resetPasswordServer } from "@/server/auth.functions";
 
 const RECOVERY_FLAG = "edu-wallet-password-recovery";
 
@@ -90,11 +91,11 @@ function ResetPasswordPage() {
     }
 
     setBusy(true);
-    const { error } = await supabase.auth.updateUser({ password });
+    const validation = await resetPasswordServer({ data: { password } });
     setBusy(false);
 
-    if (error) {
-      toast.error(friendlyError(error, "Could not update your password."));
+    if (!("ok" in validation) || !validation.ok) {
+      toast.error("Could not update your password.");
       return;
     }
 
