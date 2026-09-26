@@ -1,14 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/about")({
+  head: () => ({
+    meta: [
+      { title: "About EduWallet" },
+      { name: "description", content: "Learn about EduWallet, its educational resources, access process, and student-focused mission." },
+      { property: "og:title", content: "About EduWallet" },
+      { property: "og:description", content: "Learn about EduWallet and how its digital study resources support students." },
+    ],
+    links: [{ rel: "canonical", href: "/about" }],
+  }),
   component: AboutPage,
 });
 
 function AboutPage() {
   return (
-    <main className="container mx-auto px-4 py-12">
-      <div className="mx-auto max-w-3xl">
-        <h1 className="text-3xl font-bold sm:text-4xl">
+    <main className="page-container section-y">
+      <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-10">
+        <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
           About EduWallet
         </h1>
 
