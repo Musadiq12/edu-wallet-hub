@@ -10,23 +10,48 @@ import { categoriesQuery, productBySlugQuery, signedUrl } from "@/lib/catalog";
 import { discountPercent, formatPrice } from "@/lib/format";
 import { siteConfig } from "@/config/site";
 
+function trimDesc(text: string, max = 155) {
+  const t = text.replace(/\s+/g, " ").trim();
+  return t.length <= max ? t : `${t.slice(0, max - 1).replace(/\s+\S*$/, "")}…`;
+}
+
 export const Route = createFileRoute("/shop/$slug")({
-  head: ({ params }) => ({
-    meta: [
-      { title: `${params.slug.replace(/-/g, " ")}` },
-      {
-        name: "description",
-        content:
-          "Digital IGNOU study resource from Edu Wallet. See what's included, format and pricing before you buy.",
-      },
-      { property: "og:title", content: "Study resource" },
-      {
-        property: "og:description",
-        content: "Digital IGNOU study resource from Edu Wallet.",
-      },
-    ],
-    links: [{ rel: "canonical", href: `/shop/${params.slug}` }],
-  }),
+  loader: async ({ context, params }) => {
+    try {
+      const product = await context.queryClient.ensureQueryData(productBySlugQuery(params.slug));
+      const ogImage = product?.cover_image
+        ? await signedUrl("product-covers", product.cover_image, 60 * 60 * 24 * 365)
+        : null;
+      return { product, ogImage };
+    } catch {
+      return { product: null, ogImage: null };
+    }
+  },
+  head: ({ params, loaderData }) => {
+    const p = loaderData?.product;
+    const title = p ? `${p.title} — Edu Wallet` : "Study resource — Edu Wallet";
+    const desc = p
+      ? trimDesc(
+          p.description ||
+            p.whats_included ||
+            `${p.title}: digital IGNOU study resource from Edu Wallet.`,
+        )
+      : "Digital IGNOU study resource from Edu Wallet. See what's included, format and pricing before you buy.";
+    const meta: Array<Record<string, string>> = [
+      { title },
+      { name: "description", content: desc },
+      { property: "og:title", content: title },
+      { property: "og:description", content: desc },
+      { property: "og:type", content: "product" },
+      { name: "twitter:card", content: loaderData?.ogImage ? "summary_large_image" : "summary" },
+    ];
+    if (loaderData?.ogImage) {
+      meta.push({ property: "og:image", content: loaderData.ogImage });
+      meta.push({ name: "twitter:image", content: loaderData.ogImage });
+    }
+    if (!p) meta.push({ name: "robots", content: "noindex" });
+    return { meta, links: [{ rel: "canonical", href: `/shop/${params.slug}` }] };
+  },
   component: ProductDetail,
 });
 

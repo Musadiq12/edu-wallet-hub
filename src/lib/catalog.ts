@@ -62,6 +62,7 @@ export const productsQuery = (opts?: {
         .from("products")
         .select(PRODUCT_FIELDS)
         .eq("is_active", true)
+        .eq("is_archived", false)
         .order("created_at", { ascending: false });
       if (opts?.featured) q = q.eq("is_featured", true);
       if (opts?.free !== undefined) q = q.eq("is_free", opts.free);
@@ -81,6 +82,7 @@ export const productBySlugQuery = (slug: string) =>
         .select(PRODUCT_FIELDS)
         .eq("slug", slug)
         .eq("is_active", true)
+        .eq("is_archived", false)
         .maybeSingle();
       if (error) throw error;
       return (data ?? null) as unknown as Product | null;
