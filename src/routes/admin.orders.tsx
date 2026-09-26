@@ -71,7 +71,7 @@ function AdminOrders() {
       const downloadUrl = await signedUrl("product-files", product.pdf_file, 48 * 60 * 60);
       if (!downloadUrl) throw new Error("Could not create the document download link.");
 
-      let phone = o.whatsapp.replace(/\\D/g, "");
+      let phone = o.whatsapp.replace(/\D/g, "");
       if (phone.startsWith("0")) phone = phone.slice(1);
       if (phone.length === 10) phone = `91${phone}`;
 
@@ -82,10 +82,10 @@ function AdminOrders() {
         "",
         "Thank you for your purchase.",
         "",
-        `Download your document here:\\n${downloadUrl}`,
+        `Download your document here:\n${downloadUrl}`,
         "",
         "Thank you for choosing EduWallet."
-      ].join("\\n");
+      ].join("\n");
 
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
       toast.success("WhatsApp message prepared with the document link.");
