@@ -1,0 +1,1 @@
+UPDATE public.products SET is_active = false WHERE is_demo = true;
