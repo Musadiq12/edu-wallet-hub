@@ -6,7 +6,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { siteConfig } from "@/config/site";
-import { friendlyError } from "@/lib/admin";
 import { resetPasswordServer } from "@/server/auth.functions";
 
 const RECOVERY_FLAG = "edu-wallet-password-recovery";
