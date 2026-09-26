@@ -19,7 +19,11 @@ function AdminOrders() {
   const { data, isLoading, isError } = useQuery(adminOrdersQuery());
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const update = async (o: AdminOrder, patch: Database["public"]["Tables"]["orders"]["Update"], message: string) => {
+  const update = async (
+    o: AdminOrder,
+    patch: Database["public"]["Tables"]["orders"]["Update"],
+    message: string,
+  ) => {
     setBusyId(o.id);
     const { error } = await supabase.from("orders").update(patch).eq("id", o.id);
     setBusyId(null);
@@ -37,7 +41,9 @@ function AdminOrders() {
   const sendWhatsApp = async (o: AdminOrder) => {
     setBusyId(o.id);
     try {
-      if (o.payment_status !== "submitted") throw new Error("This order is no longer awaiting payment verification.");
+      if (o.payment_status !== "submitted" || o.order_status !== "pending") {
+        throw new Error("This order is no longer awaiting payment verification.");
+      }
       if (!o.whatsapp) throw new Error("This order has no WhatsApp number.");
       if (!o.product_id) throw new Error("This order is missing its product.");
 
@@ -48,7 +54,9 @@ function AdminOrders() {
         .maybeSingle();
 
       if (error) throw error;
-      if (!product?.pdf_file || product.is_free) throw new Error("A downloadable PDF is not available for this product.");
+      if (!product?.pdf_file || product.is_free) {
+        throw new Error("A downloadable PDF is not available for this product.");
+      }
 
       const downloadUrl = await signedUrl("product-files", product.pdf_file, 48 * 60 * 60);
       if (!downloadUrl) throw new Error("Could not create the document download link.");
@@ -64,10 +72,10 @@ function AdminOrders() {
         "",
         "Thank you for your purchase.",
         "",
-        `Download your document here:\n${downloadUrl}`,
+        `Download your document here:\\n${downloadUrl}`,
         "",
-        "Thank you for choosing EduWallet."
-      ].join("\n");
+        "Thank you for choosing EduWallet.",
+      ].join("\\n");
 
       const { error: updateError } = await supabase
         .from("orders")
@@ -77,15 +85,22 @@ function AdminOrders() {
           delivered_at: new Date().toISOString(),
         })
         .eq("id", o.id)
-        .eq("payment_status", "submitted");
+        .eq("payment_status", "submitted")
+        .eq("order_status", "pending");
 
       if (updateError) throw updateError;
 
       await qc.invalidateQueries({ queryKey: ["admin", "orders"] });
-      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
-      toast.success("Payment verified and WhatsApp delivery prepared.");
+      window.open(
+        `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
+        "_blank",
+        "noopener",
+      );
+      toast.success("Payment verified, order delivered, and WhatsApp delivery prepared.");
     } catch (err) {
-      toast.error(friendlyError(err, "Could not verify the payment and prepare WhatsApp delivery."));
+      toast.error(
+        friendlyError(err, "Could not verify the payment and prepare WhatsApp delivery."),
+      );
     } finally {
       setBusyId(null);
     }
@@ -101,94 +116,175 @@ function AdminOrders() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-2">{Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28 w-full" />)}</div>
+        <div className="space-y-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-28 w-full" />
+          ))}
+        </div>
       ) : isError ? (
         <p className="rounded-lg border border-border p-6 text-sm text-muted-foreground">
           We could not load orders right now. Please refresh and try again.
         </p>
       ) : (data ?? []).length === 0 ? (
-        <p className="rounded-lg border border-border p-8 text-center text-sm text-muted-foreground">No orders yet.</p>
+        <p className="rounded-lg border border-border p-8 text-center text-sm text-muted-foreground">
+          No orders yet.
+        </p>
       ) : (
         <div className="space-y-3">
-          {(data ?? []).map((o) => (
-            <article key={o.id} className="rounded-lg border border-border p-4">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-medium">{o.product_title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Order {o.id.slice(0, 8)} · {new Date(o.created_at).toLocaleString()}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Badge variant={o.payment_status === "verified" ? "default" : "secondary"}>
-                    {PAYMENT_STATUS_LABELS[o.payment_status] ?? o.payment_status}
-                  </Badge>
-                  <Badge variant="outline">{ORDER_STATUS_LABELS[o.order_status] ?? o.order_status}</Badge>
-                </div>
-              </div>
+          {(data ?? []).map((o) => {
+            const isSubmitted = o.payment_status === "submitted" && o.order_status === "pending";
+            const isRejected =
+              o.payment_status === "rejected" && o.order_status === "payment_rejected";
+            const isCancelled = o.order_status === "cancelled";
+            const isVerified = o.payment_status === "verified";
 
-              <dl className="mt-3 grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2 lg:grid-cols-3">
-                <div><dt className="text-xs text-muted-foreground">Customer</dt><dd>{o.full_name}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Email</dt><dd className="break-all">{o.email}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">WhatsApp</dt><dd>{o.whatsapp}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Amount</dt><dd>{formatPrice(Number(o.amount))}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">UPI transaction ID</dt><dd className="break-all">{o.transaction_id ?? "—"}</dd></div>
-                <div><dt className="text-xs text-muted-foreground">Payment method</dt><dd>{o.payment_method}</dd></div>
-              </dl>
+            return (
+              <article key={o.id} className="rounded-lg border border-border p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium">{o.product_title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Order {o.id.slice(0, 8)} · {new Date(o.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Badge variant={isVerified ? "default" : "secondary"}>
+                      {PAYMENT_STATUS_LABELS[o.payment_status] ?? o.payment_status}
+                    </Badge>
+                    <Badge variant="outline">
+                      {ORDER_STATUS_LABELS[o.order_status] ?? o.order_status}
+                    </Badge>
+                  </div>
+                </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
-                {busyId === o.id && <Loader2 className="h-4 w-4 animate-spin self-center" />}
-                {o.screenshot_path && (
-                  <Button size="sm" variant="outline" onClick={() => void openProof(o.screenshot_path!)}>
-                    View screenshot
-                  </Button>
-                )}
-                {o.payment_status === "submitted" && (
-                  <>
-                    <Button size="sm" disabled={busyId === o.id} onClick={() => void sendWhatsApp(o)}>
-                      <MessageCircle className="mr-1.5 h-4 w-4" /> Verify & Send via WhatsApp
-                    </Button>
+                <dl className="mt-3 grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2 lg:grid-cols-3">
+                  <div><dt className="text-xs text-muted-foreground">Customer</dt><dd>{o.full_name}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Email</dt><dd className="break-all">{o.email}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">WhatsApp</dt><dd>{o.whatsapp}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Amount</dt><dd>{formatPrice(Number(o.amount))}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">UPI transaction ID</dt><dd className="break-all">{o.transaction_id ?? "—"}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Payment method</dt><dd>{o.payment_method}</dd></div>
+                </dl>
+
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {busyId === o.id && <Loader2 className="h-4 w-4 animate-spin self-center" />}
+
+                  {o.screenshot_path && (
                     <Button
                       size="sm"
                       variant="outline"
                       disabled={busyId === o.id}
-                      onClick={() => void update(o, { payment_status: "rejected", order_status: "payment_rejected" }, "Payment rejected. You can restore it if this was a mistake.")}
+                      onClick={() => void openProof(o.screenshot_path!)}
                     >
-                      Reject Payment
+                      View screenshot
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={busyId === o.id}
-                      onClick={() => void update(o, { order_status: "cancelled" }, "Order cancelled.")}
-                    >
-                      Cancel Order
-                    </Button>
-                  </>
-                )}
-                {o.payment_status === "rejected" && o.order_status === "payment_rejected" && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={busyId === o.id}
-                    onClick={() => void update(o, { payment_status: "submitted", order_status: "pending" }, "Payment restored. You can verify it now.")}
-                  >
-                    Restore for Verification
-                  </Button>
-                )}
-                {o.payment_status === "verified" && o.order_status !== "delivered" && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={busyId === o.id}
-                    onClick={() => void update(o, { order_status: "delivered", delivered_at: new Date().toISOString() }, "Order marked delivered.")}
-                  >
-                    Mark Delivered
-                  </Button>
-                )}
-              </div>
-            </article>
-          ))}
+                  )}
+
+                  {isSubmitted && (
+                    <>
+                      <Button size="sm" disabled={busyId === o.id} onClick={() => void sendWhatsApp(o)}>
+                        <MessageCircle className="mr-1.5 h-4 w-4" /> Verify & Send via WhatsApp
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busyId === o.id}
+                        onClick={() =>
+                          void update(
+                            o,
+                            { payment_status: "rejected", order_status: "payment_rejected" },
+                            "Payment rejected. Click Reject Payment again to restore it.",
+                          )
+                        }
+                      >
+                        Reject Payment
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={busyId === o.id}
+                        onClick={() =>
+                          void update(
+                            o,
+                            { order_status: "cancelled" },
+                            "Order cancelled. Click Cancel Order again to restore it.",
+                          )
+                        }
+                      >
+                        Cancel Order
+                      </Button>
+                    </>
+                  )}
+
+                  {isRejected && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busyId === o.id}
+                        onClick={() =>
+                          void update(
+                            o,
+                            { payment_status: "submitted", order_status: "pending" },
+                            "Payment restored. You can verify it again.",
+                          )
+                        }
+                      >
+                        Reject Payment
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={busyId === o.id}
+                        onClick={() =>
+                          void update(
+                            o,
+                            { payment_status: "rejected", order_status: "cancelled" },
+                            "Order cancelled.",
+                          )
+                        }
+                      >
+                        Cancel Order
+                      </Button>
+                    </>
+                  )}
+
+                  {isCancelled && !isVerified && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={busyId === o.id}
+                        onClick={() =>
+                          void update(
+                            o,
+                            { payment_status: "submitted", order_status: "pending" },
+                            "Order restored. You can verify, reject, or cancel it again.",
+                          )
+                        }
+                      >
+                        Cancel Order
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={busyId === o.id}
+                        onClick={() =>
+                          void update(
+                            o,
+                            { payment_status: "rejected", order_status: "payment_rejected" },
+                            "Payment rejected.",
+                          )
+                        }
+                      >
+                        Reject Payment
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </div>
