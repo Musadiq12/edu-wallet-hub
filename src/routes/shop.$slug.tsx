@@ -173,7 +173,7 @@ function ProductDetail() {
               </section>
             )}
 
-            <div className="mt-8 rounded-lg border border-border bg-card p-5">
+            <div className="mt-8 rounded-xl border border-border bg-card p-5 shadow-sm">
               {p.is_free ? (
                 <p className="text-2xl font-semibold text-success">Free</p>
               ) : (
@@ -229,6 +229,8 @@ function ProductDetail() {
                 Payment is made via UPI and verified manually. {s.deliveryEstimate ? `${s.deliveryEstimate}, the` : "Once verified, the"}
                 material is sent to your registered email address or WhatsApp number.
               </p>
+              <p><strong className="text-foreground">Refund / access policy:</strong> Because this is a digital product, access is provided after payment verification. If you have a payment or delivery issue, contact support before taking further action.</p>
+              <p><strong className="text-foreground">Need help?</strong> Use the Contact page and include your order details so our team can assist quickly.</p>
               {isAssignment && <p>{siteConfig.assignmentDisclaimer}</p>}
               <p>{siteConfig.disclaimer}</p>
             </div>
