@@ -27,7 +27,7 @@ function AdminDashboard() {
   const allOrders = orders.data ?? [];
   const pendingVerification = allOrders.filter((o) => o.payment_status === "submitted").length;
   const revenue = allOrders
-    .filter((o) => o.payment_status === "verified")
+    .filter((o) => o.payment_status === "verified" && o.order_status !== "cancelled")
     .reduce((sum, o) => sum + Number(o.amount ?? 0), 0);
 
   const recent = allOrders.slice(0, 8);
