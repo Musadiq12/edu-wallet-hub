@@ -27,7 +27,7 @@ export const Route = createFileRoute("/admin/products/")({ component: AdminProdu
 function AdminProducts() {
   const qc = useQueryClient();
   const [showArchived, setShowArchived] = useState(false);
-  const { data, isLoading, isError } = useQuery(adminProductsQuery(showArchived));
+  const { data, isLoading, isError, refetch } = useQuery(adminProductsQuery(showArchived));
   const { data: categories } = useQuery(categoriesQuery());
   const [target, setTarget] = useState<AdminProduct | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -105,9 +105,7 @@ function AdminProducts() {
       {isLoading ? (
         <div className="space-y-2">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
       ) : isError ? (
-        <p className="rounded-lg border border-border p-6 text-sm text-muted-foreground">
-          We could not load your products right now. Please refresh and try again.
-        </p>
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 text-sm"><p>We could not load your products right now. Please try again.</p><Button size="sm" variant="outline" className="mt-3" onClick={() => void refetch()}>Retry</Button></div>
       ) : (data ?? []).length === 0 ? (
         <div className="rounded-lg border border-border p-8 text-center">
           <p className="text-sm text-muted-foreground">No products yet. Add your first resource to get started.</p>
