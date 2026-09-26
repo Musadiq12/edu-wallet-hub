@@ -132,7 +132,6 @@ function ResetPasswordPage() {
       </p>
 
       <form onSubmit={submit} className="mt-6 space-y-4">
-        <div className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="password">New password</Label>
           <Input
@@ -165,7 +164,6 @@ function ResetPasswordPage() {
         <Button type="submit" className="h-11 w-full" disabled={busy || !ready}>
           {busy ? "Updating…" : "Reset password"}
         </Button>
-        </div>
       </form>
     </div>
   );
