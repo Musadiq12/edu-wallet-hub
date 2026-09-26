@@ -17,7 +17,7 @@ export const Route = createFileRoute("/admin/orders")({ component: AdminOrders }
 
 function AdminOrders() {
   const qc = useQueryClient();
-  const { data, isLoading, isError } = useQuery(adminOrdersQuery());
+  const { data, isLoading, isError, refetch } = useQuery(adminOrdersQuery());
   const [busyId, setBusyId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -138,9 +138,7 @@ function AdminOrders() {
           ))}
         </div>
       ) : isError ? (
-        <p className="rounded-lg border border-border p-6 text-sm text-muted-foreground">
-          We could not load orders right now. Please refresh and try again.
-        </p>
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 text-sm"><p>We could not load orders right now. Please try again.</p><Button size="sm" variant="outline" className="mt-3" onClick={() => void refetch()}>Retry</Button></div>
       ) : (data ?? []).length === 0 ? (
         <p className="rounded-lg border border-border p-8 text-center text-sm text-muted-foreground">
           No orders yet.
