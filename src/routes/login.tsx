@@ -49,7 +49,7 @@ function LoginPage() {
       return;
     }
     toast.success("Logged in.");
-    if (redirect?.startsWith("/")) window.location.assign(redirect);
+    if (redirect && redirect.startsWith("/") && !redirect.startsWith("//")) window.location.assign(redirect);
     else void navigate({ to: "/" });
   };
 
