@@ -13,11 +13,11 @@ export function ProductCard({ product }: { product: Product }) {
   const off = discountPercent(price, discounted);
 
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-lg border border-border bg-card transition-colors hover:border-primary/40">
+    <article className="flex h-full flex-col overflow-hidden interactive-lift rounded-xl border border-border bg-card">
       <Link
         to="/shop/$slug"
         params={{ slug: product.slug }}
-        className="block"
+        className="block overflow-hidden"
         aria-label={`View details for ${product.title}`}
       >
         <CoverImage path={product.cover_image} title={product.title} />
