@@ -72,16 +72,17 @@ function AdminOrders() {
         "",
         "Thank you for your purchase.",
         "",
-        `Download your document here:\\n${downloadUrl}`,
+        `Download your document here:\n${downloadUrl}`,
         "",
         "Thank you for choosing EduWallet.",
-      ].join("\\n");
+      ].join("\n");
 
       const { error: updateError } = await supabase
         .from("orders")
         .update({
           payment_status: "verified",
           order_status: "delivered",
+          verified_at: new Date().toISOString(),
           delivered_at: new Date().toISOString(),
         })
         .eq("id", o.id)
@@ -224,7 +225,7 @@ function AdminOrders() {
                         onClick={() =>
                           void update(
                             o,
-                            { payment_status: "submitted", order_status: "pending" },
+                            { payment_status: "submitted", order_status: "payment_submitted" },
                             "Payment restored. You can verify it again.",
                           )
                         }
@@ -248,7 +249,7 @@ function AdminOrders() {
                     </>
                   )}
 
-                  {isCancelled && !isVerified && (
+                  {isVerified && (\n                    <Button\n                      size="sm"\n                      variant="ghost"\n                      disabled={busyId === o.id}\n                      onClick={() =>\n                        void update(\n                          o,\n                          { order_status: "cancelled" },\n                          "Order cancelled. The dashboard revenue has been adjusted.",\n                        )\n                      }\n                    >\n                      Cancel Order\n                    </Button>\n                  )}\n\n                  {isCancelled && (
                     <>
                       <Button
                         size="sm"
