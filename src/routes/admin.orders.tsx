@@ -1,10 +1,11 @@
 import type { Database } from "@/integrations/supabase/types";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminOrdersQuery, friendlyError, type AdminOrder } from "@/lib/admin";
@@ -18,6 +19,21 @@ function AdminOrders() {
   const qc = useQueryClient();
   const { data, isLoading, isError } = useQuery(adminOrdersQuery());
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sort, setSort] = useState<"newest" | "oldest" | "amount">("newest");
+
+  const visibleOrders = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return [...(data ?? [])]
+      .filter((o) => {
+        const matches = !term || [o.full_name, o.email, o.product_title, o.transaction_id, o.whatsapp]
+          .filter(Boolean).some((v) => String(v).toLowerCase().includes(term));
+        const status = statusFilter === "all" || o.payment_status === statusFilter || o.order_status === statusFilter;
+        return matches && status;
+      })
+      .sort((a,b) => sort === "amount" ? Number(b.amount) - Number(a.amount) : sort === "oldest" ? +new Date(a.created_at) - +new Date(b.created_at) : +new Date(b.created_at) - +new Date(a.created_at));
+  }, [data, search, statusFilter, sort]);
 
   const update = async (
     o: AdminOrder,
