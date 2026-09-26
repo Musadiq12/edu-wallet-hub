@@ -11,7 +11,7 @@ export const Route = createFileRoute("/admin/free-resources")({ component: Admin
 
 function AdminFreeResources() {
   const qc = useQueryClient();
-  const { data, isLoading, isError } = useQuery(adminProductsQuery(false));
+  const { data, isLoading, isError, refetch } = useQuery(adminProductsQuery(false));
   const free = (data ?? []).filter((p) => p.is_free);
 
   const toggle = async (id: string, value: boolean) => {
@@ -37,9 +37,7 @@ function AdminFreeResources() {
       {isLoading ? (
         <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}</div>
       ) : isError ? (
-        <p className="rounded-lg border border-border p-6 text-sm text-muted-foreground">
-          We could not load free resources right now. Please refresh and try again.
-        </p>
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 text-sm"><p>We could not load free resources right now. Please try again.</p><Button size="sm" variant="outline" className="mt-3" onClick={() => void refetch()}>Retry</Button></div>
       ) : free.length === 0 ? (
         <p className="rounded-lg border border-border p-8 text-center text-sm text-muted-foreground">
           No free resources yet. Create a product and turn on the “Free product” toggle.
