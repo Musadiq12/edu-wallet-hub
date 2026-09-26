@@ -73,7 +73,7 @@ if (form.password.length < 8) {
       },
     });
     setBusy(false);
-    if (error) return void toast.error(friendlyError(error, "Could not create your account."));
+    if (!("ok" in result) || !result.ok) return void toast.error("Could not create your account. Please check your details and try again.");
     toast.success("Account created.");
     if (redirect?.startsWith("/")) window.location.assign(redirect);
     else void navigate({ to: "/" });
