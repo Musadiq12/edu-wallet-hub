@@ -139,7 +139,11 @@ function AdminOrders() {
               <div className="mt-4 flex flex-wrap gap-2">
                 {busyId === o.id && <Loader2 className="h-4 w-4 animate-spin self-center" />}
                 {o.screenshot_path && (
-                  {o.payment_status === "submitted" && (
+                  <Button size="sm" variant="outline" onClick={() => void openProof(o.screenshot_path!)}>
+                    View screenshot
+                  </Button>
+                )}
+                {o.payment_status === "submitted" && (
                   <>
                     <Button size="sm" disabled={busyId === o.id} onClick={() => void sendWhatsApp(o)}>
                       <MessageCircle className="mr-1.5 h-4 w-4" /> Verify & Send via WhatsApp
