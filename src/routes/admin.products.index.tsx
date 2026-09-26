@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -30,6 +31,18 @@ function AdminProducts() {
   const { data: categories } = useQuery(categoriesQuery());
   const [target, setTarget] = useState<AdminProduct | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("all");
+  const [sort, setSort] = useState<"newest" | "oldest" | "price">("newest");
+
+  const visible = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return [...(data ?? [])].filter((p) => {
+      const matches = !term || [p.title, p.slug, p.course_label, p.subject_label].filter(Boolean).some((v) => String(v).toLowerCase().includes(term));
+      const matchesStatus = status === "all" || (status === "published" && p.is_active && !p.is_archived) || (status === "draft" && !p.is_active && !p.is_archived) || (status === "archived" && p.is_archived) || (status === "free" && p.is_free);
+      return matches && matchesStatus;
+    }).sort((a,b) => sort === "price" ? Number(b.discounted_price ?? b.price) - Number(a.discounted_price ?? a.price) : sort === "oldest" ? +new Date(a.created_at) - +new Date(b.created_at) : +new Date(b.created_at) - +new Date(a.created_at));
+  }, [data, search, status, sort]);
 
   const categoryName = (id: string | null) => categories?.find((c) => c.id === id)?.name ?? "—";
 
@@ -107,7 +120,7 @@ function AdminProducts() {
               </tr>
             </thead>
             <tbody>
-              {(data ?? []).map((p) => (
+              {visible.map((p) => (
                 <tr key={p.id} className="border-t border-border align-middle">
                   <td className="max-w-[18rem] px-4 py-3">
                     <p className="truncate font-medium">{p.title}</p>
