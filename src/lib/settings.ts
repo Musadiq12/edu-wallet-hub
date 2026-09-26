@@ -53,8 +53,7 @@ export const defaultSettings: SiteSettings = {
 export const settingsQuery = () =>
   queryOptions({
     queryKey: ["site-settings"],
-    staleTime: 0,
-    refetchOnMount: "always",
+    staleTime: 30_000,
     queryFn: async (): Promise<SiteSettings> => {
       const { data, error } = await supabase.from("site_settings").select("key,value");
       if (error) return defaultSettings;
@@ -71,6 +70,12 @@ export const settingsQuery = () =>
 export function useSiteSettings(): SiteSettings {
   const { data } = useQuery(settingsQuery());
   return data ?? defaultSettings;
+}
+
+/** Same as useSiteSettings, plus whether real data has arrived (for skeletons). */
+export function useSiteSettingsState(): { settings: SiteSettings; ready: boolean } {
+  const { data } = useQuery(settingsQuery());
+  return { settings: data ?? defaultSettings, ready: !!data };
 }
 
 /** Saves only the given keys; other settings rows are untouched. */

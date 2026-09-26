@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Instagram, Mail, MessageCircle, Send, Youtube } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { siteConfig } from "@/config/site";
-import { isEmail, safeUrl, useSiteSettings, waLink } from "@/lib/settings";
+import { isEmail, safeUrl, useSiteSettingsState, waLink } from "@/lib/settings";
 
 const SITE_LINKS = [
   { to: "/", label: "Home" },
@@ -14,7 +14,7 @@ const SITE_LINKS = [
 
 
 export function SiteFooter() {
-  const s = useSiteSettings();
+  const { settings: s, ready } = useSiteSettingsState();
   const wa = waLink(s.whatsappNumber);
   const contacts = [
     isEmail(s.contactEmail) && { href: `mailto:${s.contactEmail}`, label: s.contactEmail, Icon: Mail },
@@ -32,8 +32,14 @@ export function SiteFooter() {
           <p className="mt-4 max-w-sm text-sm text-muted-foreground">
             {siteConfig.shortDescription}
           </p>
-          {contacts.length > 0 && (
-            <div className="mt-4 flex flex-col gap-2 text-sm">
+          {!ready ? (
+            <div className="mt-4 flex flex-col gap-2" aria-hidden="true">
+              {[40, 24, 28].map((w) => (
+                <div key={w} className="h-5 animate-pulse rounded bg-muted" style={{ width: `${w * 4}px` }} />
+              ))}
+            </div>
+          ) : contacts.length > 0 && (
+            <div className="mt-4 flex flex-col gap-2 text-sm animate-in fade-in duration-300">
               {contacts.map(({ href, label, Icon }) => (
                 <a
                   key={label}
