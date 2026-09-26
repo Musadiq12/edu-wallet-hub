@@ -1,5 +1,5 @@
--- Server-side auth hardening.
--- These constraints/trigger guards are defense-in-depth for writes that bypass the app.
+-- Defense-in-depth profile input sanitization and length limits.
+-- Supabase Auth remains responsible for authentication credentials.
 
 CREATE OR REPLACE FUNCTION public.strip_html_tags(value text)
 RETURNS text
@@ -30,7 +30,7 @@ BEGIN
   END IF;
 
   IF NEW.whatsapp IS NOT NULL THEN
-    IF length(NEW.whatsapp) > 20 OR NEW.whatsapp !~ '^[0-9+()\\-\\s]+$' THEN
+    IF length(NEW.whatsapp) > 20 OR NEW.whatsapp !~ '^[0-9+()[:space:]-]+$' THEN
       RAISE EXCEPTION 'invalid profile input';
     END IF;
     NEW.whatsapp := btrim(NEW.whatsapp);
