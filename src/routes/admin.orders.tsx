@@ -2,7 +2,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, Mail } from "lucide-react";
+import { Loader2, Mail, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -46,6 +46,51 @@ function AdminOrders() {
       toast.success(data.message || (action === "verify" ? "Payment verified and document emailed." : "Document resent."));
     } catch (err) {
       toast.error(friendlyError(err, "Could not complete payment verification and email delivery."));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const sendWhatsApp = async (o: AdminOrder) => {
+    setBusyId(o.id);
+    try {
+      if (!o.whatsapp) throw new Error("This order has no WhatsApp number.");
+      if (!o.product_id) throw new Error("This order is missing its product.");
+
+      const { data: product, error } = await supabase
+        .from("products")
+        .select("title,pdf_file,is_free")
+        .eq("id", o.product_id)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!product?.pdf_file || product.is_free) {
+        throw new Error("A downloadable PDF is not available for this product.");
+      }
+
+      const downloadUrl = await signedUrl("product-files", product.pdf_file, 48 * 60 * 60);
+      if (!downloadUrl) throw new Error("Could not create the document download link.");
+
+      let phone = o.whatsapp.replace(/\\D/g, "");
+      if (phone.startsWith("0")) phone = phone.slice(1);
+      if (phone.length === 10) phone = `91${phone}`;
+
+      const message = [
+        `Hello ${o.full_name},`,
+        "",
+        `Your payment for *${product.title}* has been verified successfully.`,
+        "",
+        "Thank you for your purchase.",
+        "",
+        `Download your document here:\\n${downloadUrl}`,
+        "",
+        "Thank you for choosing EduWallet."
+      ].join("\\n");
+
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
+      toast.success("WhatsApp message prepared with the document link.");
+    } catch (err) {
+      toast.error(friendlyError(err, "Could not prepare the WhatsApp delivery message."));
     } finally {
       setBusyId(null);
     }
