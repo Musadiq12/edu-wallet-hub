@@ -32,78 +32,54 @@ async function getAuthenticatedUser() {
 }
 
 export const signupServer = createServerFn({ method: "POST" })
+  .validator(signupSchema)
   .handler(async ({ data }): Promise<AuthResult> => {
-    const parsed = signupSchema.safeParse(data);
-    if (!parsed.success) return genericAuthFailure();
-
-    const email = parsed.data.email.toLowerCase();
-    const redirectTo = typeof parsed.data === "object" && parsed.data && "redirectTo" in parsed.data
-      ? undefined
-      : undefined;
-
     const { data: created, error } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password: parsed.data.password,
+      email: data.email.toLowerCase(),
+      password: data.password,
       email_confirm: false,
       user_metadata: {
-        full_name: parsed.data.full_name,
-        whatsapp: parsed.data.whatsapp || null,
-        ...(parsed.data.username ? { username: parsed.data.username } : {}),
+        full_name: data.full_name,
+        whatsapp: data.whatsapp || null,
+        ...(data.username ? { username: data.username } : {}),
       },
     });
 
-    if (error || !created.user) return genericAuthFailure();
-
-    return { ok: true, data: { userId: created.user.id, email: created.user.email, redirectTo } };
+    return error || !created.user ? genericAuthFailure() : { ok: true };
   });
 
 export const loginServer = createServerFn({ method: "POST" })
-  .handler(async ({ data }): Promise<AuthResult> => {
-    const parsed = loginSchema.safeParse(data);
-    if (!parsed.success) return genericAuthFailure();
-
-    // Validate input server-side before authentication. Actual session creation
-    // remains client-side via Supabase; malformed requests never reach auth.
-    return { ok: true };
-  });
+  .validator(loginSchema)
+  .handler(async (): Promise<AuthResult> => ({ ok: true }));
 
 export const forgotPasswordServer = createServerFn({ method: "POST" })
-  .handler(async ({ data }): Promise<AuthResult> => {
-    const parsed = forgotPasswordSchema.safeParse(data);
-    if (!parsed.success) return genericAuthFailure();
-    return { ok: true };
-  });
+  .validator(forgotPasswordSchema)
+  .handler(async (): Promise<AuthResult> => ({ ok: true }));
 
 export const resetPasswordServer = createServerFn({ method: "POST" })
+  .validator(resetPasswordSchema)
   .handler(async ({ data }): Promise<AuthResult> => {
-    const parsed = resetPasswordSchema.safeParse(data);
-    if (!parsed.success) return genericAuthFailure();
-
     const user = await getAuthenticatedUser();
     if (!user) return genericAuthFailure();
 
     const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
-      password: parsed.data.password,
+      password: data.password,
     });
-    if (error) return genericAuthFailure();
-
-    return { ok: true };
+    return error ? genericAuthFailure() : { ok: true };
   });
 
 export const updateProfileServer = createServerFn({ method: "POST" })
+  .validator(profileUpdateSchema)
   .handler(async ({ data }): Promise<AuthResult> => {
-    const parsed = profileUpdateSchema.safeParse(data);
-    if (!parsed.success) return genericAuthFailure();
-
     const user = await getAuthenticatedUser();
     if (!user) return genericAuthFailure();
 
     const metadata: Record<string, unknown> = {};
-    if (parsed.data.full_name !== undefined) metadata.full_name = parsed.data.full_name;
-    if (parsed.data.display_name !== undefined) metadata.display_name = parsed.data.display_name;
-    if (parsed.data.bio !== undefined) metadata.bio = parsed.data.bio;
-    if (parsed.data.username !== undefined) metadata.username = parsed.data.username;
-    if (parsed.data.whatsapp !== undefined) metadata.whatsapp = parsed.data.whatsapp || null;
+    if (data.full_name !== undefined) metadata.full_name = data.full_name;
+    if (data.display_name !== undefined) metadata.display_name = data.display_name;
+    if (data.bio !== undefined) metadata.bio = data.bio;
+    if (data.username !== undefined) metadata.username = data.username;
+    if (data.whatsapp !== undefined) metadata.whatsapp = data.whatsapp || null;
 
     const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
       user_metadata: metadata,
@@ -111,15 +87,15 @@ export const updateProfileServer = createServerFn({ method: "POST" })
     if (authError) return genericAuthFailure();
 
     const profileUpdate: Record<string, unknown> = {};
-    if (parsed.data.full_name !== undefined) profileUpdate.full_name = parsed.data.full_name || null;
-    if (parsed.data.whatsapp !== undefined) profileUpdate.whatsapp = parsed.data.whatsapp || null;
+    if (data.full_name !== undefined) profileUpdate.full_name = data.full_name || null;
+    if (data.whatsapp !== undefined) profileUpdate.whatsapp = data.whatsapp || null;
 
     if (Object.keys(profileUpdate).length) {
-      const { error: profileError } = await supabaseAdmin
+      const { error } = await supabaseAdmin
         .from("profiles")
         .update(profileUpdate)
         .eq("id", user.id);
-      if (profileError) return genericAuthFailure();
+      if (error) return genericAuthFailure();
     }
 
     return { ok: true };
