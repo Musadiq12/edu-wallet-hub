@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { siteConfig } from "@/config/site";
-import { resetPasswordServer } from "@/server/auth.functions";
+import { friendlyError } from "@/lib/admin";
 
 const RECOVERY_FLAG = "edu-wallet-password-recovery";
 
@@ -90,19 +90,11 @@ function ResetPasswordPage() {
     }
 
     setBusy(true);
-    const validation = await resetPasswordServer({ data: { password } });
-
-    if (!("ok" in validation) || !validation.ok) {
-      toast.error("Could not update your password.");
-      return;
-    }
-
-    const validated = validation.data as { password: string };
-    const { error } = await supabase.auth.updateUser({ password: validated.password });
+    const { error } = await supabase.auth.updateUser({ password });
     setBusy(false);
 
     if (error) {
-      toast.error("Could not update your password.");
+      toast.error(friendlyError(error, "Could not update your password."));
       return;
     }
 
@@ -140,6 +132,7 @@ function ResetPasswordPage() {
       </p>
 
       <form onSubmit={submit} className="mt-6 space-y-4">
+        <div className="space-y-4">
         <div className="space-y-1.5">
           <Label htmlFor="password">New password</Label>
           <Input
@@ -172,6 +165,7 @@ function ResetPasswordPage() {
         <Button type="submit" className="h-11 w-full" disabled={busy || !ready}>
           {busy ? "Updating…" : "Reset password"}
         </Button>
+        </div>
       </form>
     </div>
   );
