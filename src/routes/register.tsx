@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { signupServer } from "@/server/auth.functions";
 import { siteConfig } from "@/config/site";
+import { friendlyError } from "@/lib/admin";
 
 type Search = { redirect?: string };
 
@@ -43,48 +43,37 @@ function RegisterPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.full_name.trim()) {
+  toast.error("Enter your full name.");
+  return;
+}
+
+if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) {
+  toast.error("Enter a valid email address.");
+  return;
+}
+
+if (form.whatsapp.replace(/\D/g, "").length < 10) {
+  toast.error("Enter a valid WhatsApp number.");
+  return;
+}
+
+if (form.password.length < 8) {
+  toast.error("Password must be at least 8 characters.");
+  return;
+}
+
     setBusy(true);
-
-    const validation = await signupServer({
-      data: {
-        email: form.email,
-        password: form.password,
-        full_name: form.full_name,
-        whatsapp: form.whatsapp,
-      },
-    });
-
-    if (!("ok" in validation) || !validation.ok) {
-      setBusy(false);
-      toast.error("Could not create your account. Please check your details and try again.");
-      return;
-    }
-
-    const validated = validation.data as {
-      email: string;
-      password: string;
-      full_name: string;
-      whatsapp?: string;
-    };
-
     const { error } = await supabase.auth.signUp({
-      email: validated.email,
-      password: validated.password,
+      email: form.email.trim(),
+      password: form.password,
       options: {
         emailRedirectTo: `${window.location.origin}/`,
-        data: {
-          full_name: validated.full_name,
-          whatsapp: validated.whatsapp || "",
-        },
+        data: { full_name: form.full_name.trim(), whatsapp: form.whatsapp.trim() },
       },
     });
-
     setBusy(false);
-    if (error) {
-      toast.error("Could not create your account. Please check your details and try again.");
-      return;
-    }
-
+    if (error) return void toast.error(friendlyError(error, "Could not create your account."));
     toast.success("Account created.");
     if (redirect?.startsWith("/")) window.location.assign(redirect);
     else void navigate({ to: "/" });
