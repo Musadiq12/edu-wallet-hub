@@ -91,7 +91,6 @@ function ResetPasswordPage() {
 
     setBusy(true);
     const validation = await resetPasswordServer({ data: { password } });
-    setBusy(false);
 
     if (!("ok" in validation) || !validation.ok) {
       toast.error("Could not update your password.");
