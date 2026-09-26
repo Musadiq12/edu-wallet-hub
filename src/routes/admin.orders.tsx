@@ -152,7 +152,7 @@ function AdminOrders() {
                       size="sm"
                       variant="outline"
                       disabled={busyId === o.id}
-                      onClick={() => void update(o, { payment_status: "rejected", order_status: "payment_rejected" }, "Payment rejected.")}
+                      onClick={() => void update(o, { payment_status: "rejected", order_status: "payment_rejected" }, "Payment rejected. You can restore it if this was a mistake.")}
                     >
                       Reject Payment
                     </Button>
@@ -165,6 +165,16 @@ function AdminOrders() {
                       Cancel Order
                     </Button>
                   </>
+                )}
+                {o.payment_status === "rejected" && o.order_status === "payment_rejected" && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={busyId === o.id}
+                    onClick={() => void update(o, { payment_status: "submitted", order_status: "pending" }, "Payment restored. You can verify it now.")}
+                  >
+                    Restore for Verification
+                  </Button>
                 )}
                 {o.payment_status === "verified" && o.order_status !== "delivered" && (
                   <Button
