@@ -10,7 +10,7 @@ import {
 
 type AuthResult = { ok: true; data?: unknown } | Response;
 
-function validator<T extends { safeParse: (input: unknown) => { success: true; data: T extends { safeParse: any } ? never : never } }>(schema: any) {
+function validator(schema: { safeParse: (input: unknown) => any }) {
   return (input: unknown) => {
     const parsed = schema.safeParse(input);
     if (!parsed.success) throw safeAuthError();
