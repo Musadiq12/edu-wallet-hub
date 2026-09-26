@@ -170,6 +170,13 @@ function RecoveryRedirectHandler() {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const initialSettings = Route.useLoaderData();
+  // Seed the settings cache from the server-rendered loader data so the first
+  // client render matches the server HTML (no flash of empty contact links).
+  const key = settingsQuery().queryKey;
+  if (initialSettings && !queryClient.getQueryData(key)) {
+    queryClient.setQueryData(key, initialSettings, { updatedAt: Date.now() });
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
