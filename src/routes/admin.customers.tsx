@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import { adminCustomersQuery, adminOrdersQuery } from "@/lib/admin";
 
 export const Route = createFileRoute("/admin/customers")({ component: AdminCustomers });
@@ -8,6 +10,13 @@ export const Route = createFileRoute("/admin/customers")({ component: AdminCusto
 function AdminCustomers() {
   const { data, isLoading, isError } = useQuery(adminCustomersQuery());
   const { data: orders } = useQuery(adminOrdersQuery());
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<"newest" | "orders">("newest");
+  const visible = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return [...(data ?? [])].filter((c) => !term || [c.full_name, c.email, c.whatsapp].filter(Boolean).some((v) => String(v).toLowerCase().includes(term)))
+      .sort((a,b) => sort === "orders" ? orderCount(b.id) - orderCount(a.id) : +new Date(b.created_at) - +new Date(a.created_at));
+  }, [data, search, sort, orders]);
 
   const orderCount = (id: string) => (orders ?? []).filter((o) => o.user_id === id).length;
 
@@ -41,7 +50,7 @@ function AdminCustomers() {
               </tr>
             </thead>
             <tbody>
-              {(data ?? []).map((c) => (
+              {visible.map((c) => (
                 <tr key={c.id} className="border-t border-border">
                   <td className="px-4 py-3">{c.full_name ?? "—"}</td>
                   <td className="px-4 py-3 break-all">{c.email ?? "—"}</td>
