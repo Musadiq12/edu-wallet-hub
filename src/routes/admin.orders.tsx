@@ -133,8 +133,7 @@ function AdminOrders() {
         <div className="space-y-3">
           {(data ?? []).map((o) => {
             const isSubmitted = o.payment_status === "submitted" && o.order_status !== "cancelled";
-            const isRejected =
-              o.payment_status === "rejected" && o.order_status === "payment_rejected";
+            const isRejected = o.payment_status === "rejected" && o.order_status !== "cancelled";
             const isCancelled = o.order_status === "cancelled";
             const isVerified = o.payment_status === "verified";
 
@@ -249,7 +248,24 @@ function AdminOrders() {
                     </>
                   )}
 
-                  {isVerified && (\n                    <Button\n                      size="sm"\n                      variant="ghost"\n                      disabled={busyId === o.id}\n                      onClick={() =>\n                        void update(\n                          o,\n                          { order_status: "cancelled" },\n                          "Order cancelled. The dashboard revenue has been adjusted.",\n                        )\n                      }\n                    >\n                      Cancel Order\n                    </Button>\n                  )}\n\n                  {isCancelled && (
+                  {isVerified && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={busyId === o.id}
+                      onClick={() =>
+                        void update(
+                          o,
+                          { order_status: "cancelled" },
+                          "Order cancelled. The dashboard revenue has been adjusted.",
+                        )
+                      }
+                    >
+                      Cancel Order
+                    </Button>
+                  )}
+
+                  {isCancelled && (
                     <>
                       <Button
                         size="sm"
@@ -258,8 +274,10 @@ function AdminOrders() {
                         onClick={() =>
                           void update(
                             o,
-                            { payment_status: "submitted", order_status: "pending" },
-                            "Order restored. You can verify, reject, or cancel it again.",
+                            o.payment_status === "verified"
+                              ? { payment_status: "verified", order_status: "delivered" }
+                              : { payment_status: "submitted", order_status: "payment_submitted" },
+                            "Order restored. You can continue managing it.",
                           )
                         }
                       >
