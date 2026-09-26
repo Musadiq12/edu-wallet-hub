@@ -41,7 +41,7 @@ function AdminOrders() {
   const sendWhatsApp = async (o: AdminOrder) => {
     setBusyId(o.id);
     try {
-      if (o.payment_status !== "submitted" || o.order_status !== "pending") {
+      if (o.payment_status !== "submitted" || o.order_status === "cancelled") {
         throw new Error("This order is no longer awaiting payment verification.");
       }
       if (!o.whatsapp) throw new Error("This order has no WhatsApp number.");
@@ -85,8 +85,7 @@ function AdminOrders() {
           delivered_at: new Date().toISOString(),
         })
         .eq("id", o.id)
-        .eq("payment_status", "submitted")
-        .eq("order_status", "pending");
+        .eq("payment_status", "submitted");
 
       if (updateError) throw updateError;
 
@@ -132,7 +131,7 @@ function AdminOrders() {
       ) : (
         <div className="space-y-3">
           {(data ?? []).map((o) => {
-            const isSubmitted = o.payment_status === "submitted" && o.order_status === "pending";
+            const isSubmitted = o.payment_status === "submitted" && o.order_status !== "cancelled";
             const isRejected =
               o.payment_status === "rejected" && o.order_status === "payment_rejected";
             const isCancelled = o.order_status === "cancelled";
