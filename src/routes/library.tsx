@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Download, FileText, LogIn, ShieldCheck } from "lucide-react";
+import { BookOpen, Download, FileText, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CoverImage } from "@/components/CoverImage";
 import { useSession } from "@/lib/auth";
 import { signedUrl } from "@/lib/catalog";
 import { supabase } from "@/integrations/supabase/client";
@@ -108,13 +109,7 @@ function LibraryPage() {
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {library.data.map((item) => (
               <article key={item.order_id} className="group overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-md">
-                <div className="flex h-36 items-center justify-center bg-surface">
-                  {item.cover_image ? (
-                    <img src={item.cover_image} alt="" className="h-full w-full object-cover" />
-                  ) : (
-                    <BookOpen className="h-12 w-12 text-primary/35" aria-hidden="true" />
-                  )}
-                </div>
+                <CoverImage path={item.cover_image} title={item.title} className="h-36" />
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
