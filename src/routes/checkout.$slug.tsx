@@ -187,7 +187,7 @@ function Checkout() {
       return;
     }
     if (!form.confirm) {
-      setError("Please confirm that you have completed the payment.");
+      setError("Please confirm that you have completed the payment and agree to the Terms & Conditions.");
       return;
     }
 
@@ -375,8 +375,11 @@ function Checkout() {
                   onCheckedChange={(v) => setForm({ ...form, confirm: v === true })}
                 />
                 <Label htmlFor="confirm" className="text-sm leading-snug font-normal">
-                  I confirm that I have completed this UPI payment and the details above are
-                  correct.
+                  I confirm that I have completed this UPI payment, the details above are correct,
+                  and I agree to the{" "}
+                  <Link to="/terms" target="_blank" className="font-medium text-primary hover:underline">
+                    Terms & Conditions
+                  </Link>.
                 </Label>
               </div>
 
