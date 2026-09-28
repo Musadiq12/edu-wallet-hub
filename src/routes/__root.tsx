@@ -13,6 +13,7 @@ import { siteConfig } from "@/config/site";
 import { defaultSettings, settingsQuery, useSiteSettings } from "@/lib/settings";
 import { supabase } from "@/integrations/supabase/client";
 import { CookieConsent } from "@/components/CookieConsent";
+import { Banner } from "@/components/ui/banner";
 
 const RECOVERY_FLAG = "edu-wallet-password-recovery";
 
@@ -117,6 +118,7 @@ function RootComponent() {
     <Analytics />
     <div className={isAuthPage ? "min-h-screen" : "flex min-h-screen flex-col"}>
       {!isAuthPage && <SiteHeader />}
+      {!isAuthPage && <Banner id="site-announcement" variant="rainbow" height="2.5rem" message="🎉 New study resources and exam-focused materials are being added regularly." />}
       <main className={isAuthPage ? "min-h-screen" : "flex-1"}><Outlet /></main>
       {!isAuthPage && <SiteFooter />}
     </div>
