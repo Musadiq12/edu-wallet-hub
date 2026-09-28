@@ -10,10 +10,10 @@
 export const siteConfig = {
   fallbackBrand: { brandName: "Edu Wallet", tagline: "Study Smart. Score Better." },
   shortDescription:
-    "Exam-focused notes, guess papers, assignment guidance and study resources designed for IGNOU students.",
+    "Exam-focused notes, guess papers, solved papers, assignment guidance and study resources for competitive, board and entrance exams.",
   copyrightYear: 2026,
   disclaimer:
-    "This platform is an independent educational resource and is not affiliated with or endorsed by IGNOU.",
+    "EduWallet is an independent educational resource platform. It is not affiliated with or endorsed by any examination authority, university, board or institution.",
   assignmentDisclaimer:
     "We provide original educational reference and guidance material. Students are responsible for understanding and submitting their own academic work in accordance with their institution's rules.",
   analyticsMeasurementId: "",
