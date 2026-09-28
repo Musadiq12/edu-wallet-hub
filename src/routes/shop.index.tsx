@@ -17,16 +17,16 @@ export const Route = createFileRoute("/shop/")({
   }),
   head: () => ({
     meta: [
-      { title: "IGNOU Study Resources" },
+      { title: "Exam Study Resources" },
       {
         name: "description",
         content:
-          "Browse IGNOU notes, guess papers, assignment guidance and exam guides. Search by subject, course or keyword.",
+          "Browse exam-focused notes, guess papers, solved papers, assignment guidance and digital study resources across popular Indian exams.",
       },
-      { property: "og:title", content: "IGNOU Study Resources" },
+      { property: "og:title", content: "Exam Study Resources" },
       {
         property: "og:description",
-        content: "Browse IGNOU notes, guess papers, assignment guidance and exam guides.",
+        content: "Browse exam-focused notes, guess papers, solved papers, assignment guidance and digital study resources across popular Indian exams.",
       },
     ],
     links: [{ rel: "canonical", href: "/shop" }],
@@ -68,9 +68,9 @@ function Shop() {
   return (
     <div className="section-y">
       <div className="page-container">
-        <h1 className="text-3xl font-bold sm:text-4xl">IGNOU Study Resources</h1>
+        <h1 className="text-3xl font-bold sm:text-4xl">Exam Study Resources</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Notes, guess papers, assignment guidance and exam guides. All resources are digital
+          Notes, guess papers, assignment guidance, solved papers and exam guides across popular Indian exams. All resources are digital
           (PDF) and delivered after payment verification.
         </p>
 
