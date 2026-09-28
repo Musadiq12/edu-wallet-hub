@@ -8,16 +8,16 @@ import { siteConfig } from "@/config/site";
 export const Route = createFileRoute("/free-resources")({
   head: () => ({
     meta: [
-      { title: "Free IGNOU Study Resources" },
+      { title: "Free Study Resources" },
       {
         name: "description",
         content:
-          "Free IGNOU samples and study material from Edu Wallet. Preview the format before buying paid resources.",
+          "Free samples and study material across exam categories from Edu Wallet. Preview the format before buying paid resources.",
       },
-      { property: "og:title", content: "Free IGNOU Study Resources" },
+      { property: "og:title", content: "Free Study Resources" },
       {
         property: "og:description",
-        content: "Free IGNOU samples and study material from Edu Wallet.",
+        content: "Free samples and study material across exam categories from Edu Wallet.",
       },
     ],
     links: [{ rel: "canonical", href: "/free-resources" }],
