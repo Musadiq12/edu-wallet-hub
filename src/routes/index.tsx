@@ -1,3 +1,4 @@
+import AetherFlowHero from "@/components/ui/aether-flow-hero";
 import { useSiteSettings } from "@/lib/settings";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -91,6 +92,7 @@ function Home() {
 
   return (
     <>
+      <AetherFlowHero />
       <section className="border-b border-border bg-surface">
         <div className="page-container grid gap-10 py-14 md:grid-cols-[1.15fr_1fr] md:items-center md:py-20">
           <div>
