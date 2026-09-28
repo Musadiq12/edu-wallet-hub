@@ -8,6 +8,7 @@ import {
   FileText,
   GraduationCap,
   Gift,
+  ArrowRight,
   Target,
   Users,
 } from "lucide-react";
@@ -93,7 +94,7 @@ function Home() {
       <section className="border-b border-border bg-surface">
         <div className="page-container grid gap-10 py-14 md:grid-cols-[1.15fr_1fr] md:items-center md:py-20">
           <div>
-            <p className="text-xs font-semibold tracking-[0.18em] text-accent uppercase">
+            <p className="text-xs font-semibold tracking-[0.12em] text-accent">
               For IGNOU students
             </p>
             <h1 className="mt-3 text-4xl leading-tight font-bold text-foreground sm:text-5xl">
@@ -157,11 +158,15 @@ function Home() {
                 key={c.title}
                 to={c.to}
                 search={c.search}
-                className="rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/40"
+                className="group flex min-h-[164px] flex-col rounded-lg border border-border bg-card p-5 transition-all hover:border-primary/40 hover:shadow-sm"
               >
                 <c.icon className="h-5 w-5 text-primary" aria-hidden="true" />
                 <h3 className="mt-3 text-base font-semibold">{c.title}</h3>
                 <p className="mt-1.5 text-sm text-muted-foreground">{c.text}</p>
+                <span className="mt-auto pt-4 inline-flex items-center gap-1 text-sm font-medium text-primary">
+                  Explore
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                </span>
               </Link>
             ))}
             <Link
@@ -173,6 +178,10 @@ function Home() {
               <p className="mt-1.5 text-sm text-muted-foreground">
                 Free samples and study material.
               </p>
+              <span className="mt-auto pt-4 inline-flex items-center gap-1 text-sm font-medium text-primary">
+                Explore
+                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+              </span>
             </Link>
           </div>
         </div>
@@ -182,8 +191,9 @@ function Home() {
         <div className="page-container">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <h2 className="text-2xl font-semibold sm:text-3xl">Featured resources</h2>
-            <Link to="/shop" className="text-sm font-medium text-primary hover:underline">
+            <Link to="/shop" className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/10 hover:underline">
               View all resources
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
 
@@ -200,6 +210,7 @@ function Home() {
               <EmptyState
                 title="Resources are being added soon"
                 description="Check back shortly for notes, guess papers and exam guides."
+                className="px-6 py-8"
               />
             )}
           </div>
