@@ -11,6 +11,7 @@ const SITE_LINKS = [
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
   { to: "/terms", label: "Terms & Conditions" },
+  { to: "/privacy", label: "Privacy Policy" },
 ] as const;
 
 
