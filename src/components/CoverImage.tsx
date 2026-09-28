@@ -23,16 +23,16 @@ export function CoverImage({
       <img
         src={url}
         alt={`Cover of ${title}`}
-        loading="lazy"
+        loading="eager"
         decoding="async"
-        className={`w-full object-cover transition-transform duration-300 ${className}`}
+        className={`block w-full object-cover transition-transform duration-300 ${className}`}
       />
     );
   }
 
   return (
     <div
-      className={`flex w-full items-center justify-center border-b border-border bg-surface ${className}`}
+      className={`flex min-h-64 w-full items-center justify-center border-b border-border bg-surface ${className}`}
       aria-hidden="true"
     >
       <BookOpen className="h-8 w-8 text-muted-foreground/60" />
