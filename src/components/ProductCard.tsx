@@ -74,7 +74,7 @@ export function ProductCard({ product }: { product: Product }) {
           )}
         </div>
 
-        <div className="mt-4 flex gap-2">
+        <div className="mt-auto pt-4 flex gap-2">
           <Button variant="outline" size="sm" className="flex-1" asChild>
             <Link to="/shop/$slug" params={{ slug: product.slug }}>
               View Details
