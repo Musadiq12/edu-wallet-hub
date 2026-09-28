@@ -21,9 +21,9 @@ import { siteConfig } from "@/config/site";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "IGNOU Study Resources" },
+      { title: "Exam Study Resources" },
       { name: "description", content: siteConfig.shortDescription },
-      { property: "og:title", content: "IGNOU Study Resources" },
+      { property: "og:title", content: "Exam Study Resources" },
       { property: "og:description", content: siteConfig.shortDescription },
     ],
     links: [{ rel: "canonical", href: "/" }],
@@ -95,7 +95,7 @@ function Home() {
         <div className="page-container grid gap-10 py-14 md:grid-cols-[1.15fr_1fr] md:items-center md:py-20">
           <div>
             <p className="text-xs font-semibold tracking-[0.12em] text-accent">
-              For IGNOU students
+              For students preparing across India
             </p>
             <h1 className="mt-3 text-4xl leading-tight font-bold text-foreground sm:text-5xl">
               {settings.tagline}
@@ -103,6 +103,7 @@ function Home() {
             <p className="mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
               {siteConfig.shortDescription}
             </p>
+            <p className="mt-3 max-w-xl text-sm font-medium text-foreground/80">Popular preparation categories include NEET, JEE, UPSC, SSC CGL, banking, CLAT and more.</p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Button size="lg" asChild>
                 <Link to="/shop">Explore Resources</Link>
