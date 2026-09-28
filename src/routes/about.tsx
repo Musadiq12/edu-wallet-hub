@@ -38,9 +38,9 @@ function AboutPage() {
           <section>
             <h2 className="text-xl font-semibold">What We Offer</h2>
             <p className="mt-2 text-muted-foreground">
-              EduWallet provides IGNOU assignments, guess papers, important
-              questions, study guides, solved papers, and other
-              exam-oriented resources.
+              EduWallet provides exam-focused notes, guess papers, important
+              questions, study guides, solved papers, assignment guidance, and other
+              digital resources for students preparing across different exams.
             </p>
           </section>
 
