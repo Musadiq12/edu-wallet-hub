@@ -4,13 +4,14 @@ export function EmptyState({
   title,
   description,
   action,
+  className,
 }: {
   title: string;
   description?: string;
   action?: ReactNode;
 }) {
   return (
-    <div className="rounded-xl border border-dashed border-border bg-surface px-6 py-14 text-center transition-colors">
+    <div className={`rounded-xl border border-dashed border-border bg-surface px-6 py-14 text-center transition-colors ${className ?? ""}`}>
       <h3 className="font-serif text-lg font-semibold">{title}</h3>
       {description && (
         <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">{description}</p>
