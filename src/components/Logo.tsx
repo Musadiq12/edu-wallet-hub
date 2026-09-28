@@ -21,7 +21,7 @@ export function Logo({ compact = false }: { compact?: boolean }) {
           {brandName}
         </span>
         {!compact && tagline && (
-          <span className="mt-0.5 text-[11px] text-muted-foreground">{tagline}</span>
+          <span className="mt-0.5 text-xs text-muted-foreground">{tagline}</span>
         )}
       </span>
     </span>
