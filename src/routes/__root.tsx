@@ -55,6 +55,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   shellComponent: RootShell, component: RootComponent, notFoundComponent: NotFoundComponent, errorComponent: ErrorComponent,
 });
 
+function Analytics() {
+  useEffect(() => {
+    const id = siteConfig.analyticsMeasurementId;
+    if (!id || document.querySelector('script[data-edu-analytics]')) return;
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
+    script.dataset.eduAnalytics = "true";
+    document.head.appendChild(script);
+    const init = document.createElement("script");
+    init.dataset.eduAnalytics = "true";
+    init.text = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${id}');`;
+    document.head.appendChild(init);
+  }, []);
+  return null;
+}
+
 function RootShell({ children }: { children: ReactNode }) {
   return <html lang="en"><head><HeadContent /></head><body>{children}<Scripts /></body></html>;
 }
@@ -97,6 +114,7 @@ function RootComponent() {
   return <QueryClientProvider client={queryClient}>
     <RecoveryRedirectHandler />
     <BrandTitleSync />
+    <Analytics />
     <div className={isAuthPage ? "min-h-screen" : "flex min-h-screen flex-col"}>
       {!isAuthPage && <SiteHeader />}
       <main className={isAuthPage ? "min-h-screen" : "flex-1"}><Outlet /></main>
