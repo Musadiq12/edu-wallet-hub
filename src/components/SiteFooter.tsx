@@ -10,6 +10,7 @@ const SITE_LINKS = [
   { to: "/free-resources", label: "Free Resources" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
+  { to: "/terms", label: "Terms & Conditions" },
 ] as const;
 
 
