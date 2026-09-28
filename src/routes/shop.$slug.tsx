@@ -35,9 +35,9 @@ export const Route = createFileRoute("/shop/$slug")({
       ? trimDesc(
           p.description ||
             p.whats_included ||
-            `${p.title}: digital IGNOU study resource from Edu Wallet.`,
+            `${p.title}: digital exam study resource from Edu Wallet.`,
         )
-      : "Digital IGNOU study resource from Edu Wallet. See what's included, format and pricing before you buy.";
+      : "Digital exam study resource from Edu Wallet. See what's included, format and pricing before you buy.";
     const meta: Array<Record<string, string>> = [
       { title },
       { name: "description", content: desc },
