@@ -204,7 +204,7 @@ function ProductDetail() {
                     </Button>
                   )
                 ) : (
-                  <Button size="lg" className="sm:flex-1" asChild>
+                  <Button size="lg" className="w-full sm:w-auto sm:min-w-40" asChild>
                     <Link to="/checkout/$slug" params={{ slug: p.slug }}>
                       Buy Now
                     </Link>
