@@ -1,8 +1,9 @@
 import { useSiteSettings } from "@/lib/settings";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, ShieldCheck } from "lucide-react";
+import { ArrowRight, Eye, FileText, ShieldCheck, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { CoverImage } from "@/components/CoverImage";
 import { EmptyState } from "@/components/EmptyState";
@@ -99,9 +100,9 @@ function ProductDetail() {
   const isAssignment = category?.slug === "assignment-guidance";
 
   return (
-    <div className="section-y">
-      <div className="page-container">
-        <nav aria-label="Breadcrumb" className="text-xs text-muted-foreground">
+    <div className="min-h-screen bg-background">
+      <div className="page-container py-8 sm:py-12">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <Link to="/shop" className="hover:text-foreground">
             Shop
           </Link>
@@ -109,11 +110,12 @@ function ProductDetail() {
           <span>{category?.name ?? "Resource"}</span>
         </nav>
 
-        <div className="mt-5 grid gap-10 lg:grid-cols-[1fr_1.15fr]">
-          <div>
-            <div className="overflow-hidden rounded-lg border border-border bg-card">
+        <div className="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(320px,0.82fr)_minmax(0,1.18fr)] lg:gap-12">
+          <div className="lg:sticky lg:top-24">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
               <CoverImage path={p.cover_image} title={p.title} className="aspect-[3/4]" />
             </div>
+            <p className="mt-3 text-center text-xs text-muted-foreground">Digital PDF resource</p>
           </div>
 
           <div>
@@ -127,39 +129,47 @@ function ProductDetail() {
               {p.is_free && <Badge className="bg-success text-success-foreground">Free</Badge>}
             </div>
 
-            <h1 className="mt-3 text-3xl font-bold sm:text-4xl">{p.title}</h1>
+            <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">{p.title}</h1>
 
-            <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:max-w-md">
-              <div>
-                <dt className="text-muted-foreground">Course / Programme</dt>
-                <dd className="font-medium">{p.course_label ?? "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Subject</dt>
-                <dd className="font-medium">{p.subject_label ?? "—"}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Format</dt>
-                <dd className="font-medium">{p.format}</dd>
-              </div>
-              <div>
-                <dt className="text-muted-foreground">Pages</dt>
-                <dd className="font-medium">{p.page_count ?? "—"}</dd>
-              </div>
+            <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                ["Course", p.course_label ?? "—"],
+                ["Subject", p.subject_label ?? "—"],
+                ["Format", p.format],
+                ["Pages", p.page_count ?? "—"],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-xl border border-border bg-surface px-3 py-3">
+                  <dt className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
+                  <dd className="mt-1 truncate text-sm font-semibold text-foreground">{value}</dd>
+                </div>
+              ))}
             </dl>
 
             {p.description && (
-              <section className="mt-6">
-                <h2 className="text-lg font-semibold">Description</h2>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                  {p.description}
-                </p>
+              <section className="mt-8">
+                <div className="flex items-center justify-between gap-4">
+                  <h2 className="font-serif text-xl font-semibold">Description</h2>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="sm" className="shrink-0 text-primary">
+                        See more <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-h-[80vh] overflow-y-auto sm:max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle className="font-serif text-2xl">{p.title}</DialogTitle>
+                      </DialogHeader>
+                      <div className="mt-2 whitespace-pre-wrap text-sm leading-7 text-muted-foreground">{p.description}</div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                <p className="mt-2 line-clamp-4 text-sm leading-6 text-muted-foreground">{p.description}</p>
               </section>
             )}
 
             {p.whats_included && (
               <section className="mt-6">
-                <h2 className="text-lg font-semibold">What's included</h2>
+                <h2 className="font-serif text-xl font-semibold">What's included</h2>
                 <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
                   {p.whats_included.split(/[,\n]/).map((item, i) =>
                     item.trim() ? (
@@ -173,7 +183,8 @@ function ProductDetail() {
               </section>
             )}
 
-            <div className="mt-8 rounded-xl border border-border bg-card p-5 shadow-sm">
+            <div className="mt-8 overflow-hidden rounded-2xl border border-border bg-card shadow-md">
+              <div className="p-5 sm:p-6">
               {p.is_free ? (
                 <p className="text-2xl font-semibold text-success">Free</p>
               ) : (
@@ -190,7 +201,7 @@ function ProductDetail() {
                 </div>
               )}
 
-              <div className="mt-5 flex flex-col gap-2.5 sm:flex-row">
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 {p.is_free ? (
                   preview.data ? (
                     <Button size="lg" asChild>
@@ -204,23 +215,24 @@ function ProductDetail() {
                     </Button>
                   )
                 ) : (
-                  <Button size="lg" className="w-full sm:w-auto sm:min-w-40" asChild>
+                  <Button size="lg" className="w-full rounded-xl px-7 font-semibold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg sm:w-auto" asChild>
                     <Link to="/checkout/$slug" params={{ slug: p.slug }}>
-                      Buy Now
+                      <ShoppingBag className="mr-2 h-4 w-4" /> Buy Now
                     </Link>
                   </Button>
                 )}
                 {preview.data && !p.is_free && (
-                  <Button size="lg" variant="outline" className="sm:flex-1" asChild>
+                  <Button size="lg" variant="outline" className="w-full rounded-xl sm:w-auto" asChild>
                     <a href={preview.data} target="_blank" rel="noreferrer">
-                      Preview Sample
+                      <Eye className="mr-2 h-4 w-4" /> Preview Sample
                     </a>
                   </Button>
                 )}
               </div>
+              </div>
             </div>
 
-            <div className="mt-6 space-y-3 rounded-lg border border-border bg-surface p-5 text-sm text-muted-foreground">
+            <div className="mt-6 space-y-3 rounded-2xl border border-border bg-surface p-5 text-sm text-muted-foreground">
               <p className="flex gap-2">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
                 This is a digital product. No physical item will be shipped.
