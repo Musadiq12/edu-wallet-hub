@@ -210,7 +210,7 @@ function Home() {
               <EmptyState
                 title="Resources are being added soon"
                 description="Check back shortly for notes, guess papers and exam guides."
-                className="px-6 py-8"
+                className="!px-6 !py-8"
               />
             )}
           </div>
