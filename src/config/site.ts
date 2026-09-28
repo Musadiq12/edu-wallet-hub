@@ -16,4 +16,5 @@ export const siteConfig = {
     "This platform is an independent educational resource and is not affiliated with or endorsed by IGNOU.",
   assignmentDisclaimer:
     "We provide original educational reference and guidance material. Students are responsible for understanding and submitting their own academic work in accordance with their institution's rules.",
+  analyticsMeasurementId: "",
 } as const;
