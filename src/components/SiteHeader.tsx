@@ -35,8 +35,8 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 shadow-[0_1px_0_rgba(0,0,0,0.02)] backdrop-blur supports-[backdrop-filter]:bg-background/85">
       <div className="page-container flex h-16 items-center justify-between gap-4">
         <Link to="/" aria-label={brandName + " home"} className="shrink-0"><Logo /></Link>
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Main">
-          {NAV.map(item => <Link key={item.to} to={item.to} activeOptions={{ exact: item.to === "/" }} className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-secondary hover:text-foreground data-[status=active]:bg-secondary data-[status=active]:text-foreground">{item.label}</Link>)}
+        <nav className="hidden items-center gap-2 lg:flex" aria-label="Main">
+          {NAV.map(item => <Link key={item.to} to={item.to} activeOptions={{ exact: item.to === "/" }} className="rounded-md px-4 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-secondary hover:text-foreground data-[status=active]:bg-secondary data-[status=active]:text-foreground">{item.label}</Link>)}
         </nav>
         <div className="flex items-center gap-1.5">
           <Button variant="ghost" size="icon" aria-label="Search resources" onClick={() => setSearchOpen(v => !v)}><Search className="h-5 w-5" /></Button>
