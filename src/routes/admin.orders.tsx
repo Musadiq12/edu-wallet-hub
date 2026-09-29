@@ -1,5 +1,5 @@
 import type { Database } from "@/integrations/supabase/types";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, MessageCircle } from "lucide-react";
@@ -19,6 +19,7 @@ function AdminOrders() {
   const qc = useQueryClient();
   const { data, isLoading, isError, refetch } = useQuery(adminOrdersQuery());
   const [busyId, setBusyId] = useState<string | null>(null);
+  const mutationLockRef = useRef(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sort, setSort] = useState<"newest" | "oldest" | "amount">("newest");
@@ -40,14 +41,27 @@ function AdminOrders() {
     patch: Database["public"]["Tables"]["orders"]["Update"],
     message: string,
   ) => {
+    if (mutationLockRef.current) return;
+    mutationLockRef.current = true;
     setBusyId(o.id);
-    const { error } = await supabase.from("orders").update(patch).eq("id", o.id);
-    setBusyId(null);
-    if (error) return void toast.error(friendlyError(error, "Could not update this order."));
-    await qc.invalidateQueries({ queryKey: ["admin", "orders"] });
-    toast.success(message);
+    try {
+      const { error } = await supabase.from("orders").update(patch).eq("id", o.id);
+      if (error) {
+        toast.error(friendlyError(error, "Could not update this order."));
+        return;
+      }
+      await qc.invalidateQueries({ queryKey: ["admin", "orders"] });
+      toast.success(message);
+    } catch (err) {
+      toast.error(friendlyError(err, "Could not update this order."));
+    } finally {
+      setBusyId(null);
+      mutationLockRef.current = false;
+    }
   };
+  /*
 
+  */
   const openProof = async (path: string) => {
     const url = await signedUrl("payment-proofs", path, 300);
     if (!url) return void toast.error("Could not open the payment screenshot.");
@@ -55,6 +69,8 @@ function AdminOrders() {
   };
 
   const sendWhatsApp = async (o: AdminOrder) => {
+    if (mutationLockRef.current) return;
+    mutationLockRef.current = true;
     setBusyId(o.id);
     try {
       if (o.payment_status !== "submitted" || o.order_status === "cancelled") {
@@ -119,6 +135,7 @@ function AdminOrders() {
       );
     } finally {
       setBusyId(null);
+      mutationLockRef.current = false;
     }
   };
 
