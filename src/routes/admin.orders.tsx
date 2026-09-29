@@ -59,9 +59,7 @@ function AdminOrders() {
       mutationLockRef.current = false;
     }
   };
-  /*
 
-  */
   const openProof = async (path: string) => {
     const url = await signedUrl("payment-proofs", path, 300);
     if (!url) return void toast.error("Could not open the payment screenshot.");
