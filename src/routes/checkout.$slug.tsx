@@ -163,6 +163,9 @@ function Checkout() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Guard against duplicate submits even if multiple click/submit events arrive
+    // before React has re-rendered the disabled state.
+    if (saving) return;
     setError(null);
 
     const paid = Number(form.amount);
