@@ -26,12 +26,7 @@ export function useSession() {
   }, []);
 
   const user = session?.user ?? null;
-  return {
-    session,
-    user: user as User | null,
-    isVerified: !!user?.email_confirmed_at,
-    loading,
-  };
+  return { session, user: user as User | null, loading };
 }
 
 export function useIsAdmin(userId: string | undefined) {
@@ -39,12 +34,7 @@ export function useIsAdmin(userId: string | undefined) {
     queryKey: ["is-admin", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId!)
-        .eq("role", "admin")
-        .maybeSingle();
+      const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId!).eq("role", "admin").maybeSingle();
       if (error) return false;
       return !!data;
     },
