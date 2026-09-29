@@ -20,7 +20,7 @@ const buttonVariants = cva(
       size: {
         default: "h-9 px-4 py-2",
         sm: "h-8 rounded-md px-3 text-xs",
-        lg: "h-10 rounded-md px-8",
+        lg: "h-10 px-8",
         icon: "h-9 w-9",
       },
     },
@@ -37,10 +37,30 @@ export interface ButtonProps
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant, size, asChild = false, ...props }, ref) => {
+  ({ className, variant, size, asChild = false, onClick, ...props }, ref) => {
+    const lastActivationRef = React.useRef(0);
     const Comp = asChild ? Slot : "button";
+
+    const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+      // Prevent accidental click storms from queuing duplicate navigation, submits,
+      // dialogs, auth calls, etc. Normal clicks remain unaffected.
+      const now = performance.now();
+      if (now - lastActivationRef.current < 250) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+      lastActivationRef.current = now;
+      onClick?.(event);
+    };
+
     return (
-      <Comp className={cn(buttonVariants({ variant, size, className }))} ref={ref} {...props} />
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        onClick={handleClick}
+        {...props}
+      />
     );
   },
 );
