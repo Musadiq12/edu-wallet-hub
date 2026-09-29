@@ -25,7 +25,13 @@ export function useSession() {
     };
   }, []);
 
-  return { session, user: (session?.user ?? null) as User | null, loading };
+  const user = session?.user ?? null;
+  return {
+    session,
+    user: user as User | null,
+    isVerified: !!user?.email_confirmed_at,
+    loading,
+  };
 }
 
 export function useIsAdmin(userId: string | undefined) {
