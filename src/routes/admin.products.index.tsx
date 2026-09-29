@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
@@ -31,6 +31,7 @@ function AdminProducts() {
   const { data: categories } = useQuery(categoriesQuery());
   const [target, setTarget] = useState<AdminProduct | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const mutationLockRef = useRef(false);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [sort, setSort] = useState<"newest" | "oldest" | "price">("newest");
@@ -47,13 +48,22 @@ function AdminProducts() {
   const categoryName = (id: string | null) => categories?.find((c) => c.id === id)?.name ?? "—";
 
   const setPublished = async (p: AdminProduct, value: boolean) => {
+    if (mutationLockRef.current) return;
+    mutationLockRef.current = true;
     setBusyId(p.id);
+    try {
     const { error } = await supabase.from("products").update({ is_active: value }).eq("id", p.id);
-    setBusyId(null);
-    if (error) return void toast.error(friendlyError(error, "Could not update the product."));
+    if (error) {
+      toast.error(friendlyError(error, "Could not update the product."));
+      return;
+    }
     await qc.invalidateQueries({ queryKey: ["admin"] });
     await qc.invalidateQueries({ queryKey: ["products"] });
     toast.success(value ? "Product published." : "Product unpublished.");
+    } finally {
+      setBusyId(null);
+      mutationLockRef.current = false;
+    }
   };
 
   const archive = async (p: AdminProduct) => {
