@@ -229,3 +229,10 @@
     mix-blend-mode: color-dodge;
   }
 }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rainbow-banner-gradient-1,
+    .rainbow-banner-gradient-2 {
+      animation: none;
+    }
+  }
