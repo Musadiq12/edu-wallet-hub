@@ -232,11 +232,8 @@ export function SiteHeader() {
       {open && (
         <div id="site-mobile-menu" className="border-t border-border bg-background lg:hidden">
           <div className="page-container flex max-h-[calc(100vh-4rem)] flex-col gap-2 overflow-y-auto py-4">
-            <MobileSection title="Resources" items={productLinks} onNavigate={() => setOpen(false)} />
-            <MobileSection title="Company" items={[...companyLinks, ...companyLinks2]} onNavigate={() => setOpen(false)} />
-            <div className="grid gap-2 border-t border-border pt-3">
-              <Button asChild className="w-full"><Link to="/shop" onClick={() => setOpen(false)}>Shop</Link></Button>
-              <Button variant="outline" asChild className="w-full"><Link to="/free-resources" onClick={() => setOpen(false)}>Free Resources</Link></Button>
+            <div className="grid gap-2 border-b border-border pb-4">
+              <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
               {user ? (
                 <>
                   <Button variant="outline" asChild className="w-full"><Link to="/library" onClick={() => setOpen(false)}>My Library</Link></Button>
@@ -259,6 +256,12 @@ export function SiteHeader() {
                   <Button asChild className="w-full"><Link to="/register" onClick={() => setOpen(false)}>Register</Link></Button>
                 </>
               )}
+            </div>
+            <MobileSection title="Resources" items={productLinks} onNavigate={() => setOpen(false)} />
+            <MobileSection title="Company" items={[...companyLinks, ...companyLinks2]} onNavigate={() => setOpen(false)} />
+            <div className="grid gap-2 border-t border-border pt-3">
+              <Button asChild className="w-full"><Link to="/shop" onClick={() => setOpen(false)}>Shop</Link></Button>
+              <Button variant="outline" asChild className="w-full"><Link to="/free-resources" onClick={() => setOpen(false)}>Free Resources</Link></Button>
             </div>
           </div>
         </div>
