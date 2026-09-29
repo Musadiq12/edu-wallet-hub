@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Mail, MessageSquare, Phone, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -10,16 +11,24 @@ export const Route = createFileRoute("/admin/messages")({ component: AdminMessag
 
 function AdminMessages() {
   const qc = useQueryClient();
+  const mutationLockRef = useRef(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const messages = useQuery(adminContactMessagesQuery());
 
   const remove = async (id: string) => {
+    if (mutationLockRef.current) return;
     if (!window.confirm("Delete this message? This cannot be undone.")) return;
+    mutationLockRef.current = true;
+    setBusyId(id);
     try {
       await deleteContactMessage(id);
       await qc.invalidateQueries({ queryKey: ["admin", "contact-messages"] });
       toast.success("Message deleted.");
     } catch (err) {
       toast.error(friendlyError(err, "Could not delete the message."));
+    } finally {
+      setBusyId(null);
+      mutationLockRef.current = false;
     }
   };
 
@@ -70,7 +79,8 @@ function AdminMessages() {
                   <time className="text-xs text-muted-foreground" dateTime={m.created_at}>
                     {new Date(m.created_at).toLocaleString()}
                   </time>
-                  <Button variant="ghost" size="icon" aria-label="Delete message" onClick={() => void remove(m.id)}>
+                  <Button variant="ghost" size="icon" aria-label="Delete message" disabled={busyId === m.id}
+                    onClick={() => void remove(m.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
