@@ -241,7 +241,17 @@ export function SiteHeader() {
                 <>
                   <Button variant="outline" asChild className="w-full"><Link to="/library" onClick={() => setOpen(false)}>My Library</Link></Button>
                   {isAdmin && <Button variant="outline" asChild className="w-full"><Link to="/admin" onClick={() => setOpen(false)}>Admin</Link></Button>}
-                  <Button variant="outline" className="w-full" onClick={() => { setOpen(false); void signOutCleanly(); }}>Logout</Button>
+                  <Button
+                    variant="destructive"
+                    className="w-full"
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      void signOutCleanly();
+                    }}
+                  >
+                    Logout
+                  </Button>
                 </>
               ) : (
                 <>
