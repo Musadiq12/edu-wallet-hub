@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -10,16 +11,28 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/admin/free-resources")({ component: AdminFreeResources });
 
 function AdminFreeResources() {
+  const mutationLockRef = useRef(false);
+  const [busyId, setBusyId] = useState<string | null>(null);
   const qc = useQueryClient();
   const { data, isLoading, isError, refetch } = useQuery(adminProductsQuery(false));
   const free = (data ?? []).filter((p) => p.is_free);
 
   const toggle = async (id: string, value: boolean) => {
+    if (mutationLockRef.current) return;
+    mutationLockRef.current = true;
+    setBusyId(id);
     const { error } = await supabase.from("products").update({ is_active: value }).eq("id", id);
-    if (error) return void toast.error(friendlyError(error, "Could not update this resource."));
+    if (error) {
+      toast.error(friendlyError(error, "Could not update this resource."));
+      setBusyId(null);
+      mutationLockRef.current = false;
+      return;
+    }
     await qc.invalidateQueries({ queryKey: ["admin"] });
     await qc.invalidateQueries({ queryKey: ["products"] });
     toast.success(value ? "Resource published." : "Resource unpublished.");
+    setBusyId(null);
+    mutationLockRef.current = false;
   };
 
   return (
@@ -54,7 +67,8 @@ function AdminFreeResources() {
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant={p.is_active ? "default" : "secondary"}>{p.is_active ? "Published" : "Draft"}</Badge>
-                <Button size="sm" variant="outline" onClick={() => void toggle(p.id, !p.is_active)}>
+                <Button size="sm" variant="outline" disabled={busyId === p.id}
+                  onClick={() => void toggle(p.id, !p.is_active)}>
                   {p.is_active ? "Unpublish" : "Publish"}
                 </Button>
                 <Button size="sm" variant="ghost" asChild>
