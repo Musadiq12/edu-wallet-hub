@@ -67,23 +67,41 @@ function AdminProducts() {
   };
 
   const archive = async (p: AdminProduct) => {
+    if (mutationLockRef.current) return;
+    mutationLockRef.current = true;
     setBusyId(p.id);
+    try {
     const { error } = await supabase.from("products").update({ is_archived: true, is_active: false }).eq("id", p.id);
-    setBusyId(null);
+    if (error) {
+      toast.error(friendlyError(error, "Could not archive the product."));
+      return;
+    }
     setTarget(null);
-    if (error) return void toast.error(friendlyError(error, "Could not archive the product."));
     await qc.invalidateQueries({ queryKey: ["admin"] });
     await qc.invalidateQueries({ queryKey: ["products"] });
     toast.success("Product archived. Existing orders keep their records.");
+    } finally {
+      setBusyId(null);
+      mutationLockRef.current = false;
+    }
   };
 
   const restore = async (p: AdminProduct) => {
+    if (mutationLockRef.current) return;
+    mutationLockRef.current = true;
     setBusyId(p.id);
+    try {
     const { error } = await supabase.from("products").update({ is_archived: false }).eq("id", p.id);
-    setBusyId(null);
-    if (error) return void toast.error(friendlyError(error, "Could not restore the product."));
+    if (error) {
+      toast.error(friendlyError(error, "Could not restore the product."));
+      return;
+    }
     await qc.invalidateQueries({ queryKey: ["admin"] });
     toast.success("Product restored as a draft.");
+    } finally {
+      setBusyId(null);
+      mutationLockRef.current = false;
+    }
   };
 
   return (
