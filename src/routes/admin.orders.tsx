@@ -60,10 +60,21 @@ function AdminOrders() {
     }
   };
 
-  const openProof = async (path: string) => {
-    const url = await signedUrl("payment-proofs", path, 300);
-    if (!url) return void toast.error("Could not open the payment screenshot.");
-    window.open(url, "_blank", "noopener");
+  const openProof = async (path: string, orderId: string) => {
+    if (mutationLockRef.current) return;
+    mutationLockRef.current = true;
+    setBusyId(orderId);
+    try {
+      const url = await signedUrl("payment-proofs", path, 300);
+      if (!url) {
+        toast.error("Could not open the payment screenshot.");
+        return;
+      }
+      window.open(url, "_blank", "noopener");
+    } finally {
+      setBusyId(null);
+      mutationLockRef.current = false;
+    }
   };
 
   const sendWhatsApp = async (o: AdminOrder) => {
@@ -215,7 +226,7 @@ function AdminOrders() {
                       size="sm"
                       variant="outline"
                       disabled={busyId === o.id}
-                      onClick={() => void openProof(o.screenshot_path!)}
+                      onClick={() => void openProof(o.screenshot_path!, o.id)}
                     >
                       View screenshot
                     </Button>
