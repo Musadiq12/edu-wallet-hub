@@ -26,7 +26,6 @@ export const Route = createFileRoute("/forgot-password")({
 function ForgotPasswordPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
@@ -35,49 +34,43 @@ function ForgotPasswordPage() {
     if (!normalizedEmail) return;
 
     setBusy(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail);
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
     setBusy(false);
 
     if (error) {
-      toast.error(friendlyError(error, "Could not send the reset code."));
+      toast.error(friendlyError(error, "Could not send the password reset email."));
       return;
     }
 
-    setSent(true);
-    toast.success("Reset code sent. Check your email.");
-    void navigate({
-      to: "/reset-password",
-      search: { email: normalizedEmail },
-    });
+    toast.success("Password reset link sent. Check your email.");
+    void navigate({ to: "/login" });
   };
 
   return (
     <div className="page-container section-y max-w-md">
       <h1 className="text-2xl font-semibold tracking-tight">Reset your password</h1>
-      {sent ? (
-        <div className="mt-4 rounded-lg border border-border bg-surface p-4 text-sm">
-          <p>A 6-digit reset code has been sent to your email address.</p>
-          <p className="mt-1 text-muted-foreground">Enter the code on the next screen to choose a new password.</p>
+      <p className="mt-1 text-sm text-muted-foreground">
+        Enter your email and we'll send you a secure password reset link.
+      </p>
+      <form onSubmit={submit} className="mt-6 space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            className="h-11"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
-      ) : (
-        <form onSubmit={submit} className="mt-6 space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              className="h-11"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <Button type="submit" className="h-11 w-full" disabled={busy}>
-            {busy ? "Sending…" : "Send reset code"}
-          </Button>
-        </form>
-      )}
+        <Button type="submit" className="h-11 w-full" disabled={busy}>
+          {busy ? "Sending…" : "Send reset link"}
+        </Button>
+      </form>
       <p className="mt-4 text-sm">
         <Link to="/login" className="text-primary hover:underline">Back to login</Link>
       </p>
