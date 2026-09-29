@@ -66,7 +66,7 @@ export function SiteHeader() {
   const [term, setTerm] = useState("");
   const scrolled = useScroll(10);
   const navigate = useNavigate();
-  const { user, isVerified } = useSession();
+  const { user } = useSession();
   const { brandName } = useSiteSettings();
   const { data: isAdmin } = useIsAdmin(user?.id);
 
@@ -114,14 +114,12 @@ export function SiteHeader() {
         <div className="flex items-center gap-1.5">
           <Button variant="ghost" size="icon" aria-label="Search resources" onClick={() => setSearchOpen((v) => !v)}><Search className="size-5" /></Button>
           <div className="hidden items-center gap-2 sm:flex">
-            {user && isVerified ? (
+            {user ? (
               <>
                 <Button variant="ghost" size="sm" asChild><Link to="/library">My Library</Link></Button>
                 {isAdmin && <Button variant="ghost" size="sm" asChild><Link to="/admin">Admin</Link></Button>}
                 <Button variant="outline" size="sm" onClick={() => void signOutCleanly()}>Logout</Button>
               </>
-            ) : user ? (
-              <Button variant="outline" size="sm" asChild><Link to="/register">Check email &amp; verify</Link></Button>
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild><Link to="/login">Login</Link></Button>
@@ -149,14 +147,12 @@ export function SiteHeader() {
           <div className="page-container flex max-h-[calc(100vh-4rem)] flex-col gap-2 overflow-y-auto py-4">
             <div className="grid gap-2 border-b border-border pb-4">
               <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
-              {user && isVerified ? (
+              {user ? (
                 <>
                   <Button variant="outline" asChild className="w-full"><Link to="/library" onClick={() => setOpen(false)}>My Library</Link></Button>
                   {isAdmin && <Button variant="outline" asChild className="w-full"><Link to="/admin" onClick={() => setOpen(false)}>Admin</Link></Button>}
                   <Button variant="destructive" className="w-full" type="button" onClick={() => { setOpen(false); void signOutCleanly(); }}>Logout</Button>
                 </>
-              ) : user ? (
-                <Button variant="outline" asChild className="w-full"><Link to="/register" onClick={() => setOpen(false)}>Check email &amp; verify</Link></Button>
               ) : (
                 <>
                   <Button variant="outline" asChild className="w-full"><Link to="/login" onClick={() => setOpen(false)}>Login</Link></Button>
