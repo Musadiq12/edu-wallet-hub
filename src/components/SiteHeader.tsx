@@ -1,25 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import {
-  BarChart3,
-  BookOpen,
-  ChevronDown,
-  FileText,
-  Gift,
-  Globe2,
-  HelpCircle,
-  Layers3,
-  Leaf,
-  Menu,
-  Plug,
-  RotateCcw,
-  Search,
-  Shield,
-  Star,
-  Target,
-  UserPlus,
-  Users,
-  X,
+  BarChart3, BookOpen, FileText, Gift, Globe2, HelpCircle, Layers3,
+  Menu, RotateCcw, Search, Shield, Target, UserPlus, Users, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
@@ -29,12 +12,7 @@ import { Input } from "@/components/ui/input";
 import { useSiteSettings } from "@/lib/settings";
 import { useIsAdmin, useSession, signOutCleanly } from "@/lib/auth";
 
-type LinkItem = {
-  title: string;
-  href: string;
-  icon: typeof Globe2;
-  description?: string;
-};
+type LinkItem = { title: string; href: string; icon: typeof Globe2; description?: string };
 
 const productLinks: LinkItem[] = [
   { title: "Study Notes", href: "/shop?category=notes", description: "Subject-wise notes and revision material", icon: BookOpen },
@@ -60,13 +38,8 @@ const companyLinks2: LinkItem[] = [
 function ListItem({ title, description, icon: Icon, href }: LinkItem) {
   return (
     <NavigationMenuLink asChild>
-      <Link
-        to={href as "/"}
-        className="flex w-full flex-row items-center gap-x-3 rounded-md p-2 transition-colors hover:bg-accent hover:text-accent-foreground"
-      >
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-md border bg-background shadow-sm">
-          <Icon className="size-5" />
-        </div>
+      <Link to={href as "/"} className="flex w-full flex-row items-center gap-x-3 rounded-md p-2 transition-colors hover:bg-accent hover:text-accent-foreground">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-md border bg-background shadow-sm"><Icon className="size-5" /></div>
         <div className="flex min-w-0 flex-col items-start justify-center">
           <span className="font-medium">{title}</span>
           {description && <span className="text-xs text-muted-foreground">{description}</span>}
@@ -93,15 +66,13 @@ export function SiteHeader() {
   const [term, setTerm] = useState("");
   const scrolled = useScroll(10);
   const navigate = useNavigate();
-  const { user } = useSession();
+  const { user, isVerified } = useSession();
   const { brandName } = useSiteSettings();
   const { data: isAdmin } = useIsAdmin(user?.id);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [open]);
 
   const submitSearch = (event: React.FormEvent) => {
@@ -112,93 +83,45 @@ export function SiteHeader() {
   };
 
   return (
-    <header
-      className={cn(
-        "sticky top-0 z-50 w-full border-b border-transparent transition-colors",
-        scrolled &&
-          "border-border bg-background/95 shadow-sm backdrop-blur-lg supports-[backdrop-filter]:bg-background/70",
-      )}
-    >
+    <header className={cn("sticky top-0 z-50 w-full border-b border-transparent transition-colors", scrolled && "border-border bg-background/95 shadow-sm backdrop-blur-lg supports-[backdrop-filter]:bg-background/70")}>
       <nav className="page-container flex h-16 items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <Link to="/" aria-label={brandName + " home"} className="shrink-0 rounded-md p-1 hover:bg-accent/10">
-            <Logo compact />
-          </Link>
-
+          <Link to="/" aria-label={brandName + " home"} className="shrink-0 rounded-md p-1 hover:bg-accent/10"><Logo compact /></Link>
           <NavigationMenu className="hidden lg:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="bg-transparent">Resources</NavigationMenuTrigger>
                 <NavigationMenuContent className="bg-background p-1">
-                  <div className="grid w-[720px] grid-cols-2 gap-2 rounded-md border bg-popover p-2 shadow-lg">
-                    {productLinks.map((item) => (
-                      <ListItem key={item.title} {...item} />
-                    ))}
-                  </div>
-                  <div className="px-3 pb-2 pt-2 text-sm text-muted-foreground">
-                    Looking for something specific?{" "}
-                    <Link to="/shop" className="font-medium text-foreground hover:underline">
-                      Browse all resources
-                    </Link>
-                  </div>
+                  <div className="grid w-[720px] grid-cols-2 gap-2 rounded-md border bg-popover p-2 shadow-lg">{productLinks.map((item) => <ListItem key={item.title} {...item} />)}</div>
+                  <div className="px-3 pb-2 pt-2 text-sm text-muted-foreground">Looking for something specific?{" "}<Link to="/shop" className="font-medium text-foreground hover:underline">Browse all resources</Link></div>
                 </NavigationMenuContent>
               </NavigationMenuItem>
-
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="bg-transparent">Company</NavigationMenuTrigger>
                 <NavigationMenuContent className="bg-background p-1">
                   <div className="grid w-[720px] grid-cols-2 gap-2">
-                    <ul className="space-y-2 rounded-md border bg-popover p-2 shadow-lg">
-                      {companyLinks.map((item) => (
-                        <li key={item.title}>
-                          <ListItem {...item} />
-                        </li>
-                      ))}
-                    </ul>
-                    <ul className="space-y-2 p-3">
-                      {companyLinks2.map((item) => (
-                        <li key={item.title}>
-                          <NavigationMenuLink asChild>
-                            <Link
-                              to={item.href as "/"}
-                              className="flex items-center gap-x-2 rounded-md p-2 hover:bg-accent"
-                            >
-                              <item.icon className="size-4" />
-                              <span className="font-medium">{item.title}</span>
-                            </Link>
-                          </NavigationMenuLink>
-                        </li>
-                      ))}
-                    </ul>
+                    <ul className="space-y-2 rounded-md border bg-popover p-2 shadow-lg">{companyLinks.map((item) => <li key={item.title}><ListItem {...item} /></li>)}</ul>
+                    <ul className="space-y-2 p-3">{companyLinks2.map((item) => <li key={item.title}><NavigationMenuLink asChild><Link to={item.href as "/"} className="flex items-center gap-x-2 rounded-md p-2 hover:bg-accent"><item.icon className="size-4" /><span className="font-medium">{item.title}</span></Link></NavigationMenuLink></li>)}</ul>
                   </div>
                 </NavigationMenuContent>
               </NavigationMenuItem>
-
-              <NavigationMenuLink asChild>
-                <Link to="/shop" className="rounded-md px-4 py-2 text-sm font-medium hover:bg-accent">
-                  Shop
-                </Link>
-              </NavigationMenuLink>
-              <NavigationMenuLink asChild>
-                <Link to="/free-resources" className="rounded-md px-4 py-2 text-sm font-medium hover:bg-accent">
-                  Free Resources
-                </Link>
-              </NavigationMenuLink>
+              <NavigationMenuLink asChild><Link to="/shop" className="rounded-md px-4 py-2 text-sm font-medium hover:bg-accent">Shop</Link></NavigationMenuLink>
+              <NavigationMenuLink asChild><Link to="/free-resources" className="rounded-md px-4 py-2 text-sm font-medium hover:bg-accent">Free Resources</Link></NavigationMenuLink>
             </NavigationMenuList>
           </NavigationMenu>
         </div>
 
         <div className="flex items-center gap-1.5">
-          <Button variant="ghost" size="icon" aria-label="Search resources" onClick={() => setSearchOpen((v) => !v)}>
-            <Search className="size-5" />
-          </Button>
+          <Button variant="ghost" size="icon" aria-label="Search resources" onClick={() => setSearchOpen((v) => !v)}><Search className="size-5" /></Button>
           <div className="hidden items-center gap-2 sm:flex">
-            {user ? (
+            {user && isVerified ? (
               <>
                 <Button variant="ghost" size="sm" asChild><Link to="/library">My Library</Link></Button>
                 {isAdmin && <Button variant="ghost" size="sm" asChild><Link to="/admin">Admin</Link></Button>}
                 <Button variant="outline" size="sm" onClick={() => void signOutCleanly()}>Logout</Button>
               </>
+            ) : user ? (
+              <Button variant="outline" size="sm" asChild><Link to="/register">Check email &amp; verify</Link></Button>
             ) : (
               <>
                 <Button variant="ghost" size="sm" asChild><Link to="/login">Login</Link></Button>
@@ -206,15 +129,7 @@ export function SiteHeader() {
               </>
             )}
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            className="lg:hidden"
-            aria-label={open ? "Close menu" : "Open menu"}
-            aria-expanded={open}
-            aria-controls="site-mobile-menu"
-            onClick={() => setOpen((v) => !v)}
-          >
+          <Button variant="outline" size="icon" className="lg:hidden" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="site-mobile-menu" onClick={() => setOpen((v) => !v)}>
             {open ? <X className="size-5" /> : <Menu className="size-5" />}
           </Button>
         </div>
@@ -234,22 +149,14 @@ export function SiteHeader() {
           <div className="page-container flex max-h-[calc(100vh-4rem)] flex-col gap-2 overflow-y-auto py-4">
             <div className="grid gap-2 border-b border-border pb-4">
               <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
-              {user ? (
+              {user && isVerified ? (
                 <>
                   <Button variant="outline" asChild className="w-full"><Link to="/library" onClick={() => setOpen(false)}>My Library</Link></Button>
                   {isAdmin && <Button variant="outline" asChild className="w-full"><Link to="/admin" onClick={() => setOpen(false)}>Admin</Link></Button>}
-                  <Button
-                    variant="destructive"
-                    className="w-full"
-                    type="button"
-                    onClick={() => {
-                      setOpen(false);
-                      void signOutCleanly();
-                    }}
-                  >
-                    Logout
-                  </Button>
+                  <Button variant="destructive" className="w-full" type="button" onClick={() => { setOpen(false); void signOutCleanly(); }}>Logout</Button>
                 </>
+              ) : user ? (
+                <Button variant="outline" asChild className="w-full"><Link to="/register" onClick={() => setOpen(false)}>Check email &amp; verify</Link></Button>
               ) : (
                 <>
                   <Button variant="outline" asChild className="w-full"><Link to="/login" onClick={() => setOpen(false)}>Login</Link></Button>
@@ -270,30 +177,12 @@ export function SiteHeader() {
   );
 }
 
-function MobileSection({
-  title,
-  items,
-  onNavigate,
-}: {
-  title: string;
-  items: LinkItem[];
-  onNavigate: () => void;
-}) {
+function MobileSection({ title, items, onNavigate }: { title: string; items: LinkItem[]; onNavigate: () => void; }) {
   return (
     <section>
       <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
       <div className="grid gap-1">
-        {items.map((item) => (
-          <Link
-            key={item.title}
-            to={item.href as "/"}
-            onClick={onNavigate}
-            className="flex items-center gap-3 rounded-md px-3 py-3 hover:bg-accent"
-          >
-            <item.icon className="size-4 shrink-0" />
-            <span className="text-sm font-medium">{item.title}</span>
-          </Link>
-        ))}
+        {items.map((item) => <Link key={item.title} to={item.href as "/"} onClick={onNavigate} className="flex items-center gap-3 rounded-md px-3 py-3 hover:bg-accent"><item.icon className="size-4 shrink-0" /><span className="text-sm font-medium">{item.title}</span></Link>)}
       </div>
     </section>
   );
