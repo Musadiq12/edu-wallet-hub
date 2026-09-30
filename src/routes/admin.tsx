@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import {
-  BarChart3,
   Bell,
   BookOpen,
   ChevronDown,
   ChevronsRight,
   ExternalLink,
   Gift,
-  HelpCircle,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -24,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { useIsAdmin, useSession, signOutCleanly } from "@/lib/auth";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
+import { adminOrdersQuery } from "@/lib/admin";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -54,6 +54,10 @@ function AdminLayout() {
   const [isDark, setIsDark] = useState(false);
   const { user, loading } = useSession();
   const { data: isAdmin, isLoading: roleLoading } = useIsAdmin(user?.id);
+  const orders = useQuery({ ...adminOrdersQuery(), enabled: !!user && !!isAdmin });
+  const hasPendingOrders = (orders.data ?? []).some(
+    (order) => order.payment_status === "submitted" && order.order_status !== "cancelled",
+  );
 
   useEffect(() => {
     const saved = localStorage.getItem("eduwallet-admin-theme");
@@ -159,13 +163,6 @@ function AdminLayout() {
           <p className="px-3 pb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
             System
           </p>
-          <Link
-            to="/admin/settings"
-            className="flex h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
-          >
-            <HelpCircle className="h-4 w-4" />
-            Help & Support
-          </Link>
           <button
             type="button"
             onClick={handleLogout}
@@ -282,11 +279,15 @@ function AdminLayout() {
               </Link>
               <button
                 type="button"
+                onClick={() => void navigate({ to: "/admin/orders" })}
                 className="relative grid size-10 place-content-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800"
-                aria-label="Notifications"
+                aria-label={hasPendingOrders ? "Pending orders" : "Notifications"}
+                title={hasPendingOrders ? "You have pending orders" : "No new orders"}
               >
                 <Bell className="h-5 w-5" />
-                <span className="absolute right-2 top-2 size-2 rounded-full bg-red-500" />
+                {hasPendingOrders && (
+                  <span className="absolute right-2 top-2 size-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-900" />
+                )}
               </button>
               <button
                 type="button"
