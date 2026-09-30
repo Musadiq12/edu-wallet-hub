@@ -34,9 +34,17 @@ export function useIsAdmin(userId: string | undefined) {
     queryKey: ["is-admin", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await supabase.from("user_roles").select("role").eq("user_id", userId!).eq("role", "admin").maybeSingle();
-      if (error) return false;
-      return !!data;
+      const { data, error } = await (supabase as any).rpc("has_role", {
+        _user_id: userId!,
+        _role: "admin",
+      });
+
+      if (error) {
+        console.error("[useIsAdmin] Failed to check admin role:", error);
+        return false;
+      }
+
+      return data === true;
     },
   });
 }
