@@ -5,7 +5,10 @@ import {
   Menu, RotateCcw, Search, Shield, Target, UserPlus, Users, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
+import {
+  NavigationMenu, NavigationMenuContent, NavigationMenuItem,
+  NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger,
+} from "@/components/ui/navigation-menu";
 import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -15,17 +18,21 @@ import { useIsAdmin, useSession, signOutCleanly } from "@/lib/auth";
 type LinkItem = { title: string; href: string; icon: typeof Globe2; description?: string };
 
 const productLinks: LinkItem[] = [
-  { title: "Study Notes", href: "/shop?category=notes", description: "Subject-wise notes and revision material", icon: BookOpen },
-  { title: "Guess Papers", href: "/shop?category=guess-papers", description: "Exam-oriented practice and likely-topic guides", icon: FileText },
-  { title: "Exam Guides", href: "/shop?category=exam-guides", description: "Focused preparation and revision resources", icon: Target },
-  { title: "Free Resources", href: "/free-resources", description: "Free samples and study material", icon: Gift },
-  { title: "Popular Exams", href: "/shop", description: "Resources across competitive exams", icon: BarChart3 },
+  { title: "Study Materials", href: "/shop", description: "Notes, papers and preparation resources", icon: BookOpen },
+  { title: "Previous Papers", href: "/shop", description: "Past papers and exam practice", icon: FileText },
+  { title: "Important Questions", href: "/shop", description: "Focused revision and important questions", icon: Target },
+  { title: "Free Resources", href: "/free-resources", description: "Free study material and updates", icon: Gift },
+  { title: "University Resources", href: "/shop", description: "Kashmir, Cluster, Jammu University and IGNOU resources", icon: GraduationCapFallback },
   { title: "Student Library", href: "/library", description: "Access resources you have purchased", icon: Layers3 },
 ];
 
+function GraduationCapFallback() {
+  return <span className="inline-flex size-5" aria-hidden="true">🎓</span>;
+}
+
 const companyLinks: LinkItem[] = [
-  { title: "About Us", href: "/about", description: "Learn more about EduWallet", icon: Users },
-  { title: "Contact", href: "/contact", description: "Get in touch for support or questions", icon: UserPlus },
+  { title: "About Us", href: "/about", description: "Learn more about Beststudy", icon: Users },
+  { title: "Contact", href: "/contact", description: "Questions, feedback and support", icon: UserPlus },
   { title: "Terms", href: "/terms", description: "Terms governing use of the platform", icon: FileText },
 ];
 
@@ -39,7 +46,7 @@ function ListItem({ title, description, icon: Icon, href }: LinkItem) {
   return (
     <NavigationMenuLink asChild>
       <Link to={href as "/"} className="flex w-full flex-row items-center gap-x-3 rounded-md p-2 transition-colors hover:bg-accent hover:text-accent-foreground">
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-md border bg-background shadow-sm"><Icon className="size-5" /></div>
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-md border bg-background shadow-sm"><Icon /></div>
         <div className="flex min-w-0 flex-col items-start justify-center">
           <span className="font-medium">{title}</span>
           {description && <span className="text-xs text-muted-foreground">{description}</span>}
@@ -83,29 +90,47 @@ export function SiteHeader() {
   };
 
   return (
-    <header className={cn("sticky top-0 z-50 w-full border-b border-transparent transition-colors", scrolled && "border-border bg-background/95 shadow-sm backdrop-blur-lg supports-[backdrop-filter]:bg-background/70")}>
+    <header className={cn(
+      "sticky top-0 z-50 w-full border-b border-transparent transition-colors",
+      scrolled && "border-border bg-background/95 shadow-sm backdrop-blur-lg supports-[backdrop-filter]:bg-background/70"
+    )}>
       <nav className="page-container flex h-16 items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-3">
-          <Link to="/" aria-label={brandName + " home"} className="shrink-0 rounded-md p-1 hover:bg-accent/10"><Logo compact /></Link>
+          <Link to="/" aria-label={brandName + " home"} className="shrink-0 rounded-md p-1 hover:bg-accent/10">
+            <Logo compact />
+          </Link>
           <NavigationMenu className="hidden lg:flex">
             <NavigationMenuList>
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="bg-transparent">Resources</NavigationMenuTrigger>
                 <NavigationMenuContent className="bg-background p-1">
-                  <div className="grid w-[720px] grid-cols-2 gap-2 rounded-md border bg-popover p-2 shadow-lg">{productLinks.map((item) => <ListItem key={item.title} {...item} />)}</div>
-                  <div className="px-3 pb-2 pt-2 text-sm text-muted-foreground">Looking for something specific?{" "}<Link to="/shop" className="font-medium text-foreground hover:underline">Browse all resources</Link></div>
+                  <div className="grid w-[720px] grid-cols-2 gap-2 rounded-md border bg-popover p-2 shadow-lg">
+                    {productLinks.map((item) => <ListItem key={item.title} {...item} />)}
+                  </div>
                 </NavigationMenuContent>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuTrigger className="bg-transparent">Company</NavigationMenuTrigger>
                 <NavigationMenuContent className="bg-background p-1">
                   <div className="grid w-[720px] grid-cols-2 gap-2">
-                    <ul className="space-y-2 rounded-md border bg-popover p-2 shadow-lg">{companyLinks.map((item) => <li key={item.title}><ListItem {...item} /></li>)}</ul>
-                    <ul className="space-y-2 p-3">{companyLinks2.map((item) => <li key={item.title}><NavigationMenuLink asChild><Link to={item.href as "/"} className="flex items-center gap-x-2 rounded-md p-2 hover:bg-accent"><item.icon className="size-4" /><span className="font-medium">{item.title}</span></Link></NavigationMenuLink></li>)}</ul>
+                    <ul className="space-y-2 rounded-md border bg-popover p-2 shadow-lg">
+                      {companyLinks.map((item) => <li key={item.title}><ListItem {...item} /></li>)}
+                    </ul>
+                    <ul className="space-y-2 p-3">
+                      {companyLinks2.map((item) => (
+                        <li key={item.title}>
+                          <NavigationMenuLink asChild>
+                            <Link to={item.href as "/"} className="flex items-center gap-x-2 rounded-md p-2 hover:bg-accent">
+                              <item.icon className="size-4" /><span className="font-medium">{item.title}</span>
+                            </Link>
+                          </NavigationMenuLink>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 </NavigationMenuContent>
               </NavigationMenuItem>
-              <NavigationMenuLink asChild><Link to="/shop" className="rounded-md px-4 py-2 text-sm font-medium hover:bg-accent">Shop</Link></NavigationMenuLink>
+              <NavigationMenuLink asChild><Link to="/shop" className="rounded-md px-4 py-2 text-sm font-medium hover:bg-accent">Study Materials</Link></NavigationMenuLink>
               <NavigationMenuLink asChild><Link to="/free-resources" className="rounded-md px-4 py-2 text-sm font-medium hover:bg-accent">Free Resources</Link></NavigationMenuLink>
             </NavigationMenuList>
           </NavigationMenu>
@@ -136,7 +161,7 @@ export function SiteHeader() {
       {searchOpen && (
         <div className="border-t border-border bg-background/95 backdrop-blur">
           <form onSubmit={submitSearch} className="page-container flex gap-2 py-3">
-            <Input autoFocus value={term} onChange={(e) => setTerm(e.target.value)} placeholder="Search notes, exams, resources..." aria-label="Search resources" className="h-10" />
+            <Input autoFocus value={term} onChange={(e) => setTerm(e.target.value)} placeholder="Search study materials, papers, questions..." aria-label="Search resources" className="h-10" />
             <Button type="submit" className="h-10">Search</Button>
           </form>
         </div>
@@ -163,7 +188,7 @@ export function SiteHeader() {
             <MobileSection title="Resources" items={productLinks} onNavigate={() => setOpen(false)} />
             <MobileSection title="Company" items={[...companyLinks, ...companyLinks2]} onNavigate={() => setOpen(false)} />
             <div className="grid gap-2 border-t border-border pt-3">
-              <Button asChild className="w-full"><Link to="/shop" onClick={() => setOpen(false)}>Shop</Link></Button>
+              <Button asChild className="w-full"><Link to="/shop" onClick={() => setOpen(false)}>Study Materials</Link></Button>
               <Button variant="outline" asChild className="w-full"><Link to="/free-resources" onClick={() => setOpen(false)}>Free Resources</Link></Button>
             </div>
           </div>
@@ -173,7 +198,7 @@ export function SiteHeader() {
   );
 }
 
-function MobileSection({ title, items, onNavigate }: { title: string; items: LinkItem[]; onNavigate: () => void; }) {
+function MobileSection({ title, items, onNavigate }: { title: string; items: LinkItem[]; onNavigate: () => void }) {
   return (
     <section>
       <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
