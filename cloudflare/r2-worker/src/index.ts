@@ -233,8 +233,14 @@ export default {
     }
 
     if (url.pathname === "/delivery-link" && request.method === "POST") {
-      if (request.headers.get("X-Delivery-Secret") !== env.DELIVERY_SECRET) {
-        return json(request, env, { error: "Unauthorized." }, 401);
+      // Prefer the server-to-server delivery secret. If the secret is stale or
+      // missing, allow a valid authenticated admin bearer token as a safe fallback.
+      const deliverySecret = request.headers.get("X-Delivery-Secret");
+      if (deliverySecret !== env.DELIVERY_SECRET) {
+        const verifiedAdmin = await requireAdmin(request, env);
+        if (!verifiedAdmin) {
+          return json(request, env, { error: "Unauthorized." }, 401);
+        }
       }
 
       let body: { key?: string; expiresIn?: number };
