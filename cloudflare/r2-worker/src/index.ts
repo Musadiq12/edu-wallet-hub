@@ -1,0 +1,399 @@
+type Env = {
+  PRODUCTS: any;
+  SUPABASE_URL: string;
+  SUPABASE_PUBLISHABLE_KEY: string;
+  SUPABASE_SERVER_KEY: string;
+  DOWNLOAD_SIGNING_SECRET: string;
+  DELIVERY_SECRET: string;
+  ALLOWED_ORIGIN?: string;
+};
+
+const MAX_PDF_BYTES = 50 * 1024 * 1024;
+const DOWNLOAD_TTL_SECONDS = 48 * 60 * 60;
+
+function origin(_request: Request, _env: Env) {
+  // These endpoints use bearer/secret authentication, not browser cookies.
+  // Allow cross-origin requests so the admin app can call the Worker reliably.
+  return "*";
+}
+
+function json(request: Request, env: Env, data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Access-Control-Allow-Origin": origin(request, env),
+      "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Delivery-Secret",
+      "Access-Control-Allow-Methods": "GET, PUT, DELETE, POST, OPTIONS",
+      "Vary": "Origin",
+    },
+  });
+}
+
+function safeKey(value: string) {
+  return value
+    .replaceAll("\\", "/")
+    .replace(/^\/+/, "")
+    .replace(/[^a-zA-Z0-9._/-]/g, "-")
+    .replace(/\/{2,}/g, "/");
+}
+
+function hex(bytes: ArrayBuffer) {
+  return [...new Uint8Array(bytes)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function sign(value: string, secret: string) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  return hex(await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value)));
+}
+
+async function requireAdmin(request: Request, env: Env) {
+  const authorization = request.headers.get("Authorization");
+  if (!authorization?.startsWith("Bearer ")) return null;
+
+  const token = authorization.slice(7).trim();
+  if (!token) return null;
+
+  const userResponse = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+    headers: {
+      // Use the server key for this server-to-server admin check.
+      // The user's bearer token still identifies the caller.
+      apikey: env.SUPABASE_SERVER_KEY,
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!userResponse.ok) return null;
+
+  const user = await userResponse.json() as { id?: string };
+  if (!user.id) return null;
+
+  const roleResponse = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/user_roles?user_id=eq.${encodeURIComponent(user.id)}&role=eq.admin&select=user_id&limit=1`,
+    {
+      headers: {
+        apikey: env.SUPABASE_SERVER_KEY,
+        Accept: "application/json",
+      },
+    },
+  );
+
+  if (!roleResponse.ok) return null;
+  const roles = await roleResponse.json() as Array<{ user_id: string }>;
+  return roles.length > 0 ? user.id : null;
+}
+
+async function requireUser(request: Request, env: Env) {
+  const authorization = request.headers.get("Authorization");
+  if (!authorization?.startsWith("Bearer ")) return null;
+
+  const token = authorization.slice(7).trim();
+  if (!token) return null;
+
+  const userResponse = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
+    headers: {
+      apikey: env.SUPABASE_PUBLISHABLE_KEY,
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!userResponse.ok) return null;
+
+  const user = await userResponse.json() as { id?: string };
+  return user.id || null;
+}
+
+async function verifyDownloadSignature(key: string, exp: number, signature: string, env: Env) {
+  if (!Number.isSafeInteger(exp) || exp < Math.floor(Date.now() / 1000)) return false;
+  const expected = await sign(`${key}|${exp}`, env.DOWNLOAD_SIGNING_SECRET);
+  return expected === signature;
+}
+
+export default {
+  async fetch(request: Request, env: Env) {
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": origin(request, env),
+          "Access-Control-Allow-Headers": "Authorization, Content-Type, X-Delivery-Secret",
+          "Access-Control-Allow-Methods": "GET, PUT, DELETE, POST, OPTIONS",
+          "Vary": "Origin",
+        },
+      });
+    }
+
+    const url = new URL(request.url);
+
+    if (url.pathname === "/health" && request.method === "GET") {
+      return json(request, env, { ok: true, service: "edu-wallet-r2" });
+    }
+
+    if (url.pathname === "/upload" && request.method === "PUT") {
+      const adminId = await requireAdmin(request, env);
+      if (!adminId) return json(request, env, { error: "Administrator access required." }, 403);
+
+      const filename = url.searchParams.get("filename") || "document.pdf";
+      const key = safeKey(`products/${crypto.randomUUID()}-${filename}`);
+      const contentType = request.headers.get("Content-Type") || "application/pdf";
+      const length = Number(request.headers.get("Content-Length") || 0);
+
+      if (contentType !== "application/pdf") {
+        return json(request, env, { error: "Only PDF files are allowed." }, 415);
+      }
+      if (length > MAX_PDF_BYTES) {
+        return json(request, env, { error: "The PDF is larger than 50 MB." }, 413);
+      }
+      if (!request.body) {
+        return json(request, env, { error: "The upload body is empty." }, 400);
+      }
+
+      await env.PRODUCTS.put(key, request.body, {
+        httpMetadata: { contentType: "application/pdf" },
+        customMetadata: { uploadedBy: adminId },
+      });
+
+      return json(request, env, { ok: true, path: key });
+    }
+
+    if (url.pathname === "/migrate-legacy" && request.method === "POST") {
+      const deliverySecret = request.headers.get("X-Delivery-Secret");
+      let adminId = "server-delivery";
+
+      if (deliverySecret !== env.DELIVERY_SECRET) {
+        const verifiedAdmin = await requireAdmin(request, env);
+        if (!verifiedAdmin) return json(request, env, { error: "Administrator access required." }, 403);
+        adminId = verifiedAdmin;
+      }
+
+      let body: { path?: string };
+      try {
+        body = await request.json();
+      } catch {
+        return json(request, env, { error: "Invalid JSON body." }, 400);
+      }
+
+      const legacyPath = String(body.path || "").replace(/^\/+/, "");
+      if (!legacyPath || legacyPath.includes("..") || legacyPath.startsWith("products/")) {
+        return json(request, env, { error: "Invalid legacy product path." }, 400);
+      }
+
+      const source = await fetch(
+        `${env.SUPABASE_URL}/storage/v1/object/product-files/${legacyPath.split("/").map(encodeURIComponent).join("/")}`,
+        {
+          headers: {
+            apikey: env.SUPABASE_SERVER_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVER_KEY}`,
+          },
+        },
+      );
+      if (!source.ok || !source.body) {
+        return json(request, env, { error: "Could not read the existing product PDF from Supabase." }, 502);
+      }
+
+      const contentType = source.headers.get("Content-Type") || "";
+      if (!contentType.toLowerCase().includes("pdf")) {
+        return json(request, env, { error: "The existing product file is not a PDF." }, 415);
+      }
+
+      const filename = legacyPath.split("/").pop() || "product.pdf";
+      const key = safeKey(`products/${crypto.randomUUID()}-${filename}`);
+      await env.PRODUCTS.put(key, source.body, {
+        httpMetadata: { contentType: "application/pdf" },
+        customMetadata: { migratedFrom: legacyPath, migratedBy: adminId },
+      });
+
+      return json(request, env, { ok: true, path: key });
+    }
+
+    if (url.pathname === "/delete" && request.method === "DELETE") {
+      const adminId = await requireAdmin(request, env);
+      if (!adminId) return json(request, env, { error: "Administrator access required." }, 403);
+
+      const key = safeKey(url.searchParams.get("key") || "");
+      if (!key.startsWith("products/")) {
+        return json(request, env, { error: "Invalid product object key." }, 400);
+      }
+
+      await env.PRODUCTS.delete(key);
+      return json(request, env, { ok: true });
+    }
+
+    if (url.pathname === "/customer-delivery-link" && request.method === "POST") {
+      const userId = await requireUser(request, env);
+      if (!userId) return json(request, env, { error: "Authentication required." }, 401);
+
+      let body: { key?: string; expiresIn?: number };
+      try {
+        body = await request.json();
+      } catch {
+        return json(request, env, { error: "Invalid JSON body." }, 400);
+      }
+
+      const key = safeKey(body.key || "");
+      if (!key.startsWith("products/")) {
+        return json(request, env, { error: "Invalid product object key." }, 400);
+      }
+
+      // A customer may only receive a link when the requested R2 object belongs
+      // to a product they purchased and the payment has been verified.
+      const productResponse = await fetch(
+        `${env.SUPABASE_URL}/rest/v1/products?pdf_file=eq.${encodeURIComponent(key)}&is_free=eq.false&select=id&limit=1`,
+        {
+          headers: {
+            apikey: env.SUPABASE_SERVER_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVER_KEY}`,
+            Accept: "application/json",
+          },
+        },
+      );
+
+      if (!productResponse.ok) {
+        return json(request, env, { error: "Could not verify the purchased product." }, 502);
+      }
+
+      const products = await productResponse.json() as Array<{ id: string }>;
+      const productId = products[0]?.id;
+      if (!productId) return json(request, env, { error: "Product not found." }, 404);
+
+      const orderResponse = await fetch(
+        `${env.SUPABASE_URL}/rest/v1/orders?user_id=eq.${encodeURIComponent(userId)}&product_id=eq.${encodeURIComponent(productId)}&select=id,payment_status,order_status&limit=20`,
+        {
+          headers: {
+            apikey: env.SUPABASE_SERVER_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVER_KEY}`,
+            Accept: "application/json",
+          },
+        },
+      );
+
+      if (!orderResponse.ok) {
+        return json(request, env, { error: "Could not verify your purchase." }, 502);
+      }
+
+      const orders = await orderResponse.json() as Array<{
+        id: string;
+        payment_status?: string | null;
+        order_status?: string | null;
+      }>;
+      const hasVerifiedOrder = orders.some((order) =>
+        String(order.payment_status || "").toLowerCase() === "verified" ||
+        ["payment_verified", "verified", "processing", "delivered", "completed"].includes(
+          String(order.order_status || "").toLowerCase(),
+        )
+      );
+      if (!hasVerifiedOrder) {
+        return json(request, env, { error: "You do not have access to this document." }, 403);
+      }
+
+      const expiresIn = Math.min(
+        Math.max(Number(body.expiresIn) || 30 * 60, 60),
+        60 * 60,
+      );
+      const exp = Math.floor(Date.now() / 1000) + expiresIn;
+      const signature = await sign(`${key}|${exp}`, env.DOWNLOAD_SIGNING_SECRET);
+      const downloadUrl = `${new URL(request.url).origin}/download?key=${encodeURIComponent(key)}&exp=${exp}&sig=${signature}&disposition=inline`;
+
+      return json(request, env, {
+        ok: true,
+        url: downloadUrl,
+        expiresAt: new Date(exp * 1000).toISOString(),
+      });
+    }
+
+    if (url.pathname === "/admin-delivery-link" && request.method === "POST") {
+      const adminId = await requireAdmin(request, env);
+      if (!adminId) return json(request, env, { error: "Administrator access required." }, 403);
+
+      let body: { key?: string; expiresIn?: number };
+      try {
+        body = await request.json();
+      } catch {
+        return json(request, env, { error: "Invalid JSON body." }, 400);
+      }
+
+      const key = safeKey(body.key || "");
+      if (!key.startsWith("products/")) {
+        return json(request, env, { error: "Invalid product object key." }, 400);
+      }
+
+      const expiresIn = Math.min(
+        Math.max(Number(body.expiresIn) || DOWNLOAD_TTL_SECONDS, 60),
+        7 * 24 * 60 * 60,
+      );
+      const exp = Math.floor(Date.now() / 1000) + expiresIn;
+      const signature = await sign(`${key}|${exp}`, env.DOWNLOAD_SIGNING_SECRET);
+      const downloadUrl = `${new URL(request.url).origin}/download?key=${encodeURIComponent(key)}&exp=${exp}&sig=${signature}`;
+
+      return json(request, env, { ok: true, url: downloadUrl, expiresAt: new Date(exp * 1000).toISOString() });
+    }
+
+    if (url.pathname === "/delivery-link" && request.method === "POST") {
+      // Prefer the server-to-server delivery secret. If the secret is stale or
+      // missing, allow a valid authenticated admin bearer token as a safe fallback.
+      const deliverySecret = request.headers.get("X-Delivery-Secret");
+      if (deliverySecret !== env.DELIVERY_SECRET) {
+        const verifiedAdmin = await requireAdmin(request, env);
+        if (!verifiedAdmin) {
+          return json(request, env, { error: "Unauthorized." }, 401);
+        }
+      }
+
+      let body: { key?: string; expiresIn?: number };
+      try {
+        body = await request.json();
+      } catch {
+        return json(request, env, { error: "Invalid JSON body." }, 400);
+      }
+
+      const key = safeKey(body.key || "");
+      if (!key.startsWith("products/")) {
+        return json(request, env, { error: "Invalid product object key." }, 400);
+      }
+
+      const expiresIn = Math.min(
+        Math.max(Number(body.expiresIn) || DOWNLOAD_TTL_SECONDS, 60),
+        7 * 24 * 60 * 60,
+      );
+      const exp = Math.floor(Date.now() / 1000) + expiresIn;
+      const signature = await sign(`${key}|${exp}`, env.DOWNLOAD_SIGNING_SECRET);
+      const base = env.ALLOWED_ORIGIN?.startsWith("http")
+        ? new URL(request.url).origin
+        : new URL(request.url).origin;
+      const downloadUrl = `${base}/download?key=${encodeURIComponent(key)}&exp=${exp}&sig=${signature}`;
+
+      return json(request, env, { ok: true, url: downloadUrl, expiresAt: new Date(exp * 1000).toISOString() });
+    }
+
+    if (url.pathname === "/download" && request.method === "GET") {
+      const key = safeKey(url.searchParams.get("key") || "");
+      const exp = Number(url.searchParams.get("exp") || 0);
+      const signature = url.searchParams.get("sig") || "";
+
+      if (!key.startsWith("products/") || !(await verifyDownloadSignature(key, exp, signature, env))) {
+        return new Response("Invalid or expired download link.", { status: 403 });
+      }
+
+      const object = await env.PRODUCTS.get(key);
+      if (!object) return new Response("File not found.", { status: 404 });
+
+      const headers = new Headers();
+      object.writeHttpMetadata(headers);
+      headers.set("Content-Type", "application/pdf");
+      const disposition = url.searchParams.get("disposition") === "inline" ? "inline" : "attachment";
+      headers.set("Content-Disposition", `${disposition}; filename="${key.split("/").pop()?.replace(/"/g, "") || "document.pdf"}"`);
+      headers.set("Cache-Control", "private, no-store");
+      headers.set("X-Robots-Tag", "noindex, nofollow");
+
+      return new Response(object.body, { headers });
+    }
+
+    return json(request, env, { error: "Not found." }, 404);
+  },
+};
