@@ -1,79 +1,41 @@
-import { type HTMLAttributes, useCallback, useEffect, useState } from "react";
+import { type HTMLAttributes, useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { buttonVariants } from "@/components/ui/button";
 
 interface BannerProps extends HTMLAttributes<HTMLDivElement> {
-  variant?: "rainbow" | "normal";
-  changeLayout?: boolean;
   message?: string;
   height?: string;
 }
 
-export function Banner({
-  id, variant = "normal", changeLayout = true, message, height = "3rem", ...props
-}: BannerProps): React.ReactElement {
+export function Banner({ id, message, height = "2.25rem", ...props }: BannerProps): React.ReactElement {
   const [open, setOpen] = useState(true);
-  const globalKey = id ? `banner-${id}` : undefined;
+  const storageKey = id ? `banner-dismissed-${id}` : undefined;
 
   useEffect(() => {
-    if (globalKey) setOpen(localStorage.getItem(globalKey) !== "true");
-  }, [globalKey]);
+    if (storageKey) setOpen(localStorage.getItem(storageKey) !== "true");
+  }, [storageKey]);
 
-  const onClick = useCallback(() => {
-    setOpen(false);
-    if (globalKey) {
-      localStorage.setItem(globalKey, "true");
-      document.documentElement.classList.add(globalKey);
-    }
-  }, [globalKey]);
+  if (!open) return <div id={id} className="hidden" aria-hidden="true" />;
 
   return (
     <div
       id={id}
       {...props}
-      style={{ height: open ? height : "0" }}
-      className={cn(
-        "sticky top-0 z-40 flex flex-row items-center justify-center bg-secondary px-4 text-center text-sm font-medium transition-all duration-300",
-        variant === "rainbow" && "relative overflow-hidden bg-background",
-        !open && "hidden",
-        props.className,
-      )}
+      style={{ minHeight: height }}
+      className={cn("relative z-40 flex items-center justify-center border-b border-border bg-primary px-10 text-center text-xs font-semibold text-primary-foreground", props.className)}
     >
-      {changeLayout && open ? (
-        <style>{`:root:not(.${globalKey ?? "banner-never"}) { --banner-height: ${height}; }`}</style>
-      ) : null}
-      {id ? <style>{`.${globalKey} #${id} { display: none; }`}</style> : null}
-      {id ? (
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try { if (localStorage.getItem("${globalKey}") === "true") document.documentElement.classList.add("${globalKey}"); } catch {}`,
-          }}
-        />
-      ) : null}
-      {variant === "rainbow" ? <RainbowLayer /> : null}
-      <span className="relative z-10">{message || props.children}</span>
-      {id ? (
-        <button
-          type="button"
-          aria-label="Close banner"
-          onClick={onClick}
-          className={cn(buttonVariants({
-            variant: "ghost",
-            className: "absolute end-2 top-1/2 -translate-y-1/2 text-muted-foreground",
-            size: "icon",
-          }))}
-        >
-          <X className="h-4 w-4" />
-        </button>
-      ) : null}
+      <span>{message || props.children}</span>
+      <button
+        type="button"
+        aria-label="Dismiss announcement"
+        onClick={() => {
+          setOpen(false);
+          if (storageKey) localStorage.setItem(storageKey, "true");
+        }}
+        className="absolute right-2 inline-flex h-11 w-11 items-center justify-center rounded-lg hover:bg-primary-foreground/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-foreground"
+      >
+        <X className="h-4 w-4" aria-hidden="true" />
+      </button>
     </div>
   );
 }
-
-const RainbowLayer = () => (
-  <>
-    <div className="absolute inset-0 z-0 rainbow-banner-gradient-1" aria-hidden="true" />
-    <div className="absolute inset-0 z-0 rainbow-banner-gradient-2" aria-hidden="true" />
-  </>
-);
