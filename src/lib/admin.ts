@@ -87,6 +87,16 @@ export async function uploadFile(bucket: string, file: File, folder: string): Pr
   return { path };
 }
 
+export async function createR2DownloadLink(path: string, expiresIn = 48 * 60 * 60): Promise<string> {
+  const result = await r2Request("/admin-delivery-link", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key: path, expiresIn }),
+  });
+  if (typeof result.url !== "string") throw new Error("Cloudflare R2 did not return a download link.");
+  return result.url;
+}
+
 export async function removeFile(bucket: string, path: string | null | undefined) {
   if (!path) return;
 
