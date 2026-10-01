@@ -27,7 +27,7 @@ export function friendlyError(err: unknown, fallback = "Something went wrong. Pl
   const m = raw.toLowerCase();
   if (m.includes("duplicate key") && m.includes("slug")) return "That slug is already used by another product. Choose a different one.";
   if (m.includes("duplicate key")) return "This record already exists.";
-  if (m.includes("row-level security") || m.includes("permission")) return "You are not authorised to perform this action.";
+  if (m.includes("administrator access required") || m.includes("admin access required")) return "Your current account is not an administrator. Log in with the EduWallet admin account.";
   if (m.includes("exceeded the maximum allowed size") || m.includes("payload too large")) return "That file is too large for this upload.";
   if (m.includes("failed to fetch") || m.includes("network")) return "Network problem. Check your connection and try again.";
   if (m.includes("invalid login credentials")) return "Incorrect email or password.";
