@@ -60,7 +60,7 @@ const emptyState: FormState = {
 export function ProductForm({ product }: { product?: AdminProduct | null }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { data: categories } = useQuery(categoriesQuery());
+  const { data: categories, isLoading: categoriesLoading, isError: categoriesError } = useQuery(categoriesQuery());
 
   const [form, setForm] = useState<FormState>(() =>
     product
@@ -194,7 +194,6 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
       if (product) {
         const { error } = await supabase.from("products").update(payload).eq("id", product.id);
         if (error) throw error;
-        // Replaced files are no longer referenced — clear them from storage.
         if (cover && paths.cover_image && paths.cover_image !== next.cover_image) await removeFile(BUCKETS.cover, paths.cover_image);
         if (pdf && paths.pdf_file && paths.pdf_file !== next.pdf_file) await removeFile(BUCKETS.file, paths.pdf_file);
         if (preview && paths.preview_file && paths.preview_file !== next.preview_file) await removeFile(BUCKETS.preview, paths.preview_file);
@@ -210,7 +209,6 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
       toast.success(product ? "Product saved." : willPublish ? "Product published." : "Draft saved.");
       void navigate({ to: "/admin/products" });
     } catch (err) {
-      // Roll back files uploaded in this failed attempt.
       for (const u of uploaded) await removeFile(u.bucket, u.path);
       toast.error(friendlyError(err, "Could not save the product. Please try again."));
     } finally {
@@ -259,14 +257,47 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
             <Label htmlFor="category">Category</Label>
-            <Select value={form.category_id} onValueChange={(v) => set("category_id", v)}>
-              <SelectTrigger id="category" className="h-11" aria-invalid={!!fieldErrors.category_id} onBlur={() => validateField("category_id")}><SelectValue placeholder="Select category" /></SelectTrigger>
-              <SelectContent>
-                {(categories ?? []).map((c) => (
-                  <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                ))}
+            <Select
+              value={form.category_id}
+              onValueChange={(v) => {
+                set("category_id", v);
+                setFieldErrors((current) => {
+                  const next = { ...current };
+                  delete next.category_id;
+                  return next;
+                });
+              }}
+            >
+              <SelectTrigger
+                id="category"
+                className="h-11"
+                aria-invalid={!!fieldErrors.category_id}
+                aria-label="Select product category"
+                disabled={busy || categoriesLoading}
+                onBlur={() => validateField("category_id")}
+              >
+                <SelectValue placeholder={categoriesLoading ? "Loading categories…" : categoriesError ? "Unable to load categories" : "Select category"} />
+              </SelectTrigger>
+              <SelectContent position="popper" className="z-[100]">
+                {categoriesError ? (
+                  <div className="px-2 py-3 text-sm text-destructive">Unable to load categories.</div>
+                ) : categoriesLoading ? (
+                  <div className="px-2 py-3 text-sm text-muted-foreground">Loading categories…</div>
+                ) : categories && categories.length > 0 ? (
+                  categories.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="px-2 py-3 text-sm text-muted-foreground">No categories available.</div>
+                )}
               </SelectContent>
             </Select>
+            {fieldErrors.category_id && <p className="text-xs text-destructive">{fieldErrors.category_id}</p>}
+            {!categoriesLoading && !categoriesError && !categories?.length && (
+              <p className="text-xs text-destructive">No categories are available. Add a category before creating a product.</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="course">Course / programme</Label>
