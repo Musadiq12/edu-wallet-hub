@@ -141,8 +141,14 @@ export default {
     }
 
     if (url.pathname === "/migrate-legacy" && request.method === "POST") {
-      const adminId = await requireAdmin(request, env);
-      if (!adminId) return json(request, env, { error: "Administrator access required." }, 403);
+      const deliverySecret = request.headers.get("X-Delivery-Secret");
+      let adminId = "server-delivery";
+
+      if (deliverySecret !== env.DELIVERY_SECRET) {
+        const verifiedAdmin = await requireAdmin(request, env);
+        if (!verifiedAdmin) return json(request, env, { error: "Administrator access required." }, 403);
+        adminId = verifiedAdmin;
+      }
 
       let body: { path?: string };
       try {
