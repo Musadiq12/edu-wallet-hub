@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
 <rect width="1200" height="630" fill="#eef3f8"/>
 <rect x="70" y="70" width="1060" height="490" rx="30" fill="#ffffff" stroke="#d6dee8" stroke-width="3"/>
-<text x="120" y="250" font-family="Georgia,serif" font-size="76" font-weight="700" fill="#263857">Edu Wallet</text>
-<text x="120" y="330" font-family="Arial,sans-serif" font-size="34" fill="#4d6279">IGNOU Study Resources</text>
-<text x="120" y="405" font-family="Arial,sans-serif" font-size="26" fill="#587086">Notes • Guess Papers • Exam Guides • Free Resources</text>
+<text x="120" y="250" font-family="Georgia,serif" font-size="76" font-weight="700" fill="#263857">Beststudy</text>
+<text x="120" y="330" font-family="Arial,sans-serif" font-size="34" fill="#4d6279">Study Materials & Educational Updates</text>
+<text x="120" y="405" font-family="Arial,sans-serif" font-size="26" fill="#587086">Notes • Previous Papers • Important Questions • Updates</text>
 <rect x="920" y="185" width="120" height="220" rx="18" fill="#263857"/>
 <rect x="945" y="215" width="70" height="10" rx="5" fill="#70b7b8"/>
 <rect x="945" y="255" width="55" height="8" rx="4" fill="#d9e2ea"/>
