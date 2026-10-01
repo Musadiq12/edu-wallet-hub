@@ -5,15 +5,12 @@ import {
   ChevronDown,
   FileText,
   Gift,
-  HelpCircle,
   Layers3,
   Menu,
   Search,
-  Settings,
   Shield,
   Target,
   User,
-  Users,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
