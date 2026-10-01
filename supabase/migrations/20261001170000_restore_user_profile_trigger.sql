@@ -47,3 +47,5 @@ where not exists (
   select 1 from public.user_roles r where r.user_id = u.id and r.role = 'admin'
 )
 on conflict (user_id, role) do nothing;
+
+revoke execute on function public.handle_new_user() from public;
