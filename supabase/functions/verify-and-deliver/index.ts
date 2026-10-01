@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-type Action = "verify" | "resend";
+type Action = "verify" | "resend" | "whatsapp";
 
 type RequestBody = {
   orderId?: string;
@@ -59,7 +59,7 @@ export default {
     }
 
     const orderId = body.orderId?.trim();
-    const action: Action = body.action === "resend" ? "resend" : "verify";
+    const action: Action = body.action === "resend" ? "resend" : body.action === "whatsapp" ? "whatsapp" : "verify";
 
     if (!orderId) return json({ error: "Order ID is required." }, 400);
 
@@ -104,13 +104,82 @@ export default {
       return json({ error: "The purchased product does not have a paid PDF available for delivery." }, 400);
     }
 
-    const { data: signed, error: signedError } = await ctx.supabaseAdmin.storage
-      .from("product-files")
-      .createSignedUrl(product.pdf_file, 60 * 60 * 48);
+    if (action === "whatsapp") {
+      const r2WorkerUrl = Deno.env.get("R2_WORKER_URL")?.replace(/\\/$/, "");
+      const deliverySecret = Deno.env.get("R2_WORKER_DELIVERY_SECRET");
+      const authorization = req.headers.get("Authorization");
 
-    if (signedError || !signed?.signedUrl) {
-      console.error(signedError);
-      return json({ error: "Could not create a secure download link." }, 500);
+      if (!r2WorkerUrl || !deliverySecret || !authorization) {
+        return json({ error: "R2 delivery is not configured." }, 500);
+      }
+
+      let r2Path = product.pdf_file;
+
+      if (!r2Path.startsWith("products/")) {
+        const migrationResponse = await fetch(r2WorkerUrl + "/migrate-legacy", {
+          method: "POST",
+          headers: {
+            Authorization: authorization,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ path: r2Path }),
+        });
+
+        const migrationData = await migrationResponse.json().catch(() => ({}));
+        if (!migrationResponse.ok || typeof migrationData?.path !== "string" || !migrationData.path.startsWith("products/")) {
+          console.error("R2 legacy migration failed:", migrationData);
+          return json({ error: typeof migrationData?.error === "string" ? migrationData.error : "Could not move the product PDF to Cloudflare R2." }, 502);
+        }
+
+        r2Path = migrationData.path;
+
+        const { error: productUpdateError } = await ctx.supabaseAdmin
+          .from("products")
+          .update({ pdf_file: r2Path })
+          .eq("id", product.id);
+
+        if (productUpdateError) {
+          console.error(productUpdateError);
+          return json({ error: "The PDF was moved to R2, but the product record could not be updated." }, 500);
+        }
+      }
+
+      const linkResponse = await fetch(r2WorkerUrl + "/delivery-link", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Delivery-Secret": deliverySecret,
+        },
+        body: JSON.stringify({ key: r2Path, expiresIn: 48 * 60 * 60 }),
+      });
+
+      const linkData = await linkResponse.json().catch(() => ({}));
+      if (!linkResponse.ok || typeof linkData?.url !== "string") {
+        console.error("R2 delivery-link failed:", linkData);
+        return json({ error: typeof linkData?.error === "string" ? linkData.error : "Could not create the secure R2 download link." }, 502);
+      }
+
+      const deliveredAt = new Date().toISOString();
+      const { error: updateError } = await ctx.supabaseAdmin
+        .from("orders")
+        .update({
+          payment_status: "verified",
+          order_status: "delivered",
+          verified_at: order.verified_at ?? deliveredAt,
+          delivered_at: deliveredAt,
+        })
+        .eq("id", order.id);
+
+      if (updateError) {
+        console.error(updateError);
+        return json({ error: "The R2 link was created, but the order status could not be updated." }, 500);
+      }
+
+      return json({
+        ok: true,
+        downloadUrl: linkData.url,
+        message: "Payment verified and R2 delivery link created.",
+      });
     }
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
