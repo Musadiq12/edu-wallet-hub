@@ -53,7 +53,10 @@ function Shop() {
     if (activeCategory !== "all" && activeCategory !== "free-resources" && cat?.slug !== activeCategory)
       return false;
     if (search.exam) {
-      const haystack = [p.title, p.course_label, p.subject_label, p.keywords, p.description].filter(Boolean).join(" ").toLowerCase();\n      if (!haystack.includes(search.exam.toLowerCase())) return false;\n    }\n    return matchesSearch(p, term, cat?.name);
+      const haystack = [p.title, p.course_label, p.subject_label, p.keywords, p.description].filter(Boolean).join(" ").toLowerCase();
+      if (!haystack.includes(search.exam.toLowerCase())) return false;
+    }
+    return matchesSearch(p, term, cat?.name);
   });
 
   const setCategory = (slug: string) =>
