@@ -113,7 +113,7 @@ function ProductDetail() {
         <div className="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(320px,0.82fr)_minmax(0,1.18fr)] lg:gap-12">
           <div className="lg:sticky lg:top-24">
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-              <CoverImage path={p.cover_image} title={p.title} className="aspect-[3/4]" />
+              <CoverImage path={p.cover_image} title={p.title} />
             </div>
             <p className="mt-3 text-center text-xs text-muted-foreground">Digital PDF resource</p>
           </div>
