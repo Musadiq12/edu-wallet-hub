@@ -11,9 +11,10 @@ type Env = {
 const MAX_PDF_BYTES = 50 * 1024 * 1024;
 const DOWNLOAD_TTL_SECONDS = 48 * 60 * 60;
 
-function origin(request: Request, env: Env) {
-  const requestOrigin = request.headers.get("Origin");
-  return env.ALLOWED_ORIGIN || (requestOrigin ? "null" : "*");
+function origin(_request: Request, _env: Env) {
+  // These endpoints use bearer/secret authentication, not browser cookies.
+  // Allow cross-origin requests so the admin app can call the Worker reliably.
+  return "*";
 }
 
 function json(request: Request, env: Env, data: unknown, status = 200) {
