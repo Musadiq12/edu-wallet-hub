@@ -98,29 +98,62 @@ function AdminOrders() {
         throw new Error("A downloadable PDF is not available for this product.");
       }
 
-      let downloadUrl: string | null = null;
-      if (product.pdf_file.startsWith("products/")) {
-        const r2WorkerUrl = (import.meta.env.VITE_R2_WORKER_URL || "https://edu-wallet-r2.designeroutletmedia.workers.dev").replace(/\/$/, "");
-        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw sessionError;
-        const accessToken = sessionData.session?.access_token;
-        if (!accessToken) throw new Error("Your admin session has expired. Please sign in again.");
-        const linkResponse = await fetch(r2WorkerUrl + "/admin-delivery-link", {
-          method: "POST",
-          headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
-          body: JSON.stringify({ key: product.pdf_file, expiresIn: 48 * 60 * 60 }),
-        });
-        const linkData = await linkResponse.json().catch(() => ({}));
-        if (!linkResponse.ok || typeof linkData?.url !== "string") {
-          throw new Error(typeof linkData?.error === "string" ? linkData.error : "Could not create the secure R2 download link.");
+      const r2WorkerUrl = (import.meta.env.VITE_R2_WORKER_URL || "https://edu-wallet-r2.designeroutletmedia.workers.dev").replace(/\/$/, "");
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error("Your admin session has expired. Please sign in again.");
+
+      let r2Path = product.pdf_file;
+      if (!r2Path.startsWith("products/")) {
+        const { data: legacyFile, error: legacyError } = await supabase.storage
+          .from("product-files")
+          .createSignedUrl(product.pdf_file, 10 * 60);
+        if (legacyError || !legacyFile?.signedUrl) {
+          throw new Error("Could not read the existing product PDF for migration to Cloudflare R2.");
         }
-        downloadUrl = linkData.url as string;
-      } else {
-        downloadUrl = await supabase.storage.from("product-files").createSignedUrl(product.pdf_file, 48 * 60 * 60).then(({ data, error }) => {
-          if (error || !data?.signedUrl) throw new Error("Could not create the document download link.");
-          return data.signedUrl;
-        });
+
+        const sourceResponse = await fetch(legacyFile.signedUrl);
+        if (!sourceResponse.ok) {
+          throw new Error("Could not download the existing product PDF for migration to Cloudflare R2.");
+        }
+
+        const pdfBlob = await sourceResponse.blob();
+        const filename = product.pdf_file.split("/").pop() || "product.pdf";
+        const uploadResponse = await fetch(
+          r2WorkerUrl + "/upload?filename=" + encodeURIComponent(filename),
+          {
+            method: "PUT",
+            headers: {
+              Authorization: "Bearer " + accessToken,
+              "Content-Type": "application/pdf",
+            },
+            body: pdfBlob,
+          },
+        );
+        const uploadData = await uploadResponse.json().catch(() => ({}));
+        if (!uploadResponse.ok || typeof uploadData?.path !== "string" || !uploadData.path.startsWith("products/")) {
+          throw new Error(typeof uploadData?.error === "string" ? uploadData.error : "Could not migrate the product PDF to Cloudflare R2.");
+        }
+
+        r2Path = uploadData.path as string;
+        const { error: productUpdateError } = await supabase
+          .from("products")
+          .update({ pdf_file: r2Path })
+          .eq("id", o.product_id);
+        if (productUpdateError) throw productUpdateError;
       }
+
+      const linkResponse = await fetch(r2WorkerUrl + "/admin-delivery-link", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
+        body: JSON.stringify({ key: r2Path, expiresIn: 48 * 60 * 60 }),
+      });
+      const linkData = await linkResponse.json().catch(() => ({}));
+      if (!linkResponse.ok || typeof linkData?.url !== "string") {
+        throw new Error(typeof linkData?.error === "string" ? linkData.error : "Could not create the secure R2 download link.");
+      }
+      const downloadUrl = linkData.url as string;
 
       let phone = o.whatsapp.replace(/\D/g, "");
       if (phone.startsWith("0")) phone = phone.slice(1);
