@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { adminOrdersQuery, friendlyError, type AdminOrder } from "@/lib/admin";
+import { adminOrdersQuery, createR2DownloadLink, friendlyError, type AdminOrder } from "@/lib/admin";
 import { formatPrice, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/format";
 import { signedUrl } from "@/lib/catalog";
 import { supabase } from "@/integrations/supabase/client";
@@ -99,7 +99,10 @@ function AdminOrders() {
         throw new Error("A downloadable PDF is not available for this product.");
       }
 
-      const downloadUrl = await signedUrl("product-files", product.pdf_file, 48 * 60 * 60);
+      const downloadUrl =
+        product.pdf_file.startsWith("products/") && import.meta.env.VITE_R2_WORKER_URL
+          ? await createR2DownloadLink(product.pdf_file, 48 * 60 * 60)
+          : await signedUrl("product-files", product.pdf_file, 48 * 60 * 60);
       if (!downloadUrl) throw new Error("Could not create the document download link.");
 
       let phone = o.whatsapp.replace(/\D/g, "");
