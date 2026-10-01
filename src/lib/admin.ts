@@ -37,7 +37,44 @@ export function friendlyError(err: unknown, fallback = "Something went wrong. Pl
 
 export type UploadResult = { path: string };
 
+const R2_WORKER_URL = import.meta.env.VITE_R2_WORKER_URL?.replace(/\/$/, "");
+
+async function getAccessToken() {
+  const { data, error } = await supabase.auth.getSession();
+  if (error) throw error;
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Your admin session has expired. Please sign in again.");
+  return token;
+}
+
 export async function uploadFile(bucket: string, file: File, folder: string): Promise<UploadResult> {
+  if (bucket === BUCKETS.file && R2_WORKER_URL) {
+    if (file.type !== "application/pdf") throw new Error("Only PDF files are allowed.");
+    if (file.size > LIMITS.fileBytes) throw new Error("That PDF is larger than 50 MB.");
+
+    const token = await getAccessToken();
+    const response = await fetch(
+      `${R2_WORKER_URL}/upload?filename=${encodeURIComponent(file.name)}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/pdf",
+        },
+        body: file,
+      },
+    );
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(typeof data?.error === "string" ? data.error : "R2 upload failed.");
+    }
+    if (typeof data?.path !== "string" || !data.path.startsWith("products/")) {
+      throw new Error("R2 upload did not return a valid product file path.");
+    }
+    return { path: data.path };
+  }
+
   const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
   const path = `${folder}/${Date.now()}-${safe}`;
   const { error } = await supabase.storage.from(bucket).upload(path, file, {
@@ -51,11 +88,22 @@ export async function uploadFile(bucket: string, file: File, folder: string): Pr
 
 export async function removeFile(bucket: string, path: string | null | undefined) {
   if (!path) return;
+
+  if (bucket === BUCKETS.file && R2_WORKER_URL && path.startsWith("products/")) {
+    const token = await getAccessToken();
+    const response = await fetch(
+      `${R2_WORKER_URL}/delete?key=${encodeURIComponent(path)}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+    if (!response.ok) return;
+    return;
+  }
+
   await supabase.storage.from(bucket).remove([path]);
 }
-
-/* ---------------- queries ---------------- */
-
 export const ADMIN_PRODUCT_FIELDS =
   "id,title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,is_archived,created_at";
 
