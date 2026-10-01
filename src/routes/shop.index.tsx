@@ -7,7 +7,7 @@ import { EmptyState, LoadingGrid } from "@/components/EmptyState";
 import { categoriesQuery, matchesSearch, productsQuery } from "@/lib/catalog";
 import { siteConfig } from "@/config/site";
 
-type ShopSearch = { q?: string | undefined; category?: string | undefined };
+type ShopSearch = { q?: string | undefined; category?: string | undefined; exam?: string | undefined };
 
 export const Route = createFileRoute("/shop/")({
   validateSearch: (search: Record<string, unknown>): ShopSearch => ({
@@ -50,13 +50,13 @@ function Shop() {
     if (activeCategory === "free-resources" && !p.is_free) return false;
     if (activeCategory !== "all" && activeCategory !== "free-resources" && cat?.slug !== activeCategory)
       return false;
-    return matchesSearch(p, term, cat?.name);
+    if (search.exam) {\n      const haystack = [p.title, p.course_label, p.subject_label, p.keywords, p.description].filter(Boolean).join(" ").toLowerCase();\n      if (!haystack.includes(search.exam.toLowerCase())) return false;\n    }\n    return matchesSearch(p, term, cat?.name);
   });
 
   const setCategory = (slug: string) =>
     navigate({
       to: "/shop",
-      search: { q: term || undefined, category: slug === "all" ? undefined : slug },
+      search: { q: term || undefined, category: slug === "all" ? undefined : slug, exam: search.exam },
     });
 
   const tabs = [
