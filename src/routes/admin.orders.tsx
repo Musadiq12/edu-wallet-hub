@@ -106,37 +106,17 @@ function AdminOrders() {
 
       let r2Path = product.pdf_file;
       if (!r2Path.startsWith("products/")) {
-        const { data: legacyFile, error: legacyError } = await supabase.storage
-          .from("product-files")
-          .createSignedUrl(product.pdf_file, 10 * 60);
-        if (legacyError || !legacyFile?.signedUrl) {
-          throw new Error("Could not read the existing product PDF for migration to Cloudflare R2.");
+        const migrationResponse = await fetch(r2WorkerUrl + "/migrate-legacy", {
+          method: "POST",
+          headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
+          body: JSON.stringify({ path: product.pdf_file }),
+        });
+        const migrationData = await migrationResponse.json().catch(() => ({}));
+        if (!migrationResponse.ok || typeof migrationData?.path !== "string" || !migrationData.path.startsWith("products/")) {
+          throw new Error(typeof migrationData?.error === "string" ? migrationData.error : "Could not migrate the product PDF to Cloudflare R2.");
         }
 
-        const sourceResponse = await fetch(legacyFile.signedUrl);
-        if (!sourceResponse.ok) {
-          throw new Error("Could not download the existing product PDF for migration to Cloudflare R2.");
-        }
-
-        const pdfBlob = await sourceResponse.blob();
-        const filename = product.pdf_file.split("/").pop() || "product.pdf";
-        const uploadResponse = await fetch(
-          r2WorkerUrl + "/upload?filename=" + encodeURIComponent(filename),
-          {
-            method: "PUT",
-            headers: {
-              Authorization: "Bearer " + accessToken,
-              "Content-Type": "application/pdf",
-            },
-            body: pdfBlob,
-          },
-        );
-        const uploadData = await uploadResponse.json().catch(() => ({}));
-        if (!uploadResponse.ok || typeof uploadData?.path !== "string" || !uploadData.path.startsWith("products/")) {
-          throw new Error(typeof uploadData?.error === "string" ? uploadData.error : "Could not migrate the product PDF to Cloudflare R2.");
-        }
-
-        r2Path = uploadData.path as string;
+        r2Path = migrationData.path as string;
         const { error: productUpdateError } = await supabase
           .from("products")
           .update({ pdf_file: r2Path })
