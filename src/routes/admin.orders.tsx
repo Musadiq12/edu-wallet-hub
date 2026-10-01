@@ -10,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminOrdersQuery, friendlyError, type AdminOrder } from "@/lib/admin";
 import { formatPrice, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/format";
-import { signedUrl } from "@/lib/catalog";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/orders")({ component: AdminOrders });
@@ -99,8 +98,33 @@ function AdminOrders() {
         throw new Error("A downloadable PDF is not available for this product.");
       }
 
-      const downloadUrl = await signedUrl("product-files", product.pdf_file, 48 * 60 * 60);
-      if (!downloadUrl) throw new Error("Could not create the document download link.");
+      const r2WorkerUrl = import.meta.env.VITE_R2_WORKER_URL?.replace(/\/$/, "");
+      if (!r2WorkerUrl) {
+        throw new Error("R2 delivery is not configured on the website.");
+      }
+
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const accessToken = sessionData.session?.access_token;
+      if (!accessToken) throw new Error("Your admin session has expired. Please sign in again.");
+
+      const linkResponse = await fetch(r2WorkerUrl + "/admin-delivery-link", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + accessToken,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ key: product.pdf_file, expiresIn: 48 * 60 * 60 }),
+      });
+      const linkData = await linkResponse.json().catch(() => ({}));
+      if (!linkResponse.ok || typeof linkData?.url !== "string") {
+        throw new Error(
+          typeof linkData?.error === "string"
+            ? linkData.error
+            : "Could not create the secure R2 download link.",
+        );
+      }
+      const downloadUrl = linkData.url as string;
 
       let phone = o.whatsapp.replace(/\D/g, "");
       if (phone.startsWith("0")) phone = phone.slice(1);
