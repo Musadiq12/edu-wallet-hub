@@ -14,6 +14,8 @@ export const Route = createFileRoute("/shop/")({
     q: typeof search['q'] === "string" && search['q'] ? search['q'] : undefined,
     category:
       typeof search['category'] === "string" && search['category'] ? search['category'] : undefined,
+    exam:
+      typeof search['exam'] === "string" && search['exam'] ? search['exam'] : undefined,
   }),
   head: () => ({
     meta: [
