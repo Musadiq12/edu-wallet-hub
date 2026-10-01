@@ -120,12 +120,7 @@ function RootComponent() {
     <div className={isAdminRoute ? "min-h-screen" : isAuthPage ? "min-h-screen" : "flex min-h-screen flex-col"}>
       {!isAuthPage && !isAdminRoute && <SiteHeader />}
       {!isAuthPage && !isAdminRoute && (
-        <Banner
-          id="site-announcement"
-          variant="rainbow"
-          height="2.5rem"
-          message="🎉 New study resources and exam-focused materials are being added regularly."
-        />
+        <Banner id="site-announcement" message="New 2026 exam resources added every week" />
       )}
       <main className={isAdminRoute || isAuthPage ? "min-h-screen" : "flex-1"}><Outlet /></main>
       {!isAuthPage && !isAdminRoute && <SiteFooter />}

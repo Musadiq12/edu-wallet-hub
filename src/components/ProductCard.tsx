@@ -44,7 +44,7 @@ export function ProductCard({ product }: { product: Product }) {
         </h3>
 
         <p className="mt-1 text-xs text-muted-foreground">
-          {[product.course_label, product.subject_label].filter(Boolean).join(" · ") || "IGNOU"}
+          {[product.course_label, product.subject_label].filter(Boolean).join(" · ") || "Exam resource"}
         </p>
 
         {product.description && (
