@@ -62,7 +62,9 @@ async function requireAdmin(request: Request, env: Env) {
 
   const userResponse = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
     headers: {
-      apikey: env.SUPABASE_PUBLISHABLE_KEY,
+      // Use the server key for this server-to-server admin check.
+      // The user's bearer token still identifies the caller.
+      apikey: env.SUPABASE_SERVER_KEY,
       Authorization: `Bearer ${token}`,
     },
   });
