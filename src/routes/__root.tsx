@@ -109,6 +109,7 @@ function RootComponent() {
   const initialSettings = Route.useLoaderData();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isAuthPage = pathname === "/login";
+  const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   const key = settingsQuery().queryKey;
   if (initialSettings && !queryClient.getQueryData(key)) queryClient.setQueryData(key, initialSettings, { updatedAt: Date.now() });
 
@@ -116,13 +117,20 @@ function RootComponent() {
     <RecoveryRedirectHandler />
     <BrandTitleSync />
     <Analytics />
-    <div className={isAuthPage ? "min-h-screen" : "flex min-h-screen flex-col"}>
-      {!isAuthPage && <SiteHeader />}
-      {!isAuthPage && <Banner id="site-announcement" variant="rainbow" height="2.5rem" message="🎉 New study resources and exam-focused materials are being added regularly." />}
-      <main className={isAuthPage ? "min-h-screen" : "flex-1"}><Outlet /></main>
-      {!isAuthPage && <SiteFooter />}
+    <div className={isAdminRoute ? "min-h-screen" : isAuthPage ? "min-h-screen" : "flex min-h-screen flex-col"}>
+      {!isAuthPage && !isAdminRoute && <SiteHeader />}
+      {!isAuthPage && !isAdminRoute && (
+        <Banner
+          id="site-announcement"
+          variant="rainbow"
+          height="2.5rem"
+          message="🎉 New study resources and exam-focused materials are being added regularly."
+        />
+      )}
+      <main className={isAdminRoute || isAuthPage ? "min-h-screen" : "flex-1"}><Outlet /></main>
+      {!isAuthPage && !isAdminRoute && <SiteFooter />}
     </div>
     <Toaster position="top-center" />
-    <CookieConsent />
+    {!isAdminRoute && <CookieConsent />
   </QueryClientProvider>;
 }
