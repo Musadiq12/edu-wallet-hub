@@ -96,21 +96,27 @@ function AdminOrders() {
         throw new Error(typeof data?.error === "string" ? data.error : "Could not create the secure R2 download link.");
       }
 
-      let phone = o.whatsapp.replace(/\\D/g, "");
+      let phone = o.whatsapp.replace(/\D/g, "");
       if (phone.startsWith("0")) phone = phone.slice(1);
       if (phone.length === 10) phone = `91${phone}`;
 
       const message = [
         `Hello ${o.full_name},`,
         "",
-        `Your payment for *${o.product_title}* has been verified successfully.`,
+        "🎉 *Your EduWallet purchase is confirmed!*",
         "",
-        "Thank you for your purchase.",
+        `Your payment for *${o.product_title}* has been successfully verified.`,
         "",
-        `Download your document here:\\n${data.downloadUrl}`,
+        "📚 *Your document is ready:*",
+        data.downloadUrl,
         "",
-        "Thank you for choosing EduWallet.",
-      ].join("\\n");
+        "🔐 This secure download link is valid for *48 hours*.",
+        "",
+        "If you have any issue accessing the document, please contact support and we’ll assist you.",
+        "",
+        "Thank you for choosing *EduWallet*.",
+        "We appreciate your purchase! ✨",
+      ].join("\n");
 
       await qc.invalidateQueries({ queryKey: ["admin", "orders"] });
       window.open(
