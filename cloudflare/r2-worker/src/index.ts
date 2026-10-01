@@ -263,7 +263,7 @@ export default {
       if (!productId) return json(request, env, { error: "Product not found." }, 404);
 
       const orderResponse = await fetch(
-        `${env.SUPABASE_URL}/rest/v1/orders?user_id=eq.${encodeURIComponent(userId)}&product_id=eq.${encodeURIComponent(productId)}&payment_status=eq.verified&order_status=in.(payment_verified,processing,delivered)&select=id&limit=1`,
+        `${env.SUPABASE_URL}/rest/v1/orders?user_id=eq.${encodeURIComponent(userId)}&product_id=eq.${encodeURIComponent(productId)}&select=id,payment_status,order_status&limit=20`,
         {
           headers: {
             apikey: env.SUPABASE_SERVER_KEY,
@@ -277,8 +277,18 @@ export default {
         return json(request, env, { error: "Could not verify your purchase." }, 502);
       }
 
-      const orders = await orderResponse.json() as Array<{ id: string }>;
-      if (!orders.length) {
+      const orders = await orderResponse.json() as Array<{
+        id: string;
+        payment_status?: string | null;
+        order_status?: string | null;
+      }>;
+      const hasVerifiedOrder = orders.some((order) =>
+        String(order.payment_status || "").toLowerCase() === "verified" ||
+        ["payment_verified", "verified", "processing", "delivered", "completed"].includes(
+          String(order.order_status || "").toLowerCase(),
+        )
+      );
+      if (!hasVerifiedOrder) {
         return json(request, env, { error: "You do not have access to this document." }, 403);
       }
 
