@@ -105,7 +105,7 @@ export default {
     }
 
     if (action === "whatsapp") {
-      const r2WorkerUrl = Deno.env.get("R2_WORKER_URL")?.replace(/\\/$/, "");
+      const r2WorkerUrl = Deno.env.get("R2_WORKER_URL")?.replace(/\/$/, "");
       const deliverySecret = Deno.env.get("R2_WORKER_DELIVERY_SECRET");
       const authorization = req.headers.get("Authorization");
 
