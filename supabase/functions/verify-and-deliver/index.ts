@@ -120,6 +120,7 @@ export default {
           method: "POST",
           headers: {
             Authorization: authorization,
+            "X-Delivery-Secret": deliverySecret,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ path: r2Path }),
