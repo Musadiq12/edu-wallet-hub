@@ -1,20 +1,15 @@
-/**
- * Static, non-editable copy for Edu Wallet.
- *
- * Editable branding/contact/payment values (website name, tagline, emails,
- * WhatsApp, social links, UPI, delivery estimate, website URL) live ONLY in the
- * `site_settings` database table and are managed in Admin → Settings.
- * Read them with `useSiteSettings()` from `@/lib/settings`.
- * `fallbackBrand` is used solely if the settings cannot be loaded at all.
- */
+/** Static copy for Beststudy. Editable brand/contact values live in the site_settings table. */
 export const siteConfig = {
-  fallbackBrand: { brandName: "Edu Wallet", tagline: "Study Smart. Score Better." },
+  fallbackBrand: {
+    brandName: "Beststudy",
+    tagline: "Study Materials, Notes, Previous Papers & Important Questions",
+  },
   shortDescription:
-    "Exam-focused notes, guess papers, solved papers, assignment guidance and study resources for competitive, board and entrance exams.",
+    "Study materials, notes, previous papers, important questions, syllabus updates and educational guidance for students from 8th class to university, with a focus on Jammu & Kashmir.",
   copyrightYear: 2026,
   disclaimer:
-    "EduWallet is an independent educational resource platform. It is not affiliated with or endorsed by any examination authority, university, board or institution.",
+    "Beststudy is an independent educational resource platform and is not affiliated with or endorsed by any university, examination authority, board or government department.",
   assignmentDisclaimer:
-    "We provide original educational reference and guidance material. Students are responsible for understanding and submitting their own academic work in accordance with their institution's rules.",
+    "We provide educational reference and guidance material. Students are responsible for understanding and completing their own academic work in accordance with applicable rules.",
   analyticsMeasurementId: "",
 } as const;
