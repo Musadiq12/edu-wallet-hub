@@ -37,20 +37,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: siteConfig.shortDescription },
       { property: "og:site_name", content: loaderData?.brandName ?? defaultSettings.brandName },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "https://edu-wallet-hub.lovable.app/og-image.svg" },
-      { property: "og:url", content: "https://edu-wallet-hub.lovable.app/" },
+      { property: "og:image", content: "https://beststudy.in/og-image.svg" },
+      { property: "og:url", content: "https://beststudy.in/" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: loaderData?.brandName ?? defaultSettings.brandName },
       { name: "twitter:description", content: siteConfig.shortDescription },
-      { name: "twitter:image", content: "https://edu-wallet-hub.lovable.app/og-image.svg" },
+      { name: "twitter:image", content: "https://beststudy.in/og-image.svg" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" },
-      { rel: "icon", href: "/edu-wallet-icon.svg", type: "image/svg+xml" },
-      { rel: "canonical", href: "https://edu-wallet-hub.lovable.app/" },
+      { rel: "icon", href: "/jk-study-materials-logo.png", type: "image/svg+xml" },
+      { rel: "canonical", href: "https://beststudy.in/" },
     ],
   }),
   shellComponent: RootShell, component: RootComponent, notFoundComponent: NotFoundComponent, errorComponent: ErrorComponent,
@@ -124,7 +124,7 @@ function RootComponent() {
           id="site-announcement"
           variant="rainbow"
           height="2.5rem"
-          message="🎉 New study resources and exam-focused materials are being added regularly."
+          message="📚 New study materials, previous papers and educational updates are added regularly."
         />
       )}
       <main className={isAdminRoute || isAuthPage ? "min-h-screen" : "flex-1"}><Outlet /></main>
