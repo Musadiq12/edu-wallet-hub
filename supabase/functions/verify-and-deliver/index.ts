@@ -104,12 +104,44 @@ export default {
       return json({ error: "The purchased product does not have a paid PDF available for delivery." }, 400);
     }
 
-    const { data: signed, error: signedError } = await ctx.supabaseAdmin.storage
-      .from("product-files")
-      .createSignedUrl(product.pdf_file, 60 * 60 * 48);
+    let downloadUrl: string | null = null;
 
-    if (signedError || !signed?.signedUrl) {
-      console.error(signedError);
+    const r2WorkerUrl = Deno.env.get("R2_WORKER_URL")?.replace(/\\/$/, "");
+    const r2DeliverySecret = Deno.env.get("R2_WORKER_DELIVERY_SECRET");
+
+    if (r2WorkerUrl && r2DeliverySecret && product.pdf_file.startsWith("products/")) {
+      const r2Response = await fetch(`${r2WorkerUrl}/delivery-link`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Delivery-Secret": r2DeliverySecret,
+        },
+        body: JSON.stringify({
+          key: product.pdf_file,
+          expiresIn: 48 * 60 * 60,
+        }),
+      });
+
+      if (r2Response.ok) {
+        const data = await r2Response.json() as { url?: string };
+        downloadUrl = data.url ?? null;
+      } else {
+        console.error("R2 delivery-link error:", await r2Response.text());
+      }
+    } else {
+      const { data: signed, error: signedError } = await ctx.supabaseAdmin.storage
+        .from("product-files")
+        .createSignedUrl(product.pdf_file, 60 * 60 * 48);
+
+      if (signedError || !signed?.signedUrl) {
+        console.error(signedError);
+        return json({ error: "Could not create a secure download link." }, 500);
+      }
+
+      downloadUrl = signed.signedUrl;
+    }
+
+    if (!downloadUrl) {
       return json({ error: "Could not create a secure download link." }, 500);
     }
 
@@ -126,7 +158,6 @@ export default {
     const customerName = escapeHtml(order.full_name || "Customer");
     const productTitle = escapeHtml(product.title || order.product_title);
     const amount = formatInr(Number(order.amount));
-    const downloadUrl = signed.signedUrl;
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",

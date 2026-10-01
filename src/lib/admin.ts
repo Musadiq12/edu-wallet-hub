@@ -37,7 +37,45 @@ export function friendlyError(err: unknown, fallback = "Something went wrong. Pl
 
 export type UploadResult = { path: string };
 
+function r2WorkerUrl() {
+  return String(import.meta.env.VITE_R2_WORKER_URL || "").replace(/\\/$/, "");
+}
+
+async function r2Request(path: string, init: RequestInit = {}) {
+  const base = r2WorkerUrl();
+  if (!base) throw new Error("Cloudflare R2 is not configured.");
+
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) throw new Error("Your session has expired. Please sign in again.");
+
+  const headers = new Headers(init.headers);
+  headers.set("Authorization", `Bearer ${token}`);
+
+  const response = await fetch(`${base}${path}`, { ...init, headers });
+  if (!response.ok) {
+    let message = "Cloudflare R2 request failed.";
+    try {
+      const body = await response.json() as { error?: string };
+      if (body.error) message = body.error;
+    } catch {}
+    throw new Error(message);
+  }
+  return response.json() as Promise<Record<string, unknown>>;
+}
+
 export async function uploadFile(bucket: string, file: File, folder: string): Promise<UploadResult> {
+  // Paid product PDFs are stored in Cloudflare R2 when the Worker is configured.
+  if (bucket === BUCKETS.file && r2WorkerUrl()) {
+    const result = await r2Request(`/upload?filename=${encodeURIComponent(file.name)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/pdf" },
+      body: file,
+    });
+    if (typeof result.path !== "string") throw new Error("Cloudflare R2 did not return an object path.");
+    return { path: result.path };
+  }
+
   const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
   const path = `${folder}/${Date.now()}-${safe}`;
   const { error } = await supabase.storage.from(bucket).upload(path, file, {
@@ -49,8 +87,26 @@ export async function uploadFile(bucket: string, file: File, folder: string): Pr
   return { path };
 }
 
+export async function createR2DownloadLink(path: string, expiresIn = 48 * 60 * 60): Promise<string> {
+  const result = await r2Request("/admin-delivery-link", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ key: path, expiresIn }),
+  });
+  if (typeof result.url !== "string") throw new Error("Cloudflare R2 did not return a download link.");
+  return result.url;
+}
+
 export async function removeFile(bucket: string, path: string | null | undefined) {
   if (!path) return;
+
+  // New R2 product keys are prefixed with products/. Old Supabase paths
+  // remain removable from the legacy product-files bucket during migration.
+  if (bucket === BUCKETS.file && path.startsWith("products/") && r2WorkerUrl()) {
+    await r2Request(`/delete?key=${encodeURIComponent(path)}`, { method: "DELETE" });
+    return;
+  }
+
   await supabase.storage.from(bucket).remove([path]);
 }
 
