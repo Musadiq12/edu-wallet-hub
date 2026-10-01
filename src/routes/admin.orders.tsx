@@ -87,82 +87,30 @@ function AdminOrders() {
       if (!o.whatsapp) throw new Error("This order has no WhatsApp number.");
       if (!o.product_id) throw new Error("This order is missing its product.");
 
-      const { data: product, error } = await supabase
-        .from("products")
-        .select("title,pdf_file,is_free")
-        .eq("id", o.product_id)
-        .maybeSingle();
+      const { data, error } = await supabase.functions.invoke("verify-and-deliver", {
+        body: { orderId: o.id, action: "whatsapp" },
+      });
 
       if (error) throw error;
-      if (!product?.pdf_file || product.is_free) {
-        throw new Error("A downloadable PDF is not available for this product.");
+      if (!data?.downloadUrl || typeof data.downloadUrl !== "string") {
+        throw new Error(typeof data?.error === "string" ? data.error : "Could not create the secure R2 download link.");
       }
 
-      const r2WorkerUrl = (import.meta.env.VITE_R2_WORKER_URL || "https://edu-wallet-r2.designeroutletmedia.workers.dev").replace(/\/$/, "");
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-      const accessToken = sessionData.session?.access_token;
-      if (!accessToken) throw new Error("Your admin session has expired. Please sign in again.");
-
-      let r2Path = product.pdf_file;
-      if (!r2Path.startsWith("products/")) {
-        const migrationResponse = await fetch(r2WorkerUrl + "/migrate-legacy", {
-          method: "POST",
-          headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
-          body: JSON.stringify({ path: product.pdf_file }),
-        });
-        const migrationData = await migrationResponse.json().catch(() => ({}));
-        if (!migrationResponse.ok || typeof migrationData?.path !== "string" || !migrationData.path.startsWith("products/")) {
-          throw new Error(typeof migrationData?.error === "string" ? migrationData.error : "Could not migrate the product PDF to Cloudflare R2.");
-        }
-
-        r2Path = migrationData.path as string;
-        const { error: productUpdateError } = await supabase
-          .from("products")
-          .update({ pdf_file: r2Path })
-          .eq("id", o.product_id);
-        if (productUpdateError) throw productUpdateError;
-      }
-
-      const linkResponse = await fetch(r2WorkerUrl + "/admin-delivery-link", {
-        method: "POST",
-        headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
-        body: JSON.stringify({ key: r2Path, expiresIn: 48 * 60 * 60 }),
-      });
-      const linkData = await linkResponse.json().catch(() => ({}));
-      if (!linkResponse.ok || typeof linkData?.url !== "string") {
-        throw new Error(typeof linkData?.error === "string" ? linkData.error : "Could not create the secure R2 download link.");
-      }
-      const downloadUrl = linkData.url as string;
-
-      let phone = o.whatsapp.replace(/\D/g, "");
+      let phone = o.whatsapp.replace(/\\D/g, "");
       if (phone.startsWith("0")) phone = phone.slice(1);
       if (phone.length === 10) phone = `91${phone}`;
 
       const message = [
         `Hello ${o.full_name},`,
         "",
-        `Your payment for *${product.title}* has been verified successfully.`,
+        `Your payment for *${o.product_title}* has been verified successfully.`,
         "",
         "Thank you for your purchase.",
         "",
-        `Download your document here:\n${downloadUrl}`,
+        `Download your document here:\\n${data.downloadUrl}`,
         "",
         "Thank you for choosing EduWallet.",
-      ].join("\n");
-
-      const { error: updateError } = await supabase
-        .from("orders")
-        .update({
-          payment_status: "verified",
-          order_status: "delivered",
-          verified_at: new Date().toISOString(),
-          delivered_at: new Date().toISOString(),
-        })
-        .eq("id", o.id)
-        .eq("payment_status", "submitted");
-
-      if (updateError) throw updateError;
+      ].join("\\n");
 
       await qc.invalidateQueries({ queryKey: ["admin", "orders"] });
       window.open(
@@ -170,7 +118,7 @@ function AdminOrders() {
         "_blank",
         "noopener",
       );
-      toast.success("Payment verified, order delivered, and WhatsApp delivery prepared.");
+      toast.success("Payment verified, R2 delivery link created, and WhatsApp delivery prepared.");
     } catch (err) {
       toast.error(
         friendlyError(err, "Could not verify the payment and prepare WhatsApp delivery."),
