@@ -25,7 +25,7 @@ export function CoverImage({
         alt={`Cover of ${title}`}
         loading="eager"
         decoding="async"
-        className={`block w-full object-cover transition-transform duration-300 ${className}`}
+        className={`block w-full object-contain bg-surface transition-transform duration-300 ${className}`}
       />
     );
   }
