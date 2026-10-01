@@ -191,16 +191,16 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         preview_file: next.preview_file,
       };
 
+      const { error: saveError } = await (supabase as any).rpc("admin_upsert_product", {
+        _product_id: product?.id ?? null,
+        _payload: payload,
+      });
+      if (saveError) throw saveError;
+
       if (product) {
-        const { error } = await supabase.from("products").update(payload).eq("id", product.id);
-        if (error) throw error;
         if (cover && paths.cover_image && paths.cover_image !== next.cover_image) await removeFile(BUCKETS.cover, paths.cover_image);
         if (pdf && paths.pdf_file && paths.pdf_file !== next.pdf_file) await removeFile(BUCKETS.file, paths.pdf_file);
         if (preview && paths.preview_file && paths.preview_file !== next.preview_file) await removeFile(BUCKETS.preview, paths.preview_file);
-      } else {
-        const { data: auth } = await supabase.auth.getUser();
-        const { error } = await supabase.from("products").insert({ ...payload, created_by: auth.user?.id ?? null });
-        if (error) throw error;
       }
 
       await qc.invalidateQueries({ queryKey: ["admin"] });
