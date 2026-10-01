@@ -63,10 +63,6 @@ function LibraryPage() {
   const openDocument = async (item: LibraryItem) => {
     setOpening(item.product_id);
 
-    // Open the tab immediately so mobile/desktop popup blockers do not
-    // reject the document after the asynchronous secure-link request.
-    const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
-
     try {
       let url: string | null = null;
 
@@ -99,27 +95,22 @@ function LibraryPage() {
           throw new Error(
             typeof data?.error === "string"
               ? data.error
-              : "Could not create a secure document link.",
+              : `Secure document request failed (HTTP ${response.status}).`,
           );
         }
 
         url = data.url;
       } else {
-        // Legacy product PDFs still stored in Supabase Storage.
         url = await signedUrl("product-files", item.pdf_file, 30 * 60);
       }
 
       if (!url) throw new Error("Could not create a secure document link.");
 
-      if (popup && !popup.closed) {
-        popup.location.href = url;
-      } else {
-        window.location.assign(url);
-      }
+      window.location.assign(url);
     } catch (error) {
-      if (popup && !popup.closed) popup.close();
       console.error("[Library] Document open failed:", error);
-      toast.error("We couldn't open this document. Please try again.");
+      const message = error instanceof Error ? error.message : "Unknown error";
+      toast.error(message);
     } finally {
       setOpening(null);
     }
