@@ -98,33 +98,29 @@ function AdminOrders() {
         throw new Error("A downloadable PDF is not available for this product.");
       }
 
-      const r2WorkerUrl = import.meta.env.VITE_R2_WORKER_URL?.replace(/\/$/, "");
-      if (!r2WorkerUrl) {
-        throw new Error("R2 delivery is not configured on the website.");
+      let downloadUrl: string | null = null;
+      if (product.pdf_file.startsWith("products/")) {
+        const r2WorkerUrl = (import.meta.env.VITE_R2_WORKER_URL || "https://edu-wallet-r2.designeroutletmedia.workers.dev").replace(/\/$/, "");
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+        const accessToken = sessionData.session?.access_token;
+        if (!accessToken) throw new Error("Your admin session has expired. Please sign in again.");
+        const linkResponse = await fetch(r2WorkerUrl + "/admin-delivery-link", {
+          method: "POST",
+          headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
+          body: JSON.stringify({ key: product.pdf_file, expiresIn: 48 * 60 * 60 }),
+        });
+        const linkData = await linkResponse.json().catch(() => ({}));
+        if (!linkResponse.ok || typeof linkData?.url !== "string") {
+          throw new Error(typeof linkData?.error === "string" ? linkData.error : "Could not create the secure R2 download link.");
+        }
+        downloadUrl = linkData.url as string;
+      } else {
+        downloadUrl = await supabase.storage.from("product-files").createSignedUrl(product.pdf_file, 48 * 60 * 60).then(({ data, error }) => {
+          if (error || !data?.signedUrl) throw new Error("Could not create the document download link.");
+          return data.signedUrl;
+        });
       }
-
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-      if (sessionError) throw sessionError;
-      const accessToken = sessionData.session?.access_token;
-      if (!accessToken) throw new Error("Your admin session has expired. Please sign in again.");
-
-      const linkResponse = await fetch(r2WorkerUrl + "/admin-delivery-link", {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer " + accessToken,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ key: product.pdf_file, expiresIn: 48 * 60 * 60 }),
-      });
-      const linkData = await linkResponse.json().catch(() => ({}));
-      if (!linkResponse.ok || typeof linkData?.url !== "string") {
-        throw new Error(
-          typeof linkData?.error === "string"
-            ? linkData.error
-            : "Could not create the secure R2 download link.",
-        );
-      }
-      const downloadUrl = linkData.url as string;
 
       let phone = o.whatsapp.replace(/\D/g, "");
       if (phone.startsWith("0")) phone = phone.slice(1);
