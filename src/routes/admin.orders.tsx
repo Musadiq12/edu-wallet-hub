@@ -103,19 +103,19 @@ function AdminOrders() {
       const message = [
         `Hello ${o.full_name},`,
         "",
-        "🎉 *Your EduWallet purchase is confirmed!*",
+        "*Your EduWallet purchase is confirmed!*",
         "",
         `Your payment for *${o.product_title}* has been successfully verified.`,
         "",
-        "📚 *Your document is ready:*",
+        "*Your document is ready:*",
         data.downloadUrl,
         "",
-        "🔐 This secure download link is valid for *48 hours*.",
+        "This secure download link is valid for *48 hours*.",
         "",
         "If you have any issue accessing the document, please contact support and we’ll assist you.",
         "",
         "Thank you for choosing *EduWallet*.",
-        "We appreciate your purchase! ✨",
+        "We appreciate your purchase.",
       ].join("\n");
 
       await qc.invalidateQueries({ queryKey: ["admin", "orders"] });
