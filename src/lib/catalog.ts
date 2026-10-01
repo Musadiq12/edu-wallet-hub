@@ -102,17 +102,26 @@ export const adminProductsQuery = () =>
     },
   });
 
-/** Private buckets: resolve a temporary readable URL for a stored file. */
-export async function signedUrl(
+/** Resolve a readable URL for a stored file. Public buckets use stable public URLs. */
+export async function fileUrl(
   bucket: string,
   path: string | null,
   seconds = 3600,
 ): Promise<string | null> {
   if (!path) return null;
+
+  if (bucket === "product-covers" || bucket === "product-previews") {
+    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+    return data?.publicUrl ?? null;
+  }
+
   const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, seconds);
   if (error) return null;
   return data?.signedUrl ?? null;
 }
+
+/** Backwards-compatible helper for private files. */
+export const signedUrl = fileUrl;
 
 export function matchesSearch(p: Product, term: string, categoryName?: string) {
   const t = term.trim().toLowerCase();
