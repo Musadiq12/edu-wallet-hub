@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Instagram, Mail, MessageCircle, Send, Youtube } from "lucide-react";
+import { Instagram, Mail, MessageCircle, Send, Youtube, Clock3 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,12 +12,11 @@ import { isEmail, safeUrl, useSiteSettings, waLink } from "@/lib/settings";
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact" },
-      { name: "description", content: "Get in touch with the Edu Wallet team by email, WhatsApp or the contact form." },
-      { property: "og:title", content: "Contact" },
-      { property: "og:description", content: "Questions about study resources or an order? Contact us." },
+      { title: "Contact Us — Beststudy" },
+      { name: "description", content: "Contact Beststudy for study material questions, corrections, suggestions, collaborations and technical support." },
+      { property: "og:title", content: "Contact Us — Beststudy" },
+      { property: "og:description", content: "Contact Beststudy by email, WhatsApp or the website contact form." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: ContactPage,
@@ -48,40 +47,73 @@ function ContactPage() {
     });
     setBusy(false);
     if (error) return void toast.error("Your message could not be sent. Please try again.");
-    toast.success("Message sent. We'll get back to you soon.");
+    toast.success("Message sent. We'll get back to you within 24–48 hours.");
     setForm({ name: "", email: "", whatsapp: "", message: "" });
   };
 
   return (
-    <div className="page-container section-y">
-      <h1 className="font-serif text-3xl font-semibold">Contact {s.brandName}</h1>
-      <p className="mt-2 max-w-xl text-muted-foreground">Questions about a resource or your order? Reach us below.</p>
-      <div className="mt-8 grid gap-10 md:grid-cols-[1fr_1.3fr]">
-        <div className="space-y-3">
-          {links.length === 0 && <p className="text-sm text-muted-foreground">Use the form to send us a message.</p>}
-          {links.map(({ href, label, Icon }) => (
-            <Button key={label} variant="outline" className="h-12 w-full justify-start" asChild>
-              <a href={href} target={href.startsWith("mailto:") ? undefined : "_blank"} rel="noopener noreferrer">
-                <Icon className="mr-2 h-4 w-4" aria-hidden="true" /> {label}
-              </a>
-            </Button>
-          ))}
-        </div>
-        <form onSubmit={submit} className="space-y-4 rounded-lg border border-border bg-card p-6">
-          {(["name", "email", "whatsapp"] as const).map((k) => (
-            <div key={k} className="space-y-1.5">
-              <Label htmlFor={k}>{k === "whatsapp" ? "WhatsApp number (optional)" : k === "name" ? "Name" : "Email"}</Label>
-              <Input id={k} className="h-11" type={k === "email" ? "email" : "text"} value={form[k]}
-                onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))} />
-            </div>
-          ))}
-          <div className="space-y-1.5">
-            <Label htmlFor="message">Message</Label>
-            <Textarea id="message" rows={5} value={form.message} onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))} />
+    <main className="page-container section-y">
+      <div className="mx-auto max-w-5xl">
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Contact Us — Beststudy</p>
+        <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight sm:text-4xl">We are here to support your academic needs</h1>
+        <p className="mt-3 max-w-3xl text-muted-foreground">
+          Whether you need exam updates, notes, previous papers, syllabus information, corrections, collaboration or help accessing the website, you can contact us.
+        </p>
+
+        <div className="mt-8 grid gap-8 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="space-y-5 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+            <section>
+              <h2 className="text-lg font-semibold">Why contact us?</h2>
+              <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+                <li>Subject-specific questions or doubts</li>
+                <li>Suggestions or feedback</li>
+                <li>Corrections or updates to published content</li>
+                <li>Collaboration or contribution opportunities</li>
+                <li>Technical issues or website access problems</li>
+              </ul>
+            </section>
+            <section>
+              <h2 className="text-lg font-semibold">Reach us</h2>
+              <div className="mt-3 space-y-2">
+                {links.length === 0 && <p className="text-sm text-muted-foreground">Use the contact form to send a message.</p>}
+                {links.map(({ href, label, Icon }) => (
+                  <Button key={label} variant="outline" className="h-12 w-full justify-start" asChild>
+                    <a href={href} target={href.startsWith("mailto:") ? undefined : "_blank"} rel="noopener noreferrer">
+                      <Icon className="mr-2 h-4 w-4" aria-hidden="true" /> {label}
+                    </a>
+                  </Button>
+                ))}
+              </div>
+            </section>
+            <section className="rounded-xl border border-border bg-surface p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold"><Clock3 className="size-4" /> Office Hours</div>
+              <p className="mt-2 text-sm text-muted-foreground">Monday to Saturday: 10:00 AM to 6:00 PM</p>
+              <p className="mt-1 text-sm text-muted-foreground">Sunday: Closed (support via email only)</p>
+              <p className="mt-2 text-xs text-muted-foreground">We aim to respond within 24–48 hours.</p>
+            </section>
           </div>
-          <Button type="submit" className="h-11 w-full" disabled={busy}>{busy ? "Sending…" : "Send message"}</Button>
-        </form>
+
+          <form onSubmit={submit} className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-8">
+            <h2 className="text-lg font-semibold">Send a message</h2>
+            {(["name", "email", "whatsapp"] as const).map((k) => (
+              <div key={k} className="space-y-1.5">
+                <Label htmlFor={k}>{k === "whatsapp" ? "WhatsApp number (optional)" : k === "name" ? "Name" : "Email"}</Label>
+                <Input id={k} className="h-11" type={k === "email" ? "email" : "text"} value={form[k]} onChange={(e) => setForm((f) => ({ ...f, [k]: e.target.value }))} />
+              </div>
+            ))}
+            <div className="space-y-1.5">
+              <Label htmlFor="message">Message</Label>
+              <Textarea id="message" rows={6} value={form.message} onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))} />
+            </div>
+            <Button type="submit" className="h-11 w-full" disabled={busy}>{busy ? "Sending…" : "Send message"}</Button>
+          </form>
+        </div>
+
+        <p className="mt-6 text-sm text-muted-foreground">
+          We appreciate your trust in Beststudy and aim to make learning more accessible and less stressful for students.
+        </p>
+        <p className="mt-2 text-sm font-medium text-foreground">Warm regards,<br />Danish Razaq Lone</p>
       </div>
-    </div>
+    </main>
   );
 }

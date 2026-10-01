@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useSiteSettings } from "@/lib/settings";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About EduWallet" },
-      { name: "description", content: "Learn about EduWallet, its educational resources, access process, and student-focused mission." },
-      { property: "og:title", content: "About EduWallet" },
-      { property: "og:description", content: "Learn about EduWallet and how its digital study resources support students." },
+      { title: "About Beststudy" },
+      { name: "description", content: "Learn about Beststudy and its educational resources for students in Jammu & Kashmir and beyond." },
+      { property: "og:title", content: "About Beststudy" },
+      { property: "og:description", content: "Beststudy provides study materials, notes, previous papers, important questions and educational updates." },
     ],
     links: [{ rel: "canonical", href: "/about" }],
   }),
@@ -14,51 +15,20 @@ export const Route = createFileRoute("/about")({
 });
 
 function AboutPage() {
+  const s = useSiteSettings();
   return (
     <main className="page-container section-y">
       <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-10">
-        <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
-          About EduWallet
-        </h1>
-
-        <p className="mt-5 text-lg text-muted-foreground">
-          EduWallet is a student-focused platform created to make exam
-          preparation more affordable, simple, and accessible.
-        </p>
-
-        <div className="mt-10 space-y-8">
-          <section>
-            <h2 className="text-xl font-semibold">Affordable Resources</h2>
-            <p className="mt-2 text-muted-foreground">
-              We believe useful study material should be accessible to
-              students without being unnecessarily expensive.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold">What We Offer</h2>
-            <p className="mt-2 text-muted-foreground">
-              EduWallet provides exam-focused notes, guess papers, important
-              questions, study guides, solved papers, assignment guidance, and other
-              digital resources for students preparing across different exams.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold">Built for Students</h2>
-            <p className="mt-2 text-muted-foreground">
-              Our resources are designed to help students save time, focus on
-              important topics, and prepare for their exams more efficiently.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold">Our Goal</h2>
-            <p className="mt-2 text-muted-foreground">
-              Our goal is simple: make quality educational resources easier
-              to find, easier to understand, and affordable for students.
-            </p>
-          </section>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">About {s.brandName}</p>
+        <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight sm:text-4xl">Making academic information easier to find</h1>
+        <div className="mt-8 space-y-7 text-muted-foreground">
+          <p className="text-lg">
+            Beststudy is an educational resource platform focused on making useful academic information easier to access for students in Jammu & Kashmir and beyond.
+          </p>
+          <section><h2 className="text-xl font-semibold text-foreground">What you can find here</h2><p className="mt-2">Study materials, notes, previous papers, important questions, syllabus and exam updates, and guidance for students from 8th class through university level.</p></section>
+          <section><h2 className="text-xl font-semibold text-foreground">Academic coverage</h2><p className="mt-2">Resources may include material related to Kashmir University, Cluster University, Jammu University, IGNOU and other student-focused academic needs.</p></section>
+          <section><h2 className="text-xl font-semibold text-foreground">Our approach</h2><p className="mt-2">We aim to publish useful, timely and clearly organized educational information so students can spend less time searching and more time studying.</p></section>
+          <section><h2 className="text-xl font-semibold text-foreground">Independent educational resource</h2><p className="mt-2">Beststudy is independently operated and should not be treated as an official source for university, board or government decisions. For deadlines, results, notices and rules, verify important information against the relevant official authority.</p></section>
         </div>
       </div>
     </main>

@@ -22,9 +22,9 @@ import { siteConfig } from "@/config/site";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Exam Study Resources" },
+      { title: "Beststudy — Study Materials & Educational Updates" },
       { name: "description", content: siteConfig.shortDescription },
-      { property: "og:title", content: "Exam Study Resources" },
+      { property: "og:title", content: "Beststudy — Study Materials & Educational Updates" },
       { property: "og:description", content: siteConfig.shortDescription },
     ],
     links: [{ rel: "canonical", href: "/" }],
@@ -97,7 +97,7 @@ function Home() {
         <div className="page-container grid gap-10 py-14 md:grid-cols-[1.15fr_1fr] md:items-center md:py-20">
           <div>
             <p className="text-xs font-semibold tracking-[0.12em] text-accent">
-              For students preparing across India
+              For students across Jammu & Kashmir and beyond
             </p>
             <h1 className="mt-3 text-4xl leading-tight font-bold text-foreground sm:text-5xl">
               {settings.tagline}
@@ -105,7 +105,7 @@ function Home() {
             <p className="mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
               {siteConfig.shortDescription}
             </p>
-            <p className="mt-3 max-w-xl text-sm font-medium text-foreground/80">Popular preparation categories include NEET, JEE, UPSC, SSC CGL, banking, CLAT and more.</p>
+            <p className="mt-3 max-w-xl text-sm font-medium text-foreground/80">Study resources cover school and university needs, including Kashmir University, Cluster University, Jammu University and IGNOU.</p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Button size="lg" asChild>
                 <Link to="/shop">Explore Resources</Link>
@@ -139,7 +139,7 @@ function Home() {
 
       <section className="section-y">
         <div className="page-container">
-          <h2 className="text-2xl font-semibold sm:text-3xl">Why students use our resources</h2>
+          <h2 className="text-2xl font-semibold sm:text-3xl">Why students use Beststudy</h2>
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {VALUES.map((v) => (
               <div key={v.title} className="rounded-lg border border-border bg-card p-5">
@@ -154,7 +154,7 @@ function Home() {
 
       <section className="section-y bg-surface">
         <div className="page-container">
-          <h2 className="text-2xl font-semibold sm:text-3xl">Explore our resources</h2>
+          <h2 className="text-2xl font-semibold sm:text-3xl">Explore study resources</h2>
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {CATEGORIES.map((c) => (
               <Link
@@ -193,7 +193,7 @@ function Home() {
       <section className="section-y">
         <div className="page-container">
           <div className="flex flex-wrap items-end justify-between gap-3">
-            <h2 className="text-2xl font-semibold sm:text-3xl">Featured resources</h2>
+            <h2 className="text-2xl font-semibold sm:text-3xl">Latest / Featured Resources</h2>
             <Link to="/shop" className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/10 hover:underline">
               View all resources
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -212,7 +212,7 @@ function Home() {
             ) : (
               <EmptyState
                 title="Resources are being added soon"
-                description="Check back shortly for notes, guess papers and exam guides."
+                description="Check back shortly for study materials, previous papers and important questions."
                 className="!px-6 !py-8"
               />
             )}
