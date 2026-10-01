@@ -131,6 +131,6 @@ function RootComponent() {
       {!isAuthPage && !isAdminRoute && <SiteFooter />}
     </div>
     <Toaster position="top-center" />
-    {!isAdminRoute && <CookieConsent />
+    {!isAdminRoute && <CookieConsent />}
   </QueryClientProvider>;
 }
