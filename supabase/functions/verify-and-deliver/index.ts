@@ -42,13 +42,23 @@ export default {
     if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
     if (req.method !== "POST") return json({ error: "Method not allowed." }, 405);
 
+    // Resolve the authenticated user directly from Supabase Auth instead of relying
+    // on ctx.userClaims.sub, which may be absent with the current server SDK context.
+    const { data: authUser, error: authUserError } = await ctx.supabase.auth.getUser();
+    const userId = authUser.user?.id;
+
+    if (authUserError || !userId) {
+      console.error("Authenticated user lookup failed:", authUserError);
+      return json({ error: "Could not identify the authenticated administrator." }, 401);
+    }
+
     const { data: isAdmin, error: roleError } = await ctx.supabase.rpc("has_role", {
-      _user_id: ctx.userClaims?.sub ?? "",
+      _user_id: userId,
       _role: "admin",
     });
 
     if (roleError || isAdmin !== true) {
-      console.error("Admin authorization failed:", roleError);
+      console.error("Admin authorization failed:", roleError, { userId });
       return json({ error: "Administrator access required." }, 403);
     }
 
