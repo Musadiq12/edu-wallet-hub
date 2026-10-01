@@ -4,7 +4,7 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Edu Wallet — WhatsApp-inspired design system */
+/* Beststudy — student-focused education design system */
 @theme inline {
   --font-sans: var(--font-sans-family);
   --font-serif: var(--font-serif-family);
@@ -48,39 +48,39 @@
 
 :root {
   --card: #ffffff;
-  --ring: #25d366;
+  --ring: #2563eb;
   --input: #e9edef;
   --muted: #f0f2f5;
-  --accent: #25d366;
+  --accent: #2563eb;
   --border: #e9edef;
   --radius: 1rem;
-  --chart-1: #25d366;
-  --chart-2: #075e54;
-  --chart-3: #128c7e;
-  --chart-4: #34b7f1;
-  --chart-5: #00a884;
+  --chart-1: #2563eb;
+  --chart-2: #0f3d91;
+  --chart-3: #0ea5e9;
+  --chart-4: #7c3aed;
+  --chart-5: #14b8a6;
   --popover: #ffffff;
-  --primary: #075e54;
+  --primary: #1d4ed8;
   --sidebar: #ffffff;
-  --secondary: #e7f8f0;
-  --background: #f0f2f5;
-  --foreground: #111b21;
+  --secondary: #e8f0ff;
+  --background: #f8fafc;
+  --foreground: #172033;
   --destructive: #ea4335;
   --font-mono-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --font-sans-family: "Segoe UI", "Helvetica Neue", Helvetica, "Lucida Grande", Arial, Ubuntu, Cantarell, "Fira Sans", sans-serif;
   --font-serif-family: Georgia, serif;
-  --muted-foreground: #667781;
+  --muted-foreground: #64748b;
   --accent-foreground: #ffffff;
   --popover-foreground: #111b21;
   --primary-foreground: #ffffff;
   --sidebar-foreground: #111b21;
-  --secondary-foreground: #075e54;
-  --sidebar-primary: #075e54;
-  --sidebar-accent: #e7f8f0;
+  --secondary-foreground: #1d4ed8;
+  --sidebar-primary: #1d4ed8;
+  --sidebar-accent: #e8f0ff;
   --sidebar-border: #e9edef;
-  --sidebar-ring: #25d366;
+  --sidebar-ring: #2563eb;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent-foreground: #075e54;
+  --sidebar-accent-foreground: #1d4ed8;
   --destructive-foreground: #ffffff;
   --shadow-color: rgba(0,0,0,0.1);
   --shadow-opacity: 0.1;
