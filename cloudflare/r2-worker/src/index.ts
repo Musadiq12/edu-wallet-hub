@@ -12,7 +12,8 @@ const MAX_PDF_BYTES = 50 * 1024 * 1024;
 const DOWNLOAD_TTL_SECONDS = 48 * 60 * 60;
 
 function origin(request: Request, env: Env) {
-  return env.ALLOWED_ORIGIN || request.headers.get("Origin") || "*";
+  const requestOrigin = request.headers.get("Origin");
+  return env.ALLOWED_ORIGIN || (requestOrigin ? "null" : "*");
 }
 
 function json(request: Request, env: Env, data: unknown, status = 200) {
