@@ -151,6 +151,33 @@ export default {
       return json(request, env, { ok: true });
     }
 
+    if (url.pathname === "/admin-delivery-link" && request.method === "POST") {
+      const adminId = await requireAdmin(request, env);
+      if (!adminId) return json(request, env, { error: "Administrator access required." }, 403);
+
+      let body: { key?: string; expiresIn?: number };
+      try {
+        body = await request.json();
+      } catch {
+        return json(request, env, { error: "Invalid JSON body." }, 400);
+      }
+
+      const key = safeKey(body.key || "");
+      if (!key.startsWith("products/")) {
+        return json(request, env, { error: "Invalid product object key." }, 400);
+      }
+
+      const expiresIn = Math.min(
+        Math.max(Number(body.expiresIn) || DOWNLOAD_TTL_SECONDS, 60),
+        7 * 24 * 60 * 60,
+      );
+      const exp = Math.floor(Date.now() / 1000) + expiresIn;
+      const signature = await sign(`${key}|${exp}`, env.DOWNLOAD_SIGNING_SECRET);
+      const downloadUrl = `${new URL(request.url).origin}/download?key=${encodeURIComponent(key)}&exp=${exp}&sig=${signature}`;
+
+      return json(request, env, { ok: true, url: downloadUrl, expiresAt: new Date(exp * 1000).toISOString() });
+    }
+
     if (url.pathname === "/delivery-link" && request.method === "POST") {
       if (request.headers.get("X-Delivery-Secret") !== env.DELIVERY_SECRET) {
         return json(request, env, { error: "Unauthorized." }, 401);
