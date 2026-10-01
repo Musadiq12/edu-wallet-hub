@@ -98,7 +98,9 @@ async function requireUser(request: Request, env: Env) {
 
   const userResponse = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, {
     headers: {
-      apikey: env.SUPABASE_PUBLISHABLE_KEY,
+      // Validate the user's bearer token with the server-side Supabase key.
+      // This keeps customer authentication independent of the public client key.
+      apikey: env.SUPABASE_SERVER_KEY,
       Authorization: `Bearer ${token}`,
     },
   });
