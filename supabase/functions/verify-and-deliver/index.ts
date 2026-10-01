@@ -42,14 +42,15 @@ export default {
     if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
     if (req.method !== "POST") return json({ error: "Method not allowed." }, 405);
 
-    const { data: role, error: roleError } = await ctx.supabaseAdmin
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", ctx.userClaims?.sub ?? "")
-      .eq("role", "admin")
-      .maybeSingle();
+    const { data: isAdmin, error: roleError } = await ctx.supabase.rpc("has_role", {
+      _user_id: ctx.userClaims?.sub ?? "",
+      _role: "admin",
+    });
 
-    if (roleError || !role) return json({ error: "Administrator access required." }, 403);
+    if (roleError || isAdmin !== true) {
+      console.error("Admin authorization failed:", roleError);
+      return json({ error: "Administrator access required." }, 403);
+    }
 
     let body: RequestBody;
     try {
