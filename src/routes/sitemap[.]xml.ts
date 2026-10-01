@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 
-const BASE = "https://edu-wallet-hub.lovable.app";
+const BASE = "https://www.beststudy.in";
 const STATIC = ["/", "/shop", "/free-resources", "/about", "/contact"];
 
 export const Route = createFileRoute("/sitemap.xml")({
