@@ -210,7 +210,9 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
       void navigate({ to: "/admin/products" });
     } catch (err) {
       for (const u of uploaded) await removeFile(u.bucket, u.path);
-      console.error("[ProductForm] Save failed:", err);\n      const rawError = err instanceof Error ? err.message : typeof err === "string" ? err : String((err as { message?: string })?.message ?? err);\n      toast.error(friendlyError(err, rawError || "Could not save the product. Please try again."));
+      console.error("[ProductForm] Save failed:", err);
+      const rawError = err instanceof Error ? err.message : typeof err === "string" ? err : String((err as { message?: string })?.message ?? err);
+      toast.error(friendlyError(err, rawError || "Could not save the product. Please try again."));
     } finally {
       setBusy(false);
       setStatus(null);
