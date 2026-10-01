@@ -62,13 +62,67 @@ function LibraryPage() {
 
   const openDocument = async (item: LibraryItem) => {
     setOpening(item.product_id);
-    const url = await signedUrl("product-files", item.pdf_file, 30 * 60);
-    setOpening(null);
-    if (!url) {
-      toast.error("We couldn't create a secure document link. Please try again.");
-      return;
+
+    // Open the tab immediately so mobile/desktop popup blockers do not
+    // reject the document after the asynchronous secure-link request.
+    const popup = window.open("about:blank", "_blank", "noopener,noreferrer");
+
+    try {
+      let url: string | null = null;
+
+      if (item.pdf_file.startsWith("products/")) {
+        const workerUrl = String(
+          import.meta.env.VITE_R2_WORKER_URL ||
+            "https://edu-wallet-r2.designeroutletmedia.workers.dev",
+        ).replace(/\/$/, "");
+
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw sessionError;
+
+        const token = sessionData.session?.access_token;
+        if (!token) throw new Error("Your session has expired. Please sign in again.");
+
+        const response = await fetch(`${workerUrl}/customer-delivery-link`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            key: item.pdf_file,
+            expiresIn: 30 * 60,
+          }),
+        });
+
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok || typeof data?.url !== "string") {
+          throw new Error(
+            typeof data?.error === "string"
+              ? data.error
+              : "Could not create a secure document link.",
+          );
+        }
+
+        url = data.url;
+      } else {
+        // Legacy product PDFs still stored in Supabase Storage.
+        url = await signedUrl("product-files", item.pdf_file, 30 * 60);
+      }
+
+      if (!url) throw new Error("Could not create a secure document link.");
+
+      if (popup && !popup.closed) {
+        popup.location.href = url;
+      } else {
+        window.location.assign(url);
+      }
+    } catch (error) {
+      if (popup && !popup.closed) popup.close();
+      console.error("[Library] Document open failed:", error);
+      toast.error("We couldn't open this document. Please try again.");
+    } finally {
+      setOpening(null);
     }
-    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   if (authLoading || !user) {
