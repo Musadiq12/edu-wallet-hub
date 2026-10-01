@@ -139,6 +139,50 @@ export default {
       return json(request, env, { ok: true, path: key });
     }
 
+    if (url.pathname === "/migrate-legacy" && request.method === "POST") {
+      const adminId = await requireAdmin(request, env);
+      if (!adminId) return json(request, env, { error: "Administrator access required." }, 403);
+
+      let body: { path?: string };
+      try {
+        body = await request.json();
+      } catch {
+        return json(request, env, { error: "Invalid JSON body." }, 400);
+      }
+
+      const legacyPath = String(body.path || "").replace(/^\/+/, "");
+      if (!legacyPath || legacyPath.includes("..") || legacyPath.startsWith("products/")) {
+        return json(request, env, { error: "Invalid legacy product path." }, 400);
+      }
+
+      const source = await fetch(
+        `${env.SUPABASE_URL}/storage/v1/object/product-files/${legacyPath.split("/").map(encodeURIComponent).join("/")}`,
+        {
+          headers: {
+            apikey: env.SUPABASE_SERVER_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVER_KEY}`,
+          },
+        },
+      );
+      if (!source.ok || !source.body) {
+        return json(request, env, { error: "Could not read the existing product PDF from Supabase." }, 502);
+      }
+
+      const contentType = source.headers.get("Content-Type") || "";
+      if (!contentType.toLowerCase().includes("pdf")) {
+        return json(request, env, { error: "The existing product file is not a PDF." }, 415);
+      }
+
+      const filename = legacyPath.split("/").pop() || "product.pdf";
+      const key = safeKey(`products/${crypto.randomUUID()}-${filename}`);
+      await env.PRODUCTS.put(key, source.body, {
+        httpMetadata: { contentType: "application/pdf" },
+        customMetadata: { migratedFrom: legacyPath, migratedBy: adminId },
+      });
+
+      return json(request, env, { ok: true, path: key });
+    }
+
     if (url.pathname === "/delete" && request.method === "DELETE") {
       const adminId = await requireAdmin(request, env);
       if (!adminId) return json(request, env, { error: "Administrator access required." }, 403);
