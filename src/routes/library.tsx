@@ -88,7 +88,7 @@ function LibraryPage() {
 
       if (item.pdf_file.startsWith("products/")) {
         const workerUrl = String(
-          import.meta.env.VITE_R2_WORKER_URL ||
+          import.meta.env["VITE_R2_WORKER_URL"] ||
             "https://edu-wallet-r2.designeroutletmedia.workers.dev",
         ).replace(/\/$/, "");
 
