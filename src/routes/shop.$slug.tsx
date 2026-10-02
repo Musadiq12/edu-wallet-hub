@@ -69,6 +69,35 @@ function ProductDetail() {
     queryFn: () => signedUrl("product-previews", p!.preview_file),
   });
 
+  const freeResource = useQuery({
+    queryKey: ["free-resource", p?.id, p?.pdf_file],
+    enabled: !!p?.is_free && !!p?.pdf_file,
+    queryFn: async () => {
+      const workerUrl = String(
+        import.meta.env["VITE_R2_WORKER_URL"] ||
+          "https://edu-wallet-r2.designeroutletmedia.workers.dev",
+      ).replace(/\/$/, "");
+
+      const response = await fetch(`${workerUrl}/free-resource-link`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: p!.pdf_file }),
+      });
+
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || typeof data?.url !== "string") {
+        throw new Error(
+          typeof data?.error === "string"
+            ? data.error
+            : `Could not create a free resource link (HTTP ${response.status}).`,
+        );
+      }
+
+      return data.url as string;
+    },
+    enabled: false,
+  });
+
   if (product.isLoading) {
     return (
       <div className="page-container section-y">
@@ -203,11 +232,39 @@ function ProductDetail() {
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 {p.is_free ? (
-                  preview.data ? (
-                    <Button size="lg" asChild>
-                      <a href={preview.data} target="_blank" rel="noreferrer">
-                        Download Resource
-                      </a>
+                  p.pdf_file ? (
+                    <Button
+                      size="lg"
+                      disabled={freeResource.isFetching}
+                      onClick={async () => {
+                        try {
+                          const workerUrl = String(
+                            import.meta.env["VITE_R2_WORKER_URL"] ||
+                              "https://edu-wallet-r2.designeroutletmedia.workers.dev",
+                          ).replace(/\/$/, "");
+
+                          const response = await fetch(`${workerUrl}/free-resource-link`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ key: p.pdf_file }),
+                          });
+
+                          const data = await response.json().catch(() => ({}));
+                          if (!response.ok || typeof data?.url !== "string") {
+                            throw new Error(
+                              typeof data?.error === "string"
+                                ? data.error
+                                : `Could not open the free resource (HTTP ${response.status}).`,
+                            );
+                          }
+
+                          window.location.assign(data.url);
+                        } catch (error) {
+                          console.error("[Free Resource] Open failed:", error);
+                        }
+                      }}
+                    >
+                      {freeResource.isFetching ? "Opening…" : "Download Resource"}
                     </Button>
                   ) : (
                     <Button size="lg" disabled>
