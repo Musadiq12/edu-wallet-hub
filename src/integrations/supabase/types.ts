@@ -193,6 +193,13 @@ export type Database = {
             foreignKeyName: "orders_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
+            referencedRelation: "my_library"
+            referencedColumns: ["product_id"]
+          },
+          {
+            foreignKeyName: "orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
@@ -417,7 +424,23 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      my_library: {
+        Row: {
+          amount: number | null
+          cover_image: string | null
+          delivered_at: string | null
+          description: string | null
+          format: string | null
+          order_id: string | null
+          page_count: number | null
+          pdf_file: string | null
+          product_id: string | null
+          slug: string | null
+          title: string | null
+          verified_at: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
@@ -427,6 +450,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      strip_html_tags: { Args: { value: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "user"
