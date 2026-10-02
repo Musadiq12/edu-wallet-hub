@@ -1,6 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { BookOpen } from "lucide-react";
-import { signedUrl } from "@/lib/catalog";
+import { supabase } from "@/integrations/supabase/client";
 
 export function CoverImage({
   path,
@@ -11,21 +10,16 @@ export function CoverImage({
   title: string;
   className?: string;
 }) {
-  const { data: url } = useQuery({
-    queryKey: ["cover", path],
-    enabled: !!path,
-    staleTime: 30 * 60 * 1000,
-    queryFn: () => signedUrl("product-covers", path),
-  });
+  const url = path ? supabase.storage.from("product-covers").getPublicUrl(path).data.publicUrl : null;
 
   if (path && url) {
     return (
       <img
         src={url}
         alt={`Cover of ${title}`}
-        loading="eager"
+        loading="lazy"
         decoding="async"
-        className={`block w-full object-contain bg-surface transition-transform duration-300 ${className}`}
+        className={`block h-full w-full object-contain bg-surface ${className}`}
       />
     );
   }
