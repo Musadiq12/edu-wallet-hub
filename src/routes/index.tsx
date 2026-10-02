@@ -1,22 +1,10 @@
-import AetherFlowHero from "@/components/ui/aether-flow-hero";
-import { useSiteSettings } from "@/lib/settings";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowRight, BookOpen, BriefcaseBusiness, Building2, FileText, GraduationCap, Landmark, Scale, Sparkles } from "lucide-react";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import {
-  BadgeIndianRupee,
-  BookOpen,
-  ClipboardCheck,
-  FileText,
-  GraduationCap,
-  Gift,
-  ArrowRight,
-  Target,
-  Users,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { ProductCard } from "@/components/ProductCard";
-import { EmptyState, LoadingGrid } from "@/components/EmptyState";
-import { productsQuery } from "@/lib/catalog";
+import { StorefrontHero } from "@/components/StorefrontHero";
+import { ProductCarousel } from "@/components/ProductCarousel";
+import { EmptyState } from "@/components/EmptyState";
+import { productsQuery, type Product } from "@/lib/catalog";
 import { siteConfig } from "@/config/site";
 
 export const Route = createFileRoute("/")({
@@ -32,190 +20,190 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-const VALUES = [
-  {
-    icon: Target,
-    title: "Exam Focused",
-    text: "Resources organized around practical exam preparation.",
-  },
-  {
-    icon: BadgeIndianRupee,
-    title: "Affordable",
-    text: "Low-cost digital resources designed for students.",
-  },
-  {
-    icon: ClipboardCheck,
-    title: "Clear Access Process",
-    text: "Purchase confirmation and delivery handled through email or WhatsApp.",
-  },
-  {
-    icon: Users,
-    title: "Student Friendly",
-    text: "Simple, straightforward resources without unnecessary complexity.",
-  },
+const EXAMS = [
+  { title: "NEET", icon: GraduationCap, query: "neet" },
+  { title: "JEE", icon: BookOpen, query: "jee" },
+  { title: "UPSC", icon: Landmark, query: "upsc" },
+  { title: "SSC CGL", icon: BriefcaseBusiness, query: "ssc" },
+  { title: "Banking", icon: Building2, query: "bank" },
+  { title: "CLAT", icon: Scale, query: "clat" },
 ];
 
-const CATEGORIES = [
-  {
-    icon: BookOpen,
-    title: "Notes",
-    text: "Subject-wise notes and revision material.",
-    to: "/shop" as const,
-    search: { category: "notes", q: undefined },
-  },
-  {
-    icon: FileText,
-    title: "Guess Papers",
-    text: "Exam-oriented practice and likely-topic guides.",
-    to: "/shop" as const,
-    search: { category: "guess-papers", q: undefined },
-  },
-  {
-    icon: ClipboardCheck,
-    title: "Assignment Guidance",
-    text: "Original reference material and explanations designed to help students understand and complete assignments.",
-    to: "/shop" as const,
-    search: { category: "assignment-guidance", q: undefined },
-  },
-  {
-    icon: GraduationCap,
-    title: "Exam Guides",
-    text: "Focused preparation and revision resources.",
-    to: "/shop" as const,
-    search: { category: "exam-guides", q: undefined },
-  },
-];
+function includesTerm(product: Product, term: string) {
+  const haystack = [
+    product.title,
+    product.description,
+    product.course_label,
+    product.subject_label,
+    product.keywords,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return haystack.includes(term.toLowerCase());
+}
+
+function filterProducts(products: Product[], term: string) {
+  return products.filter((product) => includesTerm(product, term));
+}
 
 function Home() {
-  const settings = useSiteSettings();
-  const featured = useQuery(productsQuery({ featured: true, free: false, limit: 8 }));
+  const products = useQuery(productsQuery({ free: false, limit: 32 }));
+  const freeProducts = useQuery(productsQuery({ free: true, limit: 12 }));
+  const allProducts = products.data ?? [];
+
+  const featured = allProducts.filter((product) => product.is_featured);
+  const discounted = allProducts.filter(
+    (product) =>
+      product.discounted_price != null &&
+      Number(product.discounted_price) < Number(product.price),
+  );
 
   return (
     <>
-      <AetherFlowHero />
-      <section className="border-b border-border bg-surface">
-        <div className="page-container grid gap-10 py-14 md:grid-cols-[1.15fr_1fr] md:items-center md:py-20">
-          <div>
-            <p className="text-xs font-semibold tracking-[0.12em] text-accent">
-              For students preparing across India
-            </p>
-            <h1 className="mt-3 text-4xl leading-tight font-bold text-foreground sm:text-5xl">
-              {settings.tagline}
-            </h1>
-            <p className="mt-4 max-w-xl text-base text-muted-foreground sm:text-lg">
-              {siteConfig.shortDescription}
-            </p>
-            <p className="mt-3 max-w-xl text-sm font-medium text-foreground/80">Popular preparation categories include NEET, JEE, UPSC, SSC CGL, banking, CLAT and more.</p>
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
-              <Button size="lg" asChild>
-                <Link to="/shop">Explore Resources</Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link to="/free-resources">Free Resources</Link>
-              </Button>
-            </div>
-            <p className="mt-6 text-xs text-muted-foreground">{siteConfig.disclaimer}</p>
-          </div>
+      <StorefrontHero />
 
-          <div aria-hidden="true" className="relative hidden md:block">
-            <div className="absolute top-6 left-6 h-56 w-44 rotate-[-6deg] rounded-md border border-border bg-card shadow-sm" />
-            <div className="absolute top-3 left-24 h-60 w-44 rotate-[4deg] rounded-md border border-border bg-card shadow-sm" />
-            <div className="relative ml-12 h-64 w-48 rounded-md border border-border bg-card p-4 shadow-sm">
-              <div className="h-2 w-16 rounded bg-primary/80" />
-              <div className="mt-4 space-y-2">
-                {Array.from({ length: 7 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="h-1.5 rounded bg-muted"
-                    style={{ width: `${95 - i * 7}%` }}
-                  />
-                ))}
-              </div>
-              <div className="mt-6 h-1.5 w-20 rounded bg-accent/70" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="section-y">
+      <section className="py-7 sm:py-9">
         <div className="page-container">
-          <h2 className="text-2xl font-semibold sm:text-3xl">Why students use our resources</h2>
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {VALUES.map((v) => (
-              <div key={v.title} className="rounded-lg border border-border bg-card p-5">
-                <v.icon className="h-5 w-5 text-accent" aria-hidden="true" />
-                <h3 className="mt-3 text-base font-semibold">{v.title}</h3>
-                <p className="mt-1.5 text-sm text-muted-foreground">{v.text}</p>
-              </div>
-            ))}
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Browse by exam</p>
+              <h2 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Find your preparation track</h2>
+            </div>
+            <Link to="/shop" className="hidden items-center gap-1 text-sm font-semibold text-primary hover:underline sm:inline-flex">
+              View all <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
           </div>
-        </div>
-      </section>
 
-      <section className="section-y bg-surface">
-        <div className="page-container">
-          <h2 className="text-2xl font-semibold sm:text-3xl">Explore our resources</h2>
-          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {CATEGORIES.map((c) => (
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+            {EXAMS.map(({ title, icon: Icon, query }) => (
               <Link
-                key={c.title}
-                to={c.to}
-                search={c.search}
-                className="group flex min-h-[164px] flex-col rounded-lg border border-border bg-card p-5 transition-all hover:border-primary/40 hover:shadow-sm"
+                key={title}
+                to="/shop"
+                search={{ q: query, category: undefined }}
+                className="group rounded-xl border border-border bg-card p-4 transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
               >
-                <c.icon className="h-5 w-5 text-primary" aria-hidden="true" />
-                <h3 className="mt-3 text-base font-semibold">{c.title}</h3>
-                <p className="mt-1.5 text-sm text-muted-foreground">{c.text}</p>
-                <span className="mt-auto pt-4 inline-flex items-center gap-1 text-sm font-medium text-primary">
-                  Explore
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-                </span>
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <p className="mt-3 text-sm font-semibold">{title}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Study resources</p>
               </Link>
             ))}
-            <Link
-              to="/free-resources"
-              className="rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/40"
-            >
-              <Gift className="h-5 w-5 text-success" aria-hidden="true" />
-              <h3 className="mt-3 text-base font-semibold">Free Resources</h3>
-              <p className="mt-1.5 text-sm text-muted-foreground">
-                Free samples and study material.
-              </p>
-              <span className="mt-auto pt-4 inline-flex items-center gap-1 text-sm font-medium text-primary">
-                Explore
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-              </span>
-            </Link>
           </div>
         </div>
       </section>
 
+      {products.isLoading ? (
+        <section className="section-y">
+          <div className="page-container">
+            <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+            <div className="mt-7 flex gap-4 overflow-hidden">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="h-96 w-[72vw] shrink-0 animate-pulse rounded-xl bg-muted sm:w-[280px]" />
+              ))}
+            </div>
+          </div>
+        </section>
+      ) : allProducts.length === 0 ? (
+        <section className="section-y">
+          <div className="page-container">
+            <EmptyState
+              title="Resources are being added"
+              description="Check back shortly for notes, guess papers and exam guides."
+              action={<Link to="/free-resources" className="text-sm font-semibold text-primary hover:underline">Explore free resources</Link>}
+            />
+          </div>
+        </section>
+      ) : (
+        <>
+          <ProductCarousel
+            title="Featured resources"
+            description="Hand-picked study material worth exploring."
+            products={(featured.length ? featured : allProducts).slice(0, 10)}
+          />
+
+          <section className="border-y border-border bg-muted/35">
+            <ProductCarousel
+              title="New arrivals"
+              description="Recently added resources, ready for your preparation."
+              products={allProducts.slice(0, 12)}
+            />
+          </section>
+
+          {discounted.length > 0 && (
+            <ProductCarousel
+              title="Special offers"
+              description="Current resources available at a reduced price."
+              products={discounted.slice(0, 12)}
+            />
+          )}
+
+          {EXAMS.map(({ title, query }) => {
+            const matches = filterProducts(allProducts, query).slice(0, 10);
+            if (matches.length < 2) return null;
+            return (
+              <ProductCarousel
+                key={title}
+                title={`${title} preparation`}
+                description={`Resources matched to ${title} preparation.`}
+                products={matches}
+              />
+            );
+          })}
+
+          {freeProducts.data && freeProducts.data.length > 0 && (
+            <section className="border-y border-border bg-accent/35">
+              <ProductCarousel
+                title="Free resources"
+                description="Try useful study material before buying."
+                products={freeProducts.data.slice(0, 10)}
+              />
+            </section>
+          )}
+        </>
+      )}
+
       <section className="section-y">
         <div className="page-container">
-          <div className="flex flex-wrap items-end justify-between gap-3">
-            <h2 className="text-2xl font-semibold sm:text-3xl">Featured resources</h2>
-            <Link to="/shop" className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm font-semibold text-primary transition-colors hover:bg-primary/10 hover:underline">
-              View all resources
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
-          </div>
-
-          <div className="mt-8">
-            {featured.isLoading ? (
-              <LoadingGrid />
-            ) : featured.data && featured.data.length > 0 ? (
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                {featured.data.map((p) => (
-                  <ProductCard key={p.id} product={p} />
-                ))}
+          <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2 text-primary">
+                  <Sparkles className="h-5 w-5" aria-hidden="true" />
+                  <span className="text-sm font-semibold">Need something specific?</span>
+                </div>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight">Browse the complete EduWallet catalog.</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  Filter by resource type, exam, course or keyword and go directly to the material you need.
+                </p>
               </div>
-            ) : (
-              <EmptyState
-                title="Resources are being added soon"
-                description="Check back shortly for notes, guess papers and exam guides."
-                className="!px-6 !py-8"
-              />
-            )}
+              <Link
+                to="/shop"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              >
+                Browse catalog
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-t border-border bg-muted/30 py-10">
+        <div className="page-container grid gap-6 text-sm sm:grid-cols-3">
+          <div className="flex gap-3">
+            <FileText className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <div><p className="font-semibold">Digital-first</p><p className="mt-1 text-muted-foreground">Resources are delivered digitally after successful purchase verification.</p></div>
+          </div>
+          <div className="flex gap-3">
+            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <div><p className="font-semibold">Exam-focused</p><p className="mt-1 text-muted-foreground">Organized around practical study and revision needs.</p></div>
+          </div>
+          <div className="flex gap-3">
+            <BookOpen className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <div><p className="font-semibold">Easy to browse</p><p className="mt-1 text-muted-foreground">Fast horizontal catalogs designed for desktop and mobile.</p></div>
           </div>
         </div>
       </section>
