@@ -20,7 +20,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
         className="block overflow-hidden"
         aria-label={`View details for ${product.title}`}
       >
-        <CoverImage path={product.cover_image} title={product.title} className={compact ? "aspect-[3/4]" : "aspect-[3/4]"} />
+        <CoverImage path={product.cover_image} title={product.title} className="aspect-[3/4]" />
       </Link>
 
       <div className={compact ? "flex flex-1 flex-col p-3.5" : "flex flex-1 flex-col p-4"}>
@@ -74,7 +74,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
           )}
         </div>
 
-        <div className="mt-auto pt-4 flex gap-2">
+        <div className="mt-auto flex gap-2 pt-4">
           <Button variant={compact ? "default" : "outline"} size="sm" className="flex-1" asChild>
             <Link to="/shop/$slug" params={{ slug: product.slug }}>
               View Details
