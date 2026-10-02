@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useSiteSettings } from "@/lib/settings";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
@@ -10,6 +11,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { categoriesQuery, productBySlugQuery, signedUrl } from "@/lib/catalog";
 import { discountPercent, formatPrice } from "@/lib/format";
 import { siteConfig } from "@/config/site";
+import { toast } from "sonner";
 
 function trimDesc(text: string, max = 155) {
   const t = text.replace(/\s+/g, " ").trim();
@@ -69,34 +71,7 @@ function ProductDetail() {
     queryFn: () => signedUrl("product-previews", p!.preview_file),
   });
 
-  const freeResource = useQuery({
-    queryKey: ["free-resource", p?.id, p?.pdf_file],
-    enabled: !!p?.is_free && !!p?.pdf_file,
-    queryFn: async () => {
-      const workerUrl = String(
-        import.meta.env["VITE_R2_WORKER_URL"] ||
-          "https://edu-wallet-r2.designeroutletmedia.workers.dev",
-      ).replace(/\/$/, "");
-
-      const response = await fetch(`${workerUrl}/free-resource-link`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: p!.pdf_file }),
-      });
-
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok || typeof data?.url !== "string") {
-        throw new Error(
-          typeof data?.error === "string"
-            ? data.error
-            : `Could not create a free resource link (HTTP ${response.status}).`,
-        );
-      }
-
-      return data.url as string;
-    },
-    enabled: false,
-  });
+  const [freeResourceOpening, setFreeResourceOpening] = useState(false);
 
   if (product.isLoading) {
     return (
@@ -235,8 +210,9 @@ function ProductDetail() {
                   p.pdf_file ? (
                     <Button
                       size="lg"
-                      disabled={freeResource.isFetching}
+                      disabled={freeResourceOpening}
                       onClick={async () => {
+                        setFreeResourceOpening(true);
                         try {
                           const workerUrl = String(
                             import.meta.env["VITE_R2_WORKER_URL"] ||
@@ -261,10 +237,15 @@ function ProductDetail() {
                           window.location.assign(data.url);
                         } catch (error) {
                           console.error("[Free Resource] Open failed:", error);
+                          toast.error(
+                            error instanceof Error ? error.message : "Could not open the free resource.",
+                          );
+                        } finally {
+                          setFreeResourceOpening(false);
                         }
                       }}
                     >
-                      {freeResource.isFetching ? "Opening…" : "Download Resource"}
+                      {freeResourceOpening ? "Opening…" : "Download Resource"}
                     </Button>
                   ) : (
                     <Button size="lg" disabled>
