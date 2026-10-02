@@ -309,6 +309,106 @@ export default {
       });
     }
 
+    if (url.pathname === "/free-resource-link" && request.method === "POST") {
+      let body: { key?: string };
+      try {
+        body = await request.json();
+      } catch {
+        return json(request, env, { error: "Invalid JSON body." }, 400);
+      }
+
+      const requestedKey = String(body.key || "").replace(/^\/+/, "");
+      if (!requestedKey || requestedKey.includes("..")) {
+        return json(request, env, { error: "Invalid resource path." }, 400);
+      }
+
+      const productResponse = await fetch(
+        `${env.SUPABASE_URL}/rest/v1/products?pdf_file=eq.${encodeURIComponent(requestedKey)}&is_free=eq.true&is_active=eq.true&is_archived=eq.false&select=id,pdf_file&limit=1`,
+        {
+          headers: {
+            apikey: env.SUPABASE_SERVER_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVER_KEY}`,
+            Accept: "application/json",
+          },
+        },
+      );
+
+      if (!productResponse.ok) {
+        return json(request, env, { error: "Could not verify the free resource." }, 502);
+      }
+
+      const products = await productResponse.json() as Array<{ id: string; pdf_file: string | null }>;
+      const product = products[0];
+      if (!product?.id || !product.pdf_file) {
+        return json(request, env, { error: "Free resource not found." }, 404);
+      }
+
+      let key = safeKey(product.pdf_file);
+
+      // Older free resources may still point to the legacy Supabase bucket.
+      // Move them to R2 once, then update the product record so future opens stay on R2.
+      if (!key.startsWith("products/")) {
+        if (key.includes("..") || key.startsWith("/")) {
+          return json(request, env, { error: "Invalid stored resource path." }, 400);
+        }
+
+        const source = await fetch(
+          `${env.SUPABASE_URL}/storage/v1/object/product-files/${key.split("/").map(encodeURIComponent).join("/")}`,
+          {
+            headers: {
+              apikey: env.SUPABASE_SERVER_KEY,
+              Authorization: `Bearer ${env.SUPABASE_SERVER_KEY}`,
+            },
+          },
+        );
+
+        if (!source.ok || !source.body) {
+          return json(request, env, { error: "Could not read the free resource." }, 502);
+        }
+
+        const contentType = source.headers.get("Content-Type") || "";
+        if (!contentType.toLowerCase().includes("pdf")) {
+          return json(request, env, { error: "The free resource is not a PDF." }, 415);
+        }
+
+        const filename = key.split("/").pop() || "resource.pdf";
+        key = safeKey(`products/${crypto.randomUUID()}-${filename}`);
+        await env.PRODUCTS.put(key, source.body, {
+          httpMetadata: { contentType: "application/pdf" },
+          customMetadata: { migratedFrom: product.pdf_file, migratedBy: "free-resource" },
+        });
+
+        const updateResponse = await fetch(
+          `${env.SUPABASE_URL}/rest/v1/products?id=eq.${encodeURIComponent(product.id)}`,
+          {
+            method: "PATCH",
+            headers: {
+              apikey: env.SUPABASE_SERVER_KEY,
+              Authorization: `Bearer ${env.SUPABASE_SERVER_KEY}`,
+              "Content-Type": "application/json",
+              Prefer: "return=minimal",
+            },
+            body: JSON.stringify({ pdf_file: key }),
+          },
+        );
+
+        if (!updateResponse.ok) {
+          return json(request, env, { error: "Resource was moved to R2, but the product record could not be updated." }, 500);
+        }
+      }
+
+      const expiresIn = 60 * 60;
+      const exp = Math.floor(Date.now() / 1000) + expiresIn;
+      const signature = await sign(`${key}|${exp}`, env.DOWNLOAD_SIGNING_SECRET);
+      const downloadUrl = `${new URL(request.url).origin}/download?key=${encodeURIComponent(key)}&exp=${exp}&sig=${signature}&disposition=inline`;
+
+      return json(request, env, {
+        ok: true,
+        url: downloadUrl,
+        expiresAt: new Date(exp * 1000).toISOString(),
+      });
+    }
+
     if (url.pathname === "/admin-delivery-link" && request.method === "POST") {
       const adminId = await requireAdmin(request, env);
       if (!adminId) return json(request, env, { error: "Administrator access required." }, 403);
