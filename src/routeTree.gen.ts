@@ -15,10 +15,13 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as FreeResourcesRouteImport } from './routes/free-resources'
+import { Route as LibraryRouteImport } from './routes/library'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminFreeResourcesRouteImport } from './routes/admin.free-resources'
@@ -62,9 +65,19 @@ const FreeResourcesRoute = FreeResourcesRouteImport.update({
   path: '/free-resources',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RegisterRoute = RegisterRouteImport.update({
@@ -80,6 +93,11 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -150,10 +168,13 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/free-resources': typeof FreeResourcesRoute
+  '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/terms': typeof TermsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/free-resources': typeof AdminFreeResourcesRoute
   '/admin/messages': typeof AdminMessagesRoute
@@ -173,10 +194,13 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/free-resources': typeof FreeResourcesRoute
+  '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/terms': typeof TermsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/free-resources': typeof AdminFreeResourcesRoute
   '/admin/messages': typeof AdminMessagesRoute
@@ -198,10 +222,13 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/free-resources': typeof FreeResourcesRoute
+  '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
+  '/privacy': typeof PrivacyRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/terms': typeof TermsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/free-resources': typeof AdminFreeResourcesRoute
   '/admin/messages': typeof AdminMessagesRoute
@@ -224,10 +251,13 @@ export interface FileRouteTypes {
     | '/contact'
     | '/forgot-password'
     | '/free-resources'
+    | '/library'
     | '/login'
+    | '/privacy'
     | '/register'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/terms'
     | '/admin/customers'
     | '/admin/free-resources'
     | '/admin/messages'
@@ -247,10 +277,13 @@ export interface FileRouteTypes {
     | '/contact'
     | '/forgot-password'
     | '/free-resources'
+    | '/library'
     | '/login'
+    | '/privacy'
     | '/register'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/terms'
     | '/admin/customers'
     | '/admin/free-resources'
     | '/admin/messages'
@@ -271,10 +304,13 @@ export interface FileRouteTypes {
     | '/contact'
     | '/forgot-password'
     | '/free-resources'
+    | '/library'
     | '/login'
+    | '/privacy'
     | '/register'
     | '/reset-password'
     | '/sitemap.xml'
+    | '/terms'
     | '/admin/customers'
     | '/admin/free-resources'
     | '/admin/messages'
@@ -296,10 +332,13 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   FreeResourcesRoute: typeof FreeResourcesRoute
+  LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
+  PrivacyRoute: typeof PrivacyRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  TermsRoute: typeof TermsRoute
   CheckoutSlugRoute: typeof CheckoutSlugRoute
   ShopSlugRoute: typeof ShopSlugRoute
   ShopIndexRoute: typeof ShopIndexRoute
@@ -349,11 +388,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FreeResourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/register': {
@@ -375,6 +428,13 @@ declare module '@tanstack/react-router' {
       path: '/sitemap.xml'
       fullPath: '/sitemap.xml'
       preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -497,10 +557,13 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   FreeResourcesRoute: FreeResourcesRoute,
+  LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
+  PrivacyRoute: PrivacyRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  TermsRoute: TermsRoute,
   CheckoutSlugRoute: CheckoutSlugRoute,
   ShopSlugRoute: ShopSlugRoute,
   ShopIndexRoute: ShopIndexRoute,
