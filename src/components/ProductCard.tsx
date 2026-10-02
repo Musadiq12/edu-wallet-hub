@@ -47,7 +47,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
           {[product.course_label, product.subject_label].filter(Boolean).join(" · ") || "Digital study resource"}
         </p>
 
-        {product.description && (
+        {product.description && !compact && (
           <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{product.description}</p>
         )}
 
@@ -80,7 +80,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
               View Details
             </Link>
           </Button>
-          {!product.is_free && (
+          {!product.is_free && !compact && (
             <Button size="sm" className="flex-1" asChild>
               <Link to="/checkout/$slug" params={{ slug: product.slug }}>
                 Buy Now
