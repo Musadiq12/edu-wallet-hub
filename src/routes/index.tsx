@@ -124,13 +124,6 @@ function Home() {
             products={(featured.length ? featured : allProducts).slice(0, 10)}
           />
 
-          <section className="border-y border-border bg-muted/35">
-            <ProductCarousel
-              title="New arrivals"
-              description="Recently added resources, ready for your preparation."
-              products={allProducts.slice(0, 12)}
-            />
-          </section>
 
           {discounted.length > 0 && (
             <ProductCarousel
