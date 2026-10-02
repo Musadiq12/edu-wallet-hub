@@ -28,8 +28,12 @@ type LibraryItem = {
 export const Route = createFileRoute("/library")({
   head: () => ({
     meta: [
-      { title: "My Library — EduWallet" },
-      { name: "description", content: "Access your purchased EduWallet study resources." },
+      { title: "My Library — Edu Wallet" },
+      { name: "description", content: "Access your purchased Edu Wallet study resources." },
+      { property: "og:title", content: "My Library — Edu Wallet" },
+      { property: "og:description", content: "Access your purchased Edu Wallet study resources." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: LibraryPage,
@@ -50,13 +54,29 @@ function LibraryPage() {
     queryKey: ["my-library", user?.id],
     enabled: !!user,
     queryFn: async (): Promise<LibraryItem[]> => {
-      const client = supabase as any;
-      const { data, error } = await client
+      const { data, error } = await supabase
         .from("my_library")
         .select("product_id,title,slug,description,cover_image,pdf_file,page_count,format,order_id,amount,verified_at,delivered_at")
         .order("verified_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as LibraryItem[];
+
+      return (data ?? []).flatMap((row) => {
+        if (!row.product_id || !row.title || !row.slug || !row.pdf_file || !row.order_id) return [];
+        return [{
+          product_id: row.product_id,
+          title: row.title,
+          slug: row.slug,
+          description: row.description,
+          cover_image: row.cover_image,
+          pdf_file: row.pdf_file,
+          page_count: row.page_count,
+          format: row.format ?? "PDF",
+          order_id: row.order_id,
+          amount: row.amount ?? 0,
+          verified_at: row.verified_at,
+          delivered_at: row.delivered_at,
+        }];
+      });
     },
   });
 
@@ -151,24 +171,26 @@ function LibraryPage() {
             <Button variant="outline" size="sm" className="mt-4" onClick={() => void library.refetch()}>Try again</Button>
           </div>
         ) : library.data?.length ? (
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid items-stretch gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {library.data.map((item) => (
-              <article key={item.order_id} className="group overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-md">
-                <CoverImage path={item.cover_image} title={item.title} className="h-36" />
-                <div className="p-5">
+              <article key={item.order_id} className="group flex min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground transition-shadow hover:shadow-md">
+                <div className="h-36 shrink-0 overflow-hidden border-b border-border bg-surface">
+                  <CoverImage path={item.cover_image} title={item.title} className="h-full border-0" />
+                </div>
+                <div className="flex min-h-0 flex-1 flex-col p-5">
                   <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h2 className="font-semibold leading-6">{item.title}</h2>
+                    <div className="min-w-0 flex-1">
+                      <h2 className="break-words font-semibold leading-6">{item.title}</h2>
                       <p className="mt-1 text-xs text-muted-foreground">{item.format}{item.page_count ? ` · ${item.page_count} pages` : ""}</p>
                     </div>
-                    <span className="rounded-full bg-success/10 px-2.5 py-1 text-[11px] font-medium text-success">Purchased</span>
+                    <span className="shrink-0 rounded-full bg-success/10 px-2.5 py-1 text-[11px] font-medium text-success">Purchased</span>
                   </div>
                   {item.description && <p className="mt-3 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>}
-                  <div className="mt-5 flex gap-2">
-                    <Button className="flex-1" size="sm" disabled={opening === item.product_id} onClick={() => void openDocument(item)}>
+                  <div className="mt-auto flex gap-2 pt-5">
+                    <Button className="min-w-0 flex-1" size="sm" disabled={opening === item.product_id} onClick={() => void openDocument(item)}>
                       <FileText className="mr-1.5 h-4 w-4" /> {opening === item.product_id ? "Opening…" : "View PDF"}
                     </Button>
-                    <Button variant="outline" size="sm" aria-label={`Download ${item.title}`} disabled={opening === item.product_id} onClick={() => void openDocument(item)}>
+                    <Button className="h-8 w-8 shrink-0 px-0" variant="outline" size="sm" aria-label={`Download ${item.title}`} title={`Download ${item.title}`} disabled={opening === item.product_id} onClick={() => void openDocument(item)}>
                       <Download className="h-4 w-4" />
                     </Button>
                   </div>
