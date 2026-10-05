@@ -1,4 +1,7 @@
-import { queryOptions } from "@tanstack/react-query";\nconst db = supabase as any;\nimport { supabase } from "@/integrations/supabase/client";
+import { queryOptions } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
+const db = supabase as any;
 
 export type RevivorSeries = {
   id: string; course: string; title: string; slug: string; subject: string | null;
