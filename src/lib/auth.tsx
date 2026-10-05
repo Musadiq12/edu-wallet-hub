@@ -31,20 +31,23 @@ export function useSession() {
 
 export function useIsAdmin(userId: string | undefined) {
   return useQuery({
-    queryKey: ["is-admin", userId],
+    queryKey: ["admin-user", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("has_role", {
-        _user_id: userId!,
-        _role: "admin",
-      });
+      const { data, error } = await supabase.from("admin_users").select("user_id,role,is_active").eq("user_id", userId!).maybeSingle();
+      if (error) { console.error("[useIsAdmin] Failed to check admin access:", error); return false; }
+      return !!data?.is_active;
+    },
+  });
+}
 
-      if (error) {
-        console.error("[useIsAdmin] Failed to check admin role:", error);
-        return false;
-      }
-
-      return data === true;
+export function useAdminRole(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["admin-role", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase.from("admin_users").select("role,is_active,display_name").eq("user_id", userId!).maybeSingle();
+      return data ?? null;
     },
   });
 }
