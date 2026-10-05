@@ -15,11 +15,11 @@ export const revivorConfig = {
   clickToCallNumber: "8887621896",
   freeSampleUrl: "/revivor-free-sample.txt",
   leadWebhookUrl: "",
-  offerEndDate: "2026-12-31T23:59:59+05:30",
+  offerEndDate: "",
   trust: {
-    studentCount: "ADD_STUDENT_COUNT",
-    rating: "ADD_RATING",
-    ratingLabel: "ADD_RATING_COUNT",
+    studentCount: "",
+    rating: "",
+    ratingLabel: "",
     achievers: [] as string[],
   },
   analytics: {
