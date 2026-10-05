@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { FileText } from "lucide-react";
+import { BookOpenCheck, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CoverImage } from "@/components/CoverImage";
@@ -20,7 +20,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
         className="block overflow-hidden"
         aria-label={`View details for ${product.title}`}
       >
-        <CoverImage path={product.cover_image} title={product.title} className="aspect-[3/4]" />
+        <div className="grid aspect-[4/3] place-items-center bg-slate-950 p-6 text-white"><div className="w-full max-w-[240px] border border-white/15 bg-white/5 p-5"><p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-300">{product.course_label}</p><BookOpenCheck className="mt-8 size-7 text-amber-300" /><p className="mt-3 text-xl font-bold leading-tight">{product.title}</p><p className="mt-2 text-xs text-slate-400">{product.test_type}</p></div></div>
       </Link>
 
       <div className={compact ? "flex flex-1 flex-col p-3.5" : "flex flex-1 flex-col p-4"}>
@@ -51,11 +51,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
           <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{product.description}</p>
         )}
 
-        <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-          {product.format}
-          {product.page_count ? ` · ${product.page_count} pages` : ""}
-        </p>
+        <p className="mt-3 text-xs text-muted-foreground">{product.validity_days ? `${product.validity_days} days access` : "Flexible access"} · {product.format}</p>
 
         <div className="mt-4 flex items-baseline gap-2">
           {product.is_free ? (
@@ -82,9 +78,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
           </Button>
           {!product.is_free && !compact && (
             <Button size="sm" className="flex-1" asChild>
-              <Link to="/checkout/$slug" params={{ slug: product.slug }}>
-                Buy Now
-              </Link>
+              <Link to="/checkout/$slug" params={{ slug: product.slug }}>Buy Now <ArrowRight className="ml-1 inline size-3.5" /></Link>
             </Button>
           )}
         </div>
