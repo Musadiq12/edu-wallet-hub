@@ -34,6 +34,8 @@ function RegisterPage() {
   const [form, setForm] = useState({ full_name: "", email: "", whatsapp: "", password: "" });
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(false);
+  const [confirmationEmail, setConfirmationEmail] = useState("");
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -59,16 +61,53 @@ function RegisterPage() {
 
     if (error) return void toast.error(friendlyError(error, "Could not create your account."));
 
-    // Registration is complete from the website's perspective. Do not show
-    // an email-verification step or sign the user out after registration.
     if (data.session) {
       toast.success("Account created successfully.");
       window.location.assign(redirect?.startsWith("/") ? redirect : "/");
-    } else {
-      toast.success("Account created. You can now log in.");
-      window.location.assign(redirect?.startsWith("/") ? redirect : "/login");
+      return;
     }
+
+    setConfirmationEmail(form.email.trim());
+    setConfirmationSent(true);
+    toast.success("Account created. Please check your email to confirm your account.");
   };
+
+  const resendConfirmation = async () => {
+    if (!confirmationEmail) return;
+    setBusy(true);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: confirmationEmail,
+      options: { emailRedirectTo: window.location.origin + "/" },
+    });
+    setBusy(false);
+
+    if (error) return void toast.error(friendlyError(error, "Could not resend the confirmation email."));
+    toast.success("Confirmation email sent again.");
+  };
+
+  if (confirmationSent) {
+    return (
+      <div className="page-container section-y max-w-md">
+        <div className="rounded-xl border bg-card p-6">
+          <h1 className="text-2xl font-semibold tracking-tight">Check your email</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your account was created successfully. We sent a confirmation link to{" "}
+            <span className="font-medium text-foreground">{confirmationEmail}</span>.
+          </p>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Open the email and click the confirmation link to verify your account. Once verified, you can log in.
+          </p>
+          <Button type="button" variant="outline" className="mt-6 h-11 w-full" onClick={resendConfirmation} disabled={busy}>
+            {busy ? "Sending…" : "Resend confirmation email"}
+          </Button>
+          <Link to="/login" className="mt-4 block text-center text-sm text-primary hover:underline">
+            Back to login
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-container section-y max-w-md">
