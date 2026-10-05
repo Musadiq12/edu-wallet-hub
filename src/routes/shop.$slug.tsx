@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useSiteSettings } from "@/lib/settings";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Eye, FileText, ShieldCheck, ShoppingBag } from "lucide-react";
+import { ArrowRight, Eye, FileText, ShieldCheck, Test SeriespingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -32,14 +32,14 @@ export const Route = createFileRoute("/shop/$slug")({
   },
   head: ({ params, loaderData }) => {
     const p = loaderData?.product;
-    const title = p ? `${p.title} — Edu Wallet` : "Study resource — Edu Wallet";
+    const title = p ? `${p.title} — Revivor CS Test Series` : "Study resource — Revivor CS Test Series";
     const desc = p
       ? trimDesc(
           p.description ||
             p.whats_included ||
-            `${p.title}: digital exam study resource from Edu Wallet.`,
+            `${p.title}: digital exam study resource from Revivor CS Test Series.`,
         )
-      : "Digital exam study resource from Edu Wallet. See what's included, format and pricing before you buy.";
+      : "Digital exam study resource from Revivor CS Test Series. See what's included, format and pricing before you buy.";
     const meta: Array<Record<string, string>> = [
       { title },
       { name: "description", content: desc },
@@ -119,14 +119,14 @@ function ProductDetail() {
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
               <CoverImage path={p.cover_image} title={p.title} />
             </div>
-            <p className="mt-3 text-center text-xs text-muted-foreground">Digital PDF resource</p>
+            <p className="mt-3 text-center text-xs text-muted-foreground">Online test series</p>
           </div>
 
           <div>
             <div className="flex flex-wrap gap-1.5">
               {p.is_demo && (
                 <Badge variant="outline" className="text-[10px] tracking-wide uppercase">
-                  Demo / placeholder
+                  Test Series
                 </Badge>
               )}
               {category && <Badge variant="secondary">{category.name}</Badge>}
@@ -273,12 +273,9 @@ function ProductDetail() {
             <div className="mt-6 space-y-3 rounded-2xl border border-border bg-surface p-5 text-sm text-muted-foreground">
               <p className="flex gap-2">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-                This is a digital product. No physical item will be shipped.
+                This is an online test series. Access is provided to your student account after payment verification.
               </p>
-              <p>
-                Payment is made via UPI and verified manually. {s.deliveryEstimate ? `${s.deliveryEstimate}, the` : "Once verified, the"}
-                material is sent to your registered email address or WhatsApp number.
-              </p>
+              <p>Payment is made via UPI and verified manually. Once verified, your test-series access is activated for the validity period shown above.</p>
               <p><strong className="text-foreground">Refund / access policy:</strong> Because this is a digital product, access is provided after payment verification. If you have a payment or delivery issue, contact support before taking further action.</p>
               <p><strong className="text-foreground">Need help?</strong> Use the Contact page and include your order details so our team can assist quickly.</p>
               {isAssignment && <p>{siteConfig.assignmentDisclaimer}</p>}
