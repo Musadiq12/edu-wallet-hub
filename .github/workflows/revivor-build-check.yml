@@ -1,6 +1,9 @@
 name: Revivor Build Check
 
 on:
+  push:
+    branches:
+      - revivor-homepage
   pull_request:
     branches:
       - main
