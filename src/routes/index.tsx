@@ -67,7 +67,7 @@ function Reveal({ children, className = "" }: { children: React.ReactNode; class
 
 function CourseFinder({ onEnroll }: { onEnroll: (p: Product) => void }) {
   const [course, setCourse] = useState<Course>("CSEET");
-  const [module, setModule] = useState(trackOptions.CSEET[0]);
+  const [module, setModule] = useState<string>("All Papers");
   const [testType, setTestType] = useState<(typeof testTypes)[number]>("Chapter-wise");
   const options = trackOptions[course];
   const match = useMemo(() => PRODUCT_CATALOG.find((p) => p.course === course && p.module === module && p.testType === testType), [course, module, testType]);
