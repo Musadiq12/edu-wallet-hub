@@ -14,19 +14,19 @@ export function SiteHeader() {
       <nav className="page-container flex h-[72px] items-center justify-between gap-4">
         <Link to="/" aria-label="Revivor CS Test Series home" className="shrink-0 rounded-xl px-1 py-1 hover:bg-slate-900/5"><span className="flex items-center gap-2"><span className="grid size-9 place-items-center rounded-xl bg-slate-950 text-sm font-black text-amber-400">R</span><span className="hidden text-sm font-black tracking-tight text-slate-950 sm:inline">Revivor CS Test Series</span></span></Link>
         <div className="hidden items-center gap-7 lg:flex">
-          <a href="#finder" className="text-sm font-semibold text-slate-700 hover:text-slate-950">Find My Plan</a>
-          <a href="#series" className="text-sm font-semibold text-slate-700 hover:text-slate-950">Test Series</a>
-          <a href="#details" className="text-sm font-semibold text-slate-700 hover:text-slate-950">How It Works</a>
-          <a href="#sample" className="text-sm font-semibold text-slate-700 hover:text-slate-950">Free Sample</a>
+          <Link to="/" hash="finder" className="text-sm font-semibold text-slate-700 hover:text-slate-950">Find My Plan</Link>
+          <Link to="/" hash="series" className="text-sm font-semibold text-slate-700 hover:text-slate-950">Test Series</Link>
+          <Link to="/" hash="details" className="text-sm font-semibold text-slate-700 hover:text-slate-950">How It Works</Link>
+          <Link to="/" hash="sample" className="text-sm font-semibold text-slate-700 hover:text-slate-950">Free Sample</Link>
         </div>
         <div className="flex items-center gap-2">
           <CartLink />
           {user ? <Link to="/library" className="hidden rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white hover:bg-slate-800 sm:inline-flex">My Library</Link> : <div className="hidden items-center gap-2 sm:flex"><Link to="/login" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold hover:shadow-sm">Login</Link><Link to="/register" className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold hover:shadow-sm">Register</Link></div>}
-          <a href="#finder" className="hidden rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-black text-slate-950 hover:bg-amber-300 sm:inline-flex">Enroll Now</a>
+          <Link to="/" hash="finder" className="hidden rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-black text-slate-950 hover:bg-amber-300 sm:inline-flex">Enroll Now</Link>
           <button type="button" className="inline-flex size-10 items-center justify-center rounded-xl border border-slate-200 bg-white lg:hidden" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="revivor-mobile-menu" onClick={() => setOpen((v) => !v)}>{open ? <X className="size-5" /> : <Menu className="size-5" />}</button>
         </div>
       </nav>
-      {open && <div id="revivor-mobile-menu" className="border-t border-slate-200 bg-[#f8f6f0] lg:hidden"><div className="page-container grid gap-2 py-4">{[["Find My Plan","#finder"],["Test Series","#series"],["How It Works","#details"],["Free Sample","#sample"]].map(([label,target]) => <a key={target} href={target} onClick={() => setOpen(false)} className="rounded-xl bg-white px-4 py-3 text-sm font-bold">{label}</a>)}<div className="grid grid-cols-2 gap-2"><Link to="/login" onClick={() => setOpen(false)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold">Login</Link><Link to="/register" onClick={() => setOpen(false)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold">Register</Link></div></div></div>}
+      {open && <div id="revivor-mobile-menu" className="border-t border-slate-200 bg-[#f8f6f0] lg:hidden"><div className="page-container grid gap-2 py-4">{[["Find My Plan","finder"],["Test Series","series"],["How It Works","details"],["Free Sample","sample"]].map(([label,target]) => <Link key={target} to="/" hash={target} onClick={() => setOpen(false)} className="rounded-xl bg-white px-4 py-3 text-sm font-bold">{label}</Link>)}{user ? <Link to="/library" onClick={() => setOpen(false)} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white">My Library</Link> : <div className="grid grid-cols-2 gap-2"><Link to="/login" onClick={() => setOpen(false)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold">Login</Link><Link to="/register" onClick={() => setOpen(false)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold">Register</Link></div>}</div></div>}
     </header>
   );
 }

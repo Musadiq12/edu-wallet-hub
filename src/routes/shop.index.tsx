@@ -17,16 +17,16 @@ export const Route = createFileRoute("/shop/")({
   }),
   head: () => ({
     meta: [
-      { title: "Exam Study Resources" },
+      { title: "Revivor CS Test Series — CSEET, CS Executive & CS Professional" },
       {
         name: "description",
         content:
-          "Browse exam-focused notes, guess papers, solved papers, assignment guidance and digital study resources across popular Indian exams.",
+          "Chapter-wise and full-syllabus CS test series for CSEET, CS Executive and CS Professional.",
       },
-      { property: "og:title", content: "Exam Study Resources" },
+      { property: "og:title", content: "Revivor CS Test Series — CSEET, CS Executive & CS Professional" },
       {
         property: "og:description",
-        content: "Browse exam-focused notes, guess papers, solved papers, assignment guidance and digital study resources across popular Indian exams.",
+        content: "Chapter-wise and full-syllabus CS test series for CSEET, CS Executive and CS Professional.",
       },
     ],
     links: [{ rel: "canonical", href: "/shop" }],
@@ -68,9 +68,9 @@ function Shop() {
   return (
     <div className="section-y">
       <div className="page-container">
-        <h1 className="text-3xl font-bold sm:text-4xl">Exam Study Resources</h1>
+        <h1 className="text-3xl font-bold sm:text-4xl">Revivor CS Test Series</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Notes, guess papers, assignment guidance, solved papers and exam guides across popular Indian exams. All resources are digital
+          Chapter-wise and full-syllabus test series for CSEET, CS Executive and CS Professional. All plans are digital
           (PDF) and delivered after payment verification.
         </p>
 
