@@ -23,105 +23,89 @@ export type Product = {
   is_active: boolean;
   is_demo: boolean;
   created_at: string;
+  validity_days: number | null;
+  features: string[];
+  test_type: string;
 };
 
-export type Category = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  sort_order: number;
-};
+const mapSeries = (row: any): Product => ({
+  id: row.id,
+  title: row.title,
+  slug: row.slug,
+  description: row.description ?? null,
+  whats_included: Array.isArray(row.features) ? row.features.join("\n") : null,
+  category_id: null,
+  course_label: row.course ?? null,
+  subject_label: row.subject ?? null,
+  keywords: [row.course, row.subject, row.test_type].filter(Boolean).join(" "),
+  price: Number(row.price ?? 0),
+  discounted_price: row.discount_price == null ? null : Number(row.discount_price),
+  cover_image: row.thumbnail_url ?? null,
+  pdf_file: null,
+  preview_file: null,
+  page_count: null,
+  format: "Online Test Series",
+  is_free: false,
+  is_featured: Number(row.sort_order ?? 0) < 4,
+  is_active: row.status === "published",
+  is_demo: false,
+  created_at: row.created_at,
+  validity_days: row.validity_days ?? null,
+  features: Array.isArray(row.features) ? row.features : [],
+  test_type: row.test_type ?? "",
+});
 
-const PRODUCT_FIELDS =
-  "id,title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,created_at";
-
-export const categoriesQuery = () =>
+export const productsQuery = (opts?: { featured?: boolean; free?: boolean; categorySlug?: string; limit?: number }) =>
   queryOptions({
-    queryKey: ["categories"],
-    queryFn: async (): Promise<Category[]> => {
-      const { data, error } = await supabase
-        .from("categories")
-        .select("id,name,slug,description,sort_order")
-        .order("sort_order");
-      if (error) throw error;
-      return (data ?? []) as Category[];
-    },
-  });
-
-export const productsQuery = (opts?: {
-  featured?: boolean;
-  free?: boolean;
-  categorySlug?: string;
-  limit?: number;
-}) =>
-  queryOptions({
-    queryKey: ["products", opts ?? {}],
+    queryKey: ["revivor-series-catalog", opts ?? {}],
     queryFn: async (): Promise<Product[]> => {
-      let q = supabase
-        .from("products")
-        .select(PRODUCT_FIELDS)
-        .eq("is_active", true)
-        .eq("is_archived", false)
+      let q = supabase.from("test_series")
+        .select("id,title,slug,description,course,subject,test_type,price,discount_price,validity_days,features,thumbnail_url,status,sort_order,created_at")
+        .eq("status", "published")
+        .order("sort_order")
         .order("created_at", { ascending: false });
-      if (opts?.featured) q = q.eq("is_featured", true);
-      if (opts?.free !== undefined) q = q.eq("is_free", opts.free);
-      q = q.limit(opts?.limit ?? 60);
+      if (opts?.featured) q = q.limit(opts.limit ?? 6);
+      else q = q.limit(opts?.limit ?? 100);
       const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []) as unknown as Product[];
+      let rows = (data ?? []).map(mapSeries);
+      if (opts?.featured) rows = rows.slice(0, opts.limit ?? 6);
+      return rows;
     },
   });
 
 export const productBySlugQuery = (slug: string) =>
   queryOptions({
-    queryKey: ["product", slug],
+    queryKey: ["revivor-series", slug],
     queryFn: async (): Promise<Product | null> => {
-      const { data, error } = await supabase
-        .from("products")
-        .select(PRODUCT_FIELDS)
+      const { data, error } = await supabase.from("test_series")
+        .select("id,title,slug,description,course,subject,test_type,price,discount_price,validity_days,features,thumbnail_url,status,sort_order,created_at")
         .eq("slug", slug)
-        .eq("is_active", true)
-        .eq("is_archived", false)
+        .eq("status", "published")
         .maybeSingle();
       if (error) throw error;
-      return (data ?? null) as unknown as Product | null;
+      return data ? mapSeries(data) : null;
     },
   });
 
-export const adminProductsQuery = () =>
-  queryOptions({
-    queryKey: ["admin-products"],
-    queryFn: async (): Promise<Product[]> => {
-      const { data, error } = await supabase
-        .from("products")
-        .select(PRODUCT_FIELDS)
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as unknown as Product[];
-    },
-  });
+export const categoriesQuery = () => queryOptions({
+  queryKey: ["revivor-courses"],
+  queryFn: async () => {
+    const { data, error } = await supabase.from("test_series")
+      .select("course")
+      .eq("status", "published");
+    if (error) throw error;
+    return [...new Set((data ?? []).map((x: any) => x.course).filter(Boolean))].map((name) => ({
+      id: name,
+      name,
+      slug: String(name).toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      description: null,
+      sort_order: 0,
+    }));
+  },
+});
 
-/** Resolve a readable URL for a stored file. Public buckets use stable public URLs. */
-export async function fileUrl(
-  bucket: string,
-  path: string | null,
-  seconds = 3600,
-): Promise<string | null> {
-  if (!path) return null;
-
-  if (bucket === "product-covers" || bucket === "product-previews") {
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-    return data?.publicUrl ?? null;
-  }
-
-  const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, seconds);
-  if (error) return null;
-  return data?.signedUrl ?? null;
-}
-
-/** Backwards-compatible helper for private files. */
-export const signedUrl = fileUrl;
+export const adminProductsQuery = productsQuery;
 
 export function matchesSearch(p: Product, term: string, categoryName?: string) {
   const t = term.trim().toLowerCase();
@@ -130,3 +114,13 @@ export function matchesSearch(p: Product, term: string, categoryName?: string) {
     .filter(Boolean)
     .some((v) => String(v).toLowerCase().includes(t));
 }
+
+export function effectivePrice(p: Product) {
+  return Number(p.discounted_price ?? p.price ?? 0);
+}
+
+export async function fileUrl(): Promise<string | null> {
+  return null;
+}
+
+export const signedUrl = fileUrl;
