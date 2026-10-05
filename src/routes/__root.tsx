@@ -35,7 +35,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: async ({ context }) => { try { return await context.queryClient.ensureQueryData(settingsQuery()); } catch { return defaultSettings; } },
   head: ({ loaderData }) => {
-    const publicSiteUrl = (import.meta.env.VITE_PUBLIC_SITE_URL || "").replace(/\/$/, "");
+    const rawPublicSiteUrl = import.meta.env.VITE_PUBLIC_SITE_URL || "";\n    const publicSiteUrl = rawPublicSiteUrl.endsWith("/") ? rawPublicSiteUrl.slice(0, -1) : rawPublicSiteUrl;
     const ogImage = loaderData?.ogImageUrl || (publicSiteUrl ? `${publicSiteUrl}/og-image.svg` : "");
     const canonical = publicSiteUrl ? `${publicSiteUrl}/` : "";
     return {
