@@ -1,6 +1,9 @@
 name: Revivor build check
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - revivor-functional-admin
