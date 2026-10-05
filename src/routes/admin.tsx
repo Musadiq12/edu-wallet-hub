@@ -50,7 +50,7 @@ function AdminLayout() {
     return <div className="grid min-h-screen place-items-center bg-[#f8f6f0] text-sm text-slate-500">Checking administrator access…</div>;
   }
   if (!user) {
-    return <div className="mx-auto max-w-md px-6 py-20"><h1 className="text-2xl font-black text-slate-950">Administrator login</h1><p className="mt-2 text-sm text-slate-500">Sign in with the administrator account to manage Revivor.</p><Button className="mt-5" asChild><Link to="/login" search={{ redirect: "/admin" }}>Go to login</Link></Button></div>;
+    return <div className="mx-auto max-w-md px-6 py-20"><h1 className="text-2xl font-black text-slate-950">Administrator login</h1><p className="mt-2 text-sm text-slate-500">Sign in with the Revivor administrator account.</p><Button className="mt-5" asChild><Link to="/admin/login">Go to admin login</Link></Button></div>;
   }
   if (!isAdmin) {
     return <div className="mx-auto max-w-md px-6 py-20"><h1 className="text-2xl font-black">Access denied</h1><p className="mt-2 text-sm text-slate-500">This area is restricted to Revivor administrators.</p><div className="mt-5 flex gap-2"><Button variant="outline" asChild><Link to="/">Back to site</Link></Button><Button variant="ghost" onClick={async () => { await signOutCleanly(); void navigate({ to: "/login" }); }}>Log out</Button></div></div>;
@@ -99,7 +99,7 @@ function AdminLayout() {
             <Link to="/" className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-slate-500 hover:bg-slate-100 sm:flex sm:items-center sm:gap-2"><ExternalLink className="size-4" /> View site</Link>
             <button type="button" onClick={() => void navigate({ to: "/admin/orders" })} className="relative grid size-10 place-items-center rounded-xl text-slate-500 hover:bg-slate-100" aria-label="Orders"><Bell className="size-4" />{pending > 0 && <span className="absolute right-2 top-2 size-2 rounded-full bg-red-500" />}</button>
             <button type="button" onClick={() => setDark((v) => !v)} className="grid size-10 place-items-center rounded-xl text-slate-500 hover:bg-slate-100" aria-label="Toggle theme">{dark ? <Sun className="size-4" /> : <Moon className="size-4" />}</button>
-            <div className="hidden h-8 w-px bg-slate-200 sm:block" /><div className="hidden max-w-[220px] sm:block"><p className="truncate text-xs font-bold">{user.email}</p><p className="text-[11px] text-slate-500">Administrator</p></div>
+            <div className="hidden h-8 w-px bg-slate-200 sm:block" /><div className="hidden max-w-[220px] sm:block"><p className="truncate text-xs font-bold">{user.email}</p><p className="text-[11px] text-slate-500">{roleLoading ? "Checking access" : "Administrator"}</p></div>
           </div>
         </header>
         <main className="min-h-[calc(100vh-4rem)] p-4 sm:p-7 lg:p-9"><div className="mx-auto max-w-[1500px]"><Outlet /></div></main>
