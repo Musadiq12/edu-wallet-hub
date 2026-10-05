@@ -25,7 +25,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => { reportLovableError(error, { boundary: "tanstack_root_error_component" }); }, [error]);
-  return <div className="flex min-h-[60vh] items-center justify-center px-4"><div className="max-w-md text-center"><h1 className="font-serif text-xl font-semibold tracking-tight text-foreground">This page didn't load</h1><p className="mt-2 text-sm text-muted-foreground">Something went wrong on our end. Please try again or head back home.</p><div className="mt-6 flex flex-wrap justify-center gap-2"><button onClick={() => { router.invalidate(); reset(); }} className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">Try again</button><a href="/" className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/10">Go home</a></div></div></div>;
+  const retry = async () => {
+    try { reset(); await router.invalidate(); } catch { window.location.reload(); }
+  };
+  const goHome = async () => {
+    try { reset(); await router.navigate({ to: "/" }); } catch { window.location.assign("/"); }
+  };
+  return <div className="flex min-h-[60vh] items-center justify-center px-4"><div className="max-w-md text-center"><h1 className="font-serif text-xl font-semibold tracking-tight text-foreground">This page didn't load</h1><p className="mt-2 text-sm text-muted-foreground">Something went wrong on our end. Please try again or head back home.</p><div className="mt-6 flex flex-wrap justify-center gap-2"><button type="button" onClick={() => void retry()} className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">Try again</button><a href="/" onClick={(e) => { e.preventDefault(); void goHome(); }} className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/10">Go home</a></div></div></div>;
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
@@ -63,10 +69,10 @@ function Analytics() {
     const script = document.createElement("script");
     script.async = true;
     script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
-    script.dataset.eduAnalytics = "true";
+    script.dataset["eduAnalytics"] = "true";
     document.head.appendChild(script);
     const init = document.createElement("script");
-    init.dataset.eduAnalytics = "true";
+    init.dataset["eduAnalytics"] = "true";
     init.text = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${id}');`;
     document.head.appendChild(init);
   }, []);
