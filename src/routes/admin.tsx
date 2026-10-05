@@ -26,6 +26,7 @@ const NAV = [
   { to: "/admin/customers", label: "Students", icon: Users, exact: false },
   { to: "/admin/messages", label: "Leads & Messages", icon: Bell, exact: false },
   { to: "/admin/free-resources", label: "Free Resources", icon: Gift, exact: false },
+  { to: "/admin/content", label: "Homepage Content", icon: BookOpenCheck, exact: false },
   { to: "/admin/settings", label: "Site Settings", icon: Settings, exact: false },
 ] as const;
 
