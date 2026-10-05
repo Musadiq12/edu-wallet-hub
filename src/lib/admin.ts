@@ -30,6 +30,7 @@ export function friendlyError(err: unknown, fallback = "Something went wrong. Pl
   if (m.includes("administrator access required") || m.includes("admin access required")) return "Your current account is not an administrator. Log in with the EduWallet admin account.";
   if (m.includes("exceeded the maximum allowed size") || m.includes("payload too large")) return "That file is too large for this upload.";
   if (m.includes("failed to fetch") || m.includes("network")) return "Network problem. Check your connection and try again.";
+  if (m.includes("over_email_send_rate_limit") || (m.includes("rate limit") && m.includes("email"))) return "Email sending is temporarily rate-limited by Supabase. Please wait for the limit to reset or configure custom SMTP in Supabase Auth.";
   if (m.includes("invalid login credentials")) return "Incorrect email or password.";
   if (m.includes("already registered")) return "An account with that email already exists.";
   return fallback;
