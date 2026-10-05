@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";\nconst db = supabase as any;\nimport { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+const db = supabase as any;
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { CalendarDays, CheckCircle2, Clock3, FileUp, GraduationCap, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
