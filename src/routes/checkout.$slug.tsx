@@ -84,8 +84,8 @@ function Checkout() {
     return (
       <div className="page-container section-y">
         <EmptyState
-          title="Product unavailable"
-          description="This resource can't be purchased right now."
+          title="Test series unavailable"
+          description="This test series is not available for enrollment right now."
           action={
             <Button asChild>
               <Link to="/shop">Back to shop</Link>
@@ -128,7 +128,7 @@ function Checkout() {
           <CheckCircle2 className="mx-auto h-10 w-10 text-success" aria-hidden="true" />
           <h1 className="mt-4 font-serif text-2xl font-semibold">Payment confirmation received.</h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            We will verify your payment and deliver your digital product to your registered email
+            We will verify your payment and deliver your test series to your registered email
             address or WhatsApp number. {siteSettings.deliveryEstimate ? `${siteSettings.deliveryEstimate}.` : ""}
           </p>
           <div className="mt-5 rounded-lg border border-border bg-surface p-4 text-left text-sm">
@@ -212,7 +212,8 @@ function Checkout() {
 
       const { error: insertError } = await supabase.from("orders").insert({
         user_id: user.id,
-        product_id: p.id,
+        product_id: null,
+        series_id: p.id,
         product_title: p.title,
         full_name: form.full_name.trim(),
         email: form.email.trim(),
@@ -241,9 +242,9 @@ function Checkout() {
           onClick={() => navigate({ to: "/shop/$slug", params: { slug } })}
           className="text-xs text-muted-foreground hover:text-foreground"
         >
-          ← Back to product
+          ← Back to test series
         </button>
-        <h1 className="mt-3 text-3xl font-bold">Complete your order</h1>
+        <h1 className="mt-3 text-3xl font-bold">Complete your enrollment</h1>
 
         <div className="mt-6 grid gap-8 lg:grid-cols-2">
           <section className="rounded-lg border border-border bg-card p-6">
@@ -265,7 +266,7 @@ function Checkout() {
               {siteSettings.qrCodeUrl ? (
                 <img
                   src={siteSettings.qrCodeUrl}
-                  alt="UPI QR code for Edu Wallet"
+                  alt="UPI QR code for Revivor CS Test Series"
                   className="h-56 w-56"
                 />
               ) : (
