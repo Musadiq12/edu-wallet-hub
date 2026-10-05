@@ -1,23 +1,17 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { ProductCard } from "@/components/ProductCard";
-import { EmptyState, LoadingGrid } from "@/components/EmptyState";
-import { productsQuery } from "@/lib/catalog";
-import { siteConfig } from "@/config/site";
+import { createFileRoute, Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/free-resources")({
   head: () => ({
     meta: [
-      { title: "Free Study Resources" },
+      { title: "Free Sample — Revivor CS Test Series" },
       {
         name: "description",
-        content:
-          "Free samples and study material across exam categories from Edu Wallet. Preview the format before buying paid resources.",
+        content: "Try a Revivor CS Test Series sample before choosing your CSEET, CS Executive or CS Professional plan.",
       },
-      { property: "og:title", content: "Free Study Resources" },
+      { property: "og:title", content: "Free Sample — Revivor CS Test Series" },
       {
         property: "og:description",
-        content: "Free samples and study material across exam categories from Edu Wallet.",
+        content: "Try a Revivor CS Test Series sample before choosing your plan.",
       },
     ],
     links: [{ rel: "canonical", href: "/free-resources" }],
@@ -26,31 +20,22 @@ export const Route = createFileRoute("/free-resources")({
 });
 
 function FreeResources() {
-  const free = useQuery(productsQuery({ free: true }));
-
   return (
-    <div className="section-y">
-      <div className="page-container">
-        <h1 className="text-3xl font-bold sm:text-4xl">Free Resources</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Free samples and study material so you can see the format and quality of Edu Wallet
-          resources before purchasing anything.
+    <main className="page-container section-y">
+      <div className="mx-auto max-w-3xl rounded-[28px] border border-amber-200 bg-amber-50 p-6 sm:p-10">
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-800">Revivor CS Test Series</p>
+        <h1 className="mt-2 text-3xl font-black sm:text-4xl">Try the Free Sample</h1>
+        <p className="mt-4 text-sm leading-7 text-amber-950/70">
+          Get a sample before choosing a CSEET, CS Executive or CS Professional test series.
         </p>
-
-        <div className="mt-8">
-          {free.isLoading ? (
-            <LoadingGrid />
-          ) : free.data && free.data.length > 0 ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {free.data.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
-            </div>
-          ) : (
-            <EmptyState title="Free resources are coming soon" />
-          )}
-        </div>
+        <Link
+          to="/"
+          hash="sample"
+          className="mt-7 inline-flex items-center justify-center rounded-2xl bg-slate-950 px-5 py-3.5 font-bold text-white hover:bg-slate-800"
+        >
+          Get Free Sample
+        </Link>
       </div>
-    </div>
+    </main>
   );
 }

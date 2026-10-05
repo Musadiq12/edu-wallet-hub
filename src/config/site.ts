@@ -1,20 +1,12 @@
-/**
- * Static, non-editable copy for Edu Wallet.
- *
- * Editable branding/contact/payment values (website name, tagline, emails,
- * WhatsApp, social links, UPI, delivery estimate, website URL) live ONLY in the
- * `site_settings` database table and are managed in Admin → Settings.
- * Read them with `useSiteSettings()` from `@/lib/settings`.
- * `fallbackBrand` is used solely if the settings cannot be loaded at all.
- */
+/** Runtime-independent copy for Revivor CS Test Series. */
 export const siteConfig = {
-  fallbackBrand: { brandName: "Edu Wallet", tagline: "Study Smart. Score Better." },
+  fallbackBrand: { brandName: "Revivor CS Test Series", tagline: "Let's crack CS Exams in the upcoming attempt!" },
   shortDescription:
-    "Exam-focused notes, guess papers, solved papers, assignment guidance and study resources for competitive, board and entrance exams.",
+    "Chapter-wise and full-syllabus CS test series for CSEET, CS Executive and CS Professional, with expert checking and mentorship.",
   copyrightYear: 2026,
   disclaimer:
-    "EduWallet is an independent educational resource platform. It is not affiliated with or endorsed by any examination authority, university, board or institution.",
+    "Revivor CS Test Series is an independent educational service and is not affiliated with or endorsed by any examination authority.",
   assignmentDisclaimer:
-    "We provide original educational reference and guidance material. Students are responsible for understanding and submitting their own academic work in accordance with their institution's rules.",
+    "Revivor provides test practice, checking and mentorship. Students remain responsible for their own examination preparation and submissions.",
   analyticsMeasurementId: "",
 } as const;
