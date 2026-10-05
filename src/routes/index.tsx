@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import {
@@ -7,7 +8,9 @@ import {
   Star, Target, Users, X, Zap
 } from "lucide-react";
 import { revivorConfig } from "@/config/revivor";
-import products from "@/config/products.json";
+import { useSiteSettings } from "@/lib/settings";
+import { productsQuery, type Product as CatalogProduct } from "@/lib/catalog";
+import { supabase } from "@/integrations/supabase/client";
 
 type Course = (typeof revivorConfig.courses)[number];
 type Product = {
@@ -65,12 +68,12 @@ function Reveal({ children, className = "" }: { children: React.ReactNode; class
   return <div ref={ref} className={`transition-all duration-700 ${visible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0"} ${className}`}>{children}</div>;
 }
 
-function CourseFinder({ onEnroll }: { onEnroll: (p: Product) => void }) {
+function CourseFinder({ products, onEnroll }: { products: Product[]; onEnroll: (p: Product) => void }) {
   const [course, setCourse] = useState<Course>("CSEET");
   const [module, setModule] = useState<string>("All Papers");
   const [testType, setTestType] = useState<(typeof testTypes)[number]>("Chapter-wise");
   const options = trackOptions[course];
-  const match = useMemo(() => PRODUCT_CATALOG.find((p) => p.course === course && p.module === module && p.testType === testType), [course, module, testType]);
+  const match = useMemo(() => products.find((p) => p.course === course && p.module === module && p.testType === testType), [products, course, module, testType]);
 
   useEffect(() => {
     if (!options.includes(module)) setModule(options[0]);
@@ -106,8 +109,8 @@ function CourseFinder({ onEnroll }: { onEnroll: (p: Product) => void }) {
   );
 }
 
-function FeaturedCarousel({ onEnroll }: { onEnroll: (p: Product) => void }) {
-  const featured = PRODUCT_CATALOG.slice(0, 6);
+function FeaturedCarousel({ products, onEnroll }: { products: Product[]; onEnroll: (p: Product) => void }) {
+  const featured = products.filter((p) => p.is_featured).slice(0, 6).length ? products.filter((p) => p.is_featured).slice(0, 6) : products.slice(0, 6);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const touchX = useRef<number | null>(null);
@@ -151,6 +154,13 @@ function LeadForm({ unlocked, setUnlocked }: { unlocked: boolean; setUnlocked: (
         const response = await fetch(revivorConfig.leadWebhookUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...form, source: "homepage" }) });
         if (!response.ok) throw new Error("Lead webhook failed");
       }
+      const { error } = await supabase.from("contact_messages").insert({
+        name: form.name.trim(),
+        email: "homepage-lead@revivor.local",
+        whatsapp: form.phone.trim(),
+        message: `Free sample lead — ${form.course}`,
+      });
+      if (error) throw error;
       setStatus("success"); setUnlocked(true); 
     } catch { setStatus("error"); }
   };
@@ -180,8 +190,8 @@ function ExitIntent({ onClose, onSample }: { onClose: () => void; onSample: () =
   return <div className="fixed inset-0 z-[70] grid place-items-center bg-slate-950/55 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="exit-title"><div className="relative w-full max-w-lg rounded-[28px] bg-white p-7 shadow-2xl sm:p-9"><button type="button" aria-label="Close free sample popup" onClick={onClose} className="absolute right-4 top-4 rounded-full p-2 hover:bg-slate-100"><X className="size-5" /></button><p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Before you go</p><h2 id="exit-title" className="mt-2 text-3xl font-black">Take the free sample paper first.</h2><p className="mt-3 text-sm leading-6 text-slate-600">See how Revivor approaches test practice before making a purchase decision.</p><button type="button" onClick={onSample} className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 py-3.5 font-bold text-white">Get free sample <Download className="size-4" /></button></div></div>;
 }
 
-function FloatingActions() {
-  const number = revivorConfig.whatsappNumber.replace(/\D/g, "");
+function FloatingActions({ whatsappNumber }: { whatsappNumber: string }) {
+  const number = whatsappNumber.replace(/\D/g, "");
   const call = revivorConfig.clickToCallNumber.replace(/\D/g, "");
   const wa = number ? `https://wa.me/${number}?text=${encodeURIComponent("Hi, I want to know about Revivor CS Test Series")}` : "";
   return <><div className="fixed bottom-20 right-4 z-40 hidden flex-col gap-2 sm:flex">{wa && <a href={wa} target="_blank" rel="noreferrer" aria-label="Chat on WhatsApp" onClick={() => track("whatsapp_click")} className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-3 font-bold text-white shadow-lg"> <MessageCircle className="size-5" /> WhatsApp</a>}{call && <a href={`tel:+${call}`} aria-label="Call Revivor" onClick={() => track("call_click")} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-3 font-bold text-white shadow-lg"><Phone className="size-5" /> Call</a>}</div><div className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-2 border-t border-slate-200 bg-white p-2 sm:hidden">{wa ? <a href={wa} target="_blank" rel="noreferrer" onClick={() => track("mobile_whatsapp_click")} className="mx-1 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-3 py-3 font-bold text-white"><MessageCircle className="size-4" /> WhatsApp</a> : <span className="mx-1 inline-flex items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400">WhatsApp not configured</span>}<a href="#finder" onClick={() => track("mobile_enroll_click")} className="mx-1 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-3 py-3 font-bold text-white">Enroll Now <ArrowRight className="size-4" /></a></div></>;
@@ -189,6 +199,18 @@ function FloatingActions() {
 
 function Home() {
   const navigate = useNavigate();
+  const { data: dbProducts = [], isLoading: productsLoading, isError: productsError } = useQuery(productsQuery({ limit: 100 }));
+  const siteSettings = useSiteSettings();
+  const PRODUCT_CATALOG = useMemo<Product[]>(() => dbProducts
+    .filter((p) => p.course_label && ["CSEET", "CS Executive", "CS Professional"].includes(p.course_label))
+    .map((p) => {
+      const originalPrice = Number(p.price ?? 0);
+      const salePrice = p.discounted_price == null ? originalPrice : Number(p.discounted_price);
+      const title = p.title.replace(/^REVIVOR\s*—\s*/i, "");
+      const module = p.subject_label || "All Papers";
+      const testType = /full[- ]syllabus/i.test(p.keywords || "") || /full[- ]syllabus/i.test(title) ? "Full-syllabus" : /combo/i.test(p.keywords || "") || /combo/i.test(title) ? "Combo" : "Chapter-wise";
+      return { ...p, course: p.course_label!, module, testType, title, price: salePrice, originalPrice, validity: "1 Year" };
+    }), [dbProducts]);
   const [unlocked, setUnlocked] = useState(false);
   const [exitOpen, setExitOpen] = useState(false);
   useEffect(() => {
@@ -215,8 +237,7 @@ function Home() {
 
     <div className="page-container space-y-20 py-16 sm:py-20">
       <div className="rounded-[28px] border border-amber-200 bg-amber-100/60 p-5 sm:flex sm:items-center sm:justify-between"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-amber-800">Limited-time offer</p><p className="mt-1 font-bold">Offer ends in <span className="font-black"><Countdown /></span></p></div><a href="#finder" onClick={() => track("offer_cta")} className="mt-3 inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-bold text-white sm:mt-0">See plans <ArrowRight className="size-4" /></a></div>
-      <CourseFinder onEnroll={enroll} />
-      <FeaturedCarousel onEnroll={enroll} />
+      {productsLoading ? <div className="rounded-3xl border border-slate-200 bg-white p-8 text-sm text-slate-500">Loading live test series…</div> : productsError ? <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-sm font-semibold text-red-700">Test series could not be loaded. Please refresh or contact support.</div> : PRODUCT_CATALOG.length === 0 ? <div className="rounded-3xl border border-amber-200 bg-amber-50 p-8 text-sm font-semibold text-amber-900">No Revivor test series are published yet. Add them from Admin → Products.</div> : <><CourseFinder products={PRODUCT_CATALOG} onEnroll={enroll} /><FeaturedCarousel products={PRODUCT_CATALOG} onEnroll={enroll} /></>
 
       <Reveal><section><div className="grid gap-4 md:grid-cols-4"><a href="#schedule" onClick={() => track("quick_schedule")} className="group rounded-3xl border border-slate-200 bg-white p-5 hover:-translate-y-1 hover:shadow-xl"><Clock3 className="size-5 text-amber-600" /><h3 className="mt-3 font-bold">Schedule & Syllabus</h3><p className="mt-1 text-sm text-slate-500">Jump to prep structure.</p></a><a href="#details" onClick={() => track("quick_details")} className="group rounded-3xl border border-slate-200 bg-white p-5 hover:-translate-y-1 hover:shadow-xl"><FileCheck2 className="size-5 text-amber-600" /><h3 className="mt-3 font-bold">Test Series Details</h3><p className="mt-1 text-sm text-slate-500">See how the system works.</p></a><a href="#finder" onClick={() => track("quick_buy")} className="group rounded-3xl border border-slate-200 bg-white p-5 hover:-translate-y-1 hover:shadow-xl"><Zap className="size-5 text-amber-600" /><h3 className="mt-3 font-bold">How to Buy</h3><p className="mt-1 text-sm text-slate-500">Find a plan and enroll.</p></a><a href="#sample" onClick={() => track("quick_checked_sheets")} className="group rounded-3xl border border-slate-200 bg-white p-5 hover:-translate-y-1 hover:shadow-xl"><Download className="size-5 text-amber-600" /><h3 className="mt-3 font-bold">Checked Sheets</h3><p className="mt-1 text-sm text-slate-500">See the sample before purchase.</p></a></div></section></Reveal>
 
@@ -231,7 +252,7 @@ function Home() {
     </div>
 
     {exitOpen && <ExitIntent onClose={() => setExitOpen(false)} onSample={() => { setExitOpen(false); document.getElementById("sample")?.scrollIntoView({ behavior: "smooth" }); track("exit_sample"); }} />}
-    <FloatingActions />
+    <FloatingActions whatsappNumber={siteSettings.whatsappNumber || revivorConfig.whatsappNumber} />
   </main>;
 }
 
