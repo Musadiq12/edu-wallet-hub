@@ -44,3 +44,24 @@ function useScroll(threshold: number) {
   }, [threshold]);
   return scrolled;
 }
+
+function CartLink() {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    const read = () => {
+      try {
+        const raw = localStorage.getItem("revivor-cart");
+        const parsed = raw ? JSON.parse(raw) : [];
+        setCount(Array.isArray(parsed) ? parsed.length : 0);
+      } catch { setCount(0); }
+    };
+    read();
+    window.addEventListener("storage", read);
+    window.addEventListener("revivor:cart", read);
+    return () => {
+      window.removeEventListener("storage", read);
+      window.removeEventListener("revivor:cart", read);
+    };
+  }, []);
+  return <Link to="/shop" aria-label={count ? "Shopping cart with items" : "Shopping cart, empty"} className="relative inline-flex size-10 items-center justify-center rounded-xl border border-slate-200 bg-white hover:shadow-sm"><ShoppingBag className="size-4" />{count > 0 && <span className="absolute -right-1 -top-1 grid min-w-5 place-items-center rounded-full bg-amber-400 px-1 text-[10px] font-black text-slate-950">{count}</span>}</Link>;
+}
