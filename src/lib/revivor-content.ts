@@ -1,5 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { queryOptions } from "@tanstack/react-query";\nconst db = supabase as any;\nimport { supabase } from "@/integrations/supabase/client";
 
 export type RevivorSeries = {
   id: string; course: string; title: string; slug: string; subject: string | null;
@@ -18,15 +17,15 @@ export const revivorSeriesQuery = () => queryOptions({
   queryKey:["revivor-series"],
   staleTime:30_000,
   queryFn:async():Promise<RevivorSeries[]>=>{
-    const {data,error}=await supabase.from("test_series").select("id,course,title,slug,subject,test_type,price,discount_price,validity_days,features,thumbnail_url,status,sort_order").eq("status","published").order("sort_order").order("created_at",{ascending:false});
+    const {data,error}=await db.from("test_series").select("id,course,title,slug,subject,test_type,price,discount_price,validity_days,features,thumbnail_url,status,sort_order").eq("status","published").order("sort_order").order("created_at",{ascending:false});
     if(error) throw error;
     return (data??[]).map((x:any)=>({...x,price:Number(x.price),discount_price:x.discount_price==null?null:Number(x.discount_price),features:Array.isArray(x.features)?x.features:[]}));
   }
 });
-export const whyCardsQuery=()=>queryOptions({queryKey:["revivor-why"],staleTime:30_000,queryFn:async()=>{const {data,error}=await supabase.from("why_revivor_cards").select("id,title,description,icon,sort_order").eq("is_visible",true).order("sort_order");if(error)throw error;return data??[];}});
-export const scheduleQuery=()=>queryOptions({queryKey:["revivor-schedule"],staleTime:30_000,queryFn:async()=>{const {data,error}=await supabase.from("schedule_steps").select("id,title,description,icon,sort_order").eq("is_visible",true).order("sort_order");if(error)throw error;return data??[];}});
-export const faqQuery=()=>queryOptions({queryKey:["revivor-faq"],staleTime:30_000,queryFn:async()=>{const {data,error}=await supabase.from("faqs").select("id,question,answer,sort_order").eq("is_visible",true).order("sort_order");if(error)throw error;return data??[];}});
-export const testimonialQuery=()=>queryOptions({queryKey:["revivor-testimonials"],staleTime:30_000,queryFn:async()=>{const {data,error}=await supabase.from("testimonials").select("id,name,photo_url,course,rating,testimonial,sort_order").eq("is_visible",true).eq("is_approved",true).order("sort_order");if(error)throw error;return data??[];}});
-export const achieverQuery=()=>queryOptions({queryKey:["revivor-achievers"],staleTime:30_000,queryFn:async()=>{const {data,error}=await supabase.from("achiever_avatars").select("id,name,photo_url,alt_text,sort_order").eq("is_visible",true).order("sort_order");if(error)throw error;return data??[];}});
-export const offerQuery=()=>queryOptions({queryKey:["revivor-offer"],staleTime:15_000,queryFn:async():Promise<Offer|null>=>{const {data,error}=await supabase.from("offer_settings").select("id,text,link,end_at,is_enabled").eq("id",true).maybeSingle();if(error)throw error;return data??null;}});
-export const homepageSectionsQuery=()=>queryOptions({queryKey:["revivor-homepage-sections"],staleTime:30_000,queryFn:async()=>{const {data,error}=await supabase.from("homepage_sections").select("id,section_key,title,subtitle,content,is_visible,sort_order").eq("is_visible",true).order("sort_order");if(error)throw error;return (data??[]) as HomepageSection[];}});
+export const whyCardsQuery=()=>queryOptions({queryKey:["revivor-why"],staleTime:30_000,queryFn:async()=>{const {data,error}=await db.from("why_revivor_cards").select("id,title,description,icon,sort_order").eq("is_visible",true).order("sort_order");if(error)throw error;return data??[];}});
+export const scheduleQuery=()=>queryOptions({queryKey:["revivor-schedule"],staleTime:30_000,queryFn:async()=>{const {data,error}=await db.from("schedule_steps").select("id,title,description,icon,sort_order").eq("is_visible",true).order("sort_order");if(error)throw error;return data??[];}});
+export const faqQuery=()=>queryOptions({queryKey:["revivor-faq"],staleTime:30_000,queryFn:async()=>{const {data,error}=await db.from("faqs").select("id,question,answer,sort_order").eq("is_visible",true).order("sort_order");if(error)throw error;return data??[];}});
+export const testimonialQuery=()=>queryOptions({queryKey:["revivor-testimonials"],staleTime:30_000,queryFn:async()=>{const {data,error}=await db.from("testimonials").select("id,name,photo_url,course,rating,testimonial,sort_order").eq("is_visible",true).eq("is_approved",true).order("sort_order");if(error)throw error;return data??[];}});
+export const achieverQuery=()=>queryOptions({queryKey:["revivor-achievers"],staleTime:30_000,queryFn:async()=>{const {data,error}=await db.from("achiever_avatars").select("id,name,photo_url,alt_text,sort_order").eq("is_visible",true).order("sort_order");if(error)throw error;return data??[];}});
+export const offerQuery=()=>queryOptions({queryKey:["revivor-offer"],staleTime:15_000,queryFn:async():Promise<Offer|null>=>{const {data,error}=await db.from("offer_settings").select("id,text,link,end_at,is_enabled").eq("id",true).maybeSingle();if(error)throw error;return data??null;}});
+export const homepageSectionsQuery=()=>queryOptions({queryKey:["revivor-homepage-sections"],staleTime:30_000,queryFn:async()=>{const {data,error}=await db.from("homepage_sections").select("id,section_key,title,subtitle,content,is_visible,sort_order").eq("is_visible",true).order("sort_order");if(error)throw error;return (data??[]) as HomepageSection[];}});
