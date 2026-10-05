@@ -5,15 +5,12 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Toaster } from "@/components/ui/sonner";
-import { siteConfig } from "@/config/site";
 import { defaultSettings, settingsQuery, useSiteSettings } from "@/lib/settings";
 import { supabase } from "@/integrations/supabase/client";
 import { CookieConsent } from "@/components/CookieConsent";
-import { Banner } from "@/components/ui/banner";
 
 const RECOVERY_FLAG = "edu-wallet-password-recovery";
 
@@ -24,7 +21,7 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => { reportLovableError(error, { boundary: "tanstack_root_error_component" }); }, [error]);
+  useEffect(() => { console.error(error); }, [error]);
   const retry = async () => {
     try { reset(); await router.invalidate(); } catch { window.location.reload(); }
   };
@@ -36,29 +33,34 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: async ({ context }) => { try { return await context.queryClient.ensureQueryData(settingsQuery()); } catch { return defaultSettings; } },
-  head: ({ loaderData }) => ({
-    meta: [
-      { charSet: "utf-8" }, { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: `${loaderData?.brandName ?? defaultSettings.brandName} — ${loaderData?.tagline ?? defaultSettings.tagline}` },
-      { name: "description", content: siteConfig.shortDescription },
-      { property: "og:site_name", content: loaderData?.brandName ?? defaultSettings.brandName },
-      { property: "og:type", content: "website" },
-      { property: "og:image", content: "https://edu-wallet-hub.lovable.app/og-image.svg" },
-      { property: "og:url", content: "https://edu-wallet-hub.lovable.app/" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: loaderData?.brandName ?? defaultSettings.brandName },
-      { name: "twitter:description", content: siteConfig.shortDescription },
-      { name: "twitter:image", content: "https://edu-wallet-hub.lovable.app/og-image.svg" },
-    ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" },
-      { rel: "icon", href: "/edu-wallet-icon.svg", type: "image/svg+xml" },
-      { rel: "canonical", href: "https://edu-wallet-hub.lovable.app/" },
-    ],
-  }),
+  head: ({ loaderData }) => {
+    const publicSiteUrl = (import.meta.env.VITE_PUBLIC_SITE_URL || "").replace(/\\/$/, "");
+    const ogImage = loaderData?.ogImageUrl || (publicSiteUrl ? `${publicSiteUrl}/og-image.svg` : "");
+    const canonical = publicSiteUrl ? `${publicSiteUrl}/` : "";
+    return {
+      meta: [
+        { charSet: "utf-8" }, { name: "viewport", content: "width=device-width, initial-scale=1" },
+        { title: loaderData?.seoTitle || loaderData?.brandName || defaultSettings.brandName },
+        { name: "description", content: loaderData?.seoDescription || "" },
+        { property: "og:site_name", content: loaderData?.brandName || "" },
+        { property: "og:type", content: "website" },
+        ...(ogImage ? [{ property: "og:image", content: ogImage }] : []),
+        ...(canonical ? [{ property: "og:url", content: canonical }] : []),
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: loaderData?.seoTitle || loaderData?.brandName || "" },
+        { name: "twitter:description", content: loaderData?.seoDescription || "" },
+        ...(ogImage ? [{ name: "twitter:image", content: ogImage }] : []),
+      ],
+      links: [
+        { rel: "stylesheet", href: appCss },
+        { rel: "preconnect", href: "https://fonts.googleapis.com" },
+        { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+        { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" },
+        ...(loaderData?.faviconUrl ? [{ rel: "icon", href: loaderData.faviconUrl }] : []),
+        ...(canonical ? [{ rel: "canonical", href: canonical }] : []),
+      ],
+    };
+  },
   shellComponent: RootShell, component: RootComponent, notFoundComponent: NotFoundComponent, errorComponent: ErrorComponent,
 });
 
@@ -125,7 +127,6 @@ function RootComponent() {
     <Analytics />
     <div className={isAdminRoute ? "min-h-screen" : isAuthPage ? "min-h-screen" : "flex min-h-screen flex-col"}>
       {!isAuthPage && !isAdminRoute && <SiteHeader />}
-      {!isAuthPage && !isAdminRoute && pathname !== "/" && <Banner id="site-announcement" variant="rainbow" height="2.5rem" message="New study resources and exam-focused materials are being added regularly." />}
       <main className={isAdminRoute || isAuthPage ? "min-h-screen" : "flex-1"}><Outlet /></main>
       {!isAuthPage && !isAdminRoute && <SiteFooter />}
     </div>
