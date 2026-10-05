@@ -87,7 +87,7 @@ export function SiteHeader() {
             ))}
             <Link to="/shop" onClick={() => setOpen(false)} className="rounded-xl bg-white px-4 py-3 text-sm font-bold">Test Series Shop</Link>
             {user ? (
-              <Link to="/library" onClick={() => setOpen(false)} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white">Dashboard</Link>
+              <Link to="/dashboard" onClick={() => setOpen(false)} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white">Dashboard</Link>
             ) : (
               <div className="grid grid-cols-2 gap-2">
                 <Link to="/login" onClick={() => setOpen(false)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold">Login</Link>
