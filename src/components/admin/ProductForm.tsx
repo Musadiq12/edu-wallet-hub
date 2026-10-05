@@ -265,7 +265,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
                 set("category_id", v);
                 setFieldErrors((current) => {
                   const next = { ...current };
-                  delete next.category_id;
+                  delete next["category_id"];
                   return next;
                 });
               }}
