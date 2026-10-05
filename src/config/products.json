@@ -1,0 +1,13 @@
+[
+  {"id":"cseet-chapter","course":"CSEET","module":"All Papers","testType":"Chapter-wise","title":"CSEET Chapter-wise Test Series","price":999,"originalPrice":1499,"validity":"1 Year","slug":"cseet-chapter-wise"},
+  {"id":"cseet-full","course":"CSEET","module":"All Papers","testType":"Full-syllabus","title":"CSEET Full-syllabus Test Series","price":1499,"originalPrice":1999,"validity":"1 Year","slug":"cseet-full-syllabus"},
+  {"id":"cseet-combo","course":"CSEET","module":"All Papers","testType":"Combo","title":"CSEET Complete Combo","price":1999,"originalPrice":2999,"validity":"1 Year","slug":"cseet-combo"},
+  {"id":"exec-module-1","course":"CS Executive","module":"Module 1","testType":"Chapter-wise","title":"CS Executive Module 1 Chapter-wise Series","price":1499,"originalPrice":1999,"validity":"1 Year","slug":"cs-executive-module-1"},
+  {"id":"exec-module-2","course":"CS Executive","module":"Module 2","testType":"Chapter-wise","title":"CS Executive Module 2 Chapter-wise Series","price":1499,"originalPrice":1999,"validity":"1 Year","slug":"cs-executive-module-2"},
+  {"id":"exec-full","course":"CS Executive","module":"Both Modules","testType":"Full-syllabus","title":"CS Executive Full-syllabus Test Series","price":2499,"originalPrice":3499,"validity":"1 Year","slug":"cs-executive-full-syllabus"},
+  {"id":"exec-combo","course":"CS Executive","module":"Both Modules","testType":"Combo","title":"CS Executive Complete Combo","price":3299,"originalPrice":4999,"validity":"1 Year","slug":"cs-executive-combo"},
+  {"id":"prof-module-1","course":"CS Professional","module":"Module 1","testType":"Chapter-wise","title":"CS Professional Module 1 Chapter-wise Series","price":1799,"originalPrice":2499,"validity":"1 Year","slug":"cs-professional-module-1"},
+  {"id":"prof-module-2","course":"CS Professional","module":"Module 2","testType":"Chapter-wise","title":"CS Professional Module 2 Chapter-wise Series","price":1799,"originalPrice":2499,"validity":"1 Year","slug":"cs-professional-module-2"},
+  {"id":"prof-full","course":"CS Professional","module":"All Modules","testType":"Full-syllabus","title":"CS Professional Full-syllabus Test Series","price":2999,"originalPrice":4299,"validity":"1 Year","slug":"cs-professional-full-syllabus"},
+  {"id":"prof-combo","course":"CS Professional","module":"All Modules","testType":"Combo","title":"CS Professional Complete Combo","price":3999,"originalPrice":5999,"validity":"1 Year","slug":"cs-professional-combo"}
+]
