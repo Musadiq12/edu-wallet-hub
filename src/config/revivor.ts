@@ -13,7 +13,7 @@ export const revivorConfig = {
   ],
   whatsappNumber: "",
   clickToCallNumber: "",
-  freeSampleUrl: "",
+  freeSampleUrl: "/revivor-free-sample.txt",
   leadWebhookUrl: "",
   offerEndDate: "2026-12-31T23:59:59+05:30",
   trust: {
