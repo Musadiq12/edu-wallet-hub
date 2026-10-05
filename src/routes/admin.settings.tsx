@@ -92,6 +92,19 @@ function AdminSettings() {
           </section>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
+            <h2 className="font-black">Homepage & SEO</h2>
+            <p className="mt-1 text-xs text-slate-500">These values are rendered directly by the public Revivor site.</p>
+            <div className="mt-6 grid gap-5 md:grid-cols-2">
+              {SETTING_FIELDS.filter((field) => ["heroHeading","heroSubline","heroPrimaryCta","heroSecondaryCta","studentCount","rating","ratingCount","seoTitle","seoDescription","ogImageUrl","faviconUrl","logoUrl","footerText"].includes(field.key)).map((field) => (
+                <div key={field.key} className="space-y-1.5">
+                  <Label htmlFor={field.key}>{field.label}</Label>
+                  <Input id={field.key} className="h-11 rounded-xl" value={values[field.key] ?? ""} onChange={(e) => setValues((current) => ({ ...current, [field.key]: e.target.value }))} />
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7">
             <h2 className="font-black">Social links</h2>
             <p className="mt-1 text-xs text-slate-500">Footer and contact destinations.</p>
             <div className="mt-6 grid gap-5 md:grid-cols-3">
