@@ -144,7 +144,7 @@ function LeadForm({ unlocked, setUnlocked }: { unlocked: boolean; setUnlocked: (
   const [status, setStatus] = useState<"idle" | "busy" | "success" | "error">("idle");
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (form.name.trim().length < 2 || !/^[+]?[ds-]{8,16}$/.test(form.phone)) { setStatus("error"); return; }
+    if (form.name.trim().length < 2 || !/^[+]?\d[\d\s-]{7,15}$/.test(form.phone)) { setStatus("error"); return; }
     setStatus("busy"); track("lead_submit");
     try {
       if (revivorConfig.leadWebhookUrl) {
