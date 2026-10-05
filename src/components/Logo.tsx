@@ -1,10 +1,10 @@
 import { useSiteSettings } from "@/lib/settings";
 
 export function LogoMark({ className = "h-8 w-8" }: { className?: string }) {
-  const { brandName } = useSiteSettings();
+  const { brandName, faviconUrl } = useSiteSettings();
   return (
     <img
-      src="/edu-wallet-icon.svg"
+      src={faviconUrl || "/revivor-favicon.svg"}
       alt={`${brandName} logo`}
       className={`${className} shrink-0 transition-transform duration-200 group-hover:scale-[1.03]`}
     />
