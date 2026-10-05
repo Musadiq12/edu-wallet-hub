@@ -15,10 +15,9 @@ import { supabase } from "@/integrations/supabase/client";
 type Course = (typeof revivorConfig.courses)[number];
 type Product = {
   id: string; course: string; module: string; testType: string; title: string;
-  price: number; originalPrice: number; validity: string; slug: string;
+  price: number; originalPrice: number; validity: string; slug: string; is_featured?: boolean;
 };
 
-const PRODUCT_CATALOG = products as Product[];
 const featureIcons = [BookOpenCheck, Target, FileCheck2, Headphones, Clock3];
 const trackOptions: Record<Course, string[]> = {
   CSEET: ["All Papers"],
@@ -60,7 +59,7 @@ function Reveal({ children, className = "" }: { children: React.ReactNode; class
   useEffect(() => {
     if (!ref.current) return;
     const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) { setVisible(true); observer.disconnect(); }
+      if (entry?.isIntersecting) { setVisible(true); observer.disconnect(); }
     }, { threshold: 0.12 });
     observer.observe(ref.current);
     return () => observer.disconnect();
@@ -76,7 +75,7 @@ function CourseFinder({ products, onEnroll }: { products: Product[]; onEnroll: (
   const match = useMemo(() => products.find((p) => p.course === course && p.module === module && p.testType === testType), [products, course, module, testType]);
 
   useEffect(() => {
-    if (!options.includes(module)) setModule(options[0]);
+    if (!options.includes(module)) setModule(options[0] ?? "");
   }, [course, module, options]);
 
   return (
@@ -183,7 +182,7 @@ function Testimonials() {
     { quote: "The plan finder makes it easier to decide what to buy instead of guessing.", name: "Student feedback placeholder" },
   ];
   const [i, setI] = useState(0);
-  return <Reveal><section><div className="flex items-end justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Student voice</p><h2 className="mt-2 text-3xl font-black">The experience should earn the sale.</h2></div><div className="flex gap-2"><button type="button" aria-label="Previous testimonial" onClick={() => setI((i - 1 + items.length) % items.length)} className="rounded-full border p-2"><ChevronLeft className="size-4" /></button><button type="button" aria-label="Next testimonial" onClick={() => setI((i + 1) % items.length)} className="rounded-full border p-2"><ChevronRight className="size-4" /></button></div></div><div className="mt-5 rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8"><div className="flex gap-1 text-amber-500">{[1,2,3,4,5].map((n) => <Star key={n} className="size-4 fill-current" />)}</div><blockquote className="mt-5 max-w-3xl text-2xl font-bold leading-relaxed">“{items[i].quote}”</blockquote><p className="mt-4 text-sm font-semibold text-slate-500">{items[i].name}</p></div></section></Reveal>;
+  return <Reveal><section><div className="flex items-end justify-between gap-4"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Student voice</p><h2 className="mt-2 text-3xl font-black">The experience should earn the sale.</h2></div><div className="flex gap-2"><button type="button" aria-label="Previous testimonial" onClick={() => setI((i - 1 + items.length) % items.length)} className="rounded-full border p-2"><ChevronLeft className="size-4" /></button><button type="button" aria-label="Next testimonial" onClick={() => setI((i + 1) % items.length)} className="rounded-full border p-2"><ChevronRight className="size-4" /></button></div></div><div className="mt-5 rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm sm:p-8"><div className="flex gap-1 text-amber-500">{[1,2,3,4,5].map((n) => <Star key={n} className="size-4 fill-current" />)}</div><blockquote className="mt-5 max-w-3xl text-2xl font-bold leading-relaxed">“{items[i]?.quote}”</blockquote><p className="mt-4 text-sm font-semibold text-slate-500">{items[i]?.name}</p></div></section></Reveal>;
 }
 
 function ExitIntent({ onClose, onSample }: { onClose: () => void; onSample: () => void }) {
@@ -248,7 +247,7 @@ function Home() {
 
       <Reveal><section><div className="grid gap-6 rounded-[28px] bg-slate-950 p-6 text-white sm:p-8 lg:grid-cols-[1fr_auto] lg:items-center"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-amber-300">Final push</p><h2 className="mt-2 text-3xl font-black">Stop collecting resources. Start measuring readiness.</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-300">{revivorConfig.tagline}</p></div><a href="#finder" onClick={() => track("final_cta")} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-amber-400 px-5 py-3.5 font-black text-slate-950 hover:bg-amber-300">Choose my test series <ArrowRight className="size-4" /></a></div></section></Reveal>
 
-      <Reveal><section className="grid gap-6 lg:grid-cols-[.85fr_1.15fr]"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">FAQ</p><h2 className="mt-2 text-3xl font-black">Questions before you enroll.</h2></div><Accordion type="single" collapsible className="rounded-3xl border border-slate-200 bg-white px-5">{[["How long is validity?","Every plan is configured for 1 Year Validity."],["What does expert checking mean?","Your written-test work can be reviewed by an expert as configured in the selected series."],["Is mentorship included?","Plans can include 1-on-1 Mentorship; confirm the exact scope on the course page before purchasing."],["How do I choose a plan?","Use the 3-step Course Finder. It only shows combinations present in products.json."]].map(([q,a]) => <AccordionItem key={q} value={q}><AccordionTrigger className="text-left font-bold">{q}</AccordionTrigger><AccordionContent className="text-sm leading-6 text-slate-600">{a}</AccordionContent></AccordionItem>)}</Accordion></section></Reveal>
+      <Reveal><section className="grid gap-6 lg:grid-cols-[.85fr_1.15fr]"><div><p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">FAQ</p><h2 className="mt-2 text-3xl font-black">Questions before you enroll.</h2></div><Accordion type="single" collapsible className="rounded-3xl border border-slate-200 bg-white px-5">{[["How long is validity?","Every plan is configured for 1 Year Validity."],["What does expert checking mean?","Your written-test work can be reviewed by an expert as configured in the selected series."],["Is mentorship included?","Plans can include 1-on-1 Mentorship; confirm the exact scope on the course page before purchasing."],["How do I choose a plan?","Use the 3-step Course Finder. It only shows combinations present in products.json."]] as [string, string][].map(([q,a]) => <AccordionItem key={q} value={q}><AccordionTrigger className="text-left font-bold">{q}</AccordionTrigger><AccordionContent className="text-sm leading-6 text-slate-600">{a}</AccordionContent></AccordionItem>)}</Accordion></section></Reveal>
     </div>
 
     {exitOpen && <ExitIntent onClose={() => setExitOpen(false)} onSample={() => { setExitOpen(false); document.getElementById("sample")?.scrollIntoView({ behavior: "smooth" }); track("exit_sample"); }} />}
