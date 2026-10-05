@@ -11,6 +11,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { defaultSettings, settingsQuery, useSiteSettings } from "@/lib/settings";
 import { supabase } from "@/integrations/supabase/client";
 import { CookieConsent } from "@/components/CookieConsent";
+import { siteConfig } from "@/config/site";
 
 const RECOVERY_FLAG = "edu-wallet-password-recovery";
 
