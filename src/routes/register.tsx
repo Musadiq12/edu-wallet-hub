@@ -31,6 +31,12 @@ export const Route = createFileRoute("/register")({
 
 function RegisterPage() {
   const { redirect } = Route.useSearch();
+  const emailRedirectTo =
+    typeof window !== "undefined" &&
+    window.location.hostname !== "localhost" &&
+    window.location.hostname !== "127.0.0.1"
+      ? window.location.origin + "/"
+      : "https://eduwalletorginal.designeroutletmedia.workers.dev/";
   const [form, setForm] = useState({ full_name: "", email: "", whatsapp: "", password: "" });
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -53,7 +59,7 @@ function RegisterPage() {
       email: form.email.trim(),
       password: form.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/`,
+        emailRedirectTo,
         data: { full_name: form.full_name.trim(), whatsapp: form.whatsapp.trim() },
       },
     });
