@@ -181,8 +181,8 @@ function ExitIntent({ onClose, onSample }: { onClose: () => void; onSample: () =
 }
 
 function FloatingActions() {
-  const number = revivorConfig.whatsappNumber.replace(/D/g, "");
-  const call = revivorConfig.clickToCallNumber.replace(/D/g, "");
+  const number = revivorConfig.whatsappNumber.replace(/\D/g, "");
+  const call = revivorConfig.clickToCallNumber.replace(/\D/g, "");
   const wa = number ? `https://wa.me/${number}?text=${encodeURIComponent("Hi, I want to know about Revivor CS Test Series")}` : "";
   return <><div className="fixed bottom-20 right-4 z-40 hidden flex-col gap-2 sm:flex">{wa && <a href={wa} target="_blank" rel="noreferrer" aria-label="Chat on WhatsApp" onClick={() => track("whatsapp_click")} className="inline-flex items-center gap-2 rounded-full bg-emerald-500 px-4 py-3 font-bold text-white shadow-lg"> <MessageCircle className="size-5" /> WhatsApp</a>}{call && <a href={`tel:+${call}`} aria-label="Call Revivor" onClick={() => track("call_click")} className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-4 py-3 font-bold text-white shadow-lg"><Phone className="size-5" /> Call</a>}</div><div className="fixed inset-x-0 bottom-0 z-50 grid grid-cols-2 border-t border-slate-200 bg-white p-2 sm:hidden">{wa ? <a href={wa} target="_blank" rel="noreferrer" onClick={() => track("mobile_whatsapp_click")} className="mx-1 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 px-3 py-3 font-bold text-white"><MessageCircle className="size-4" /> WhatsApp</a> : <span className="mx-1 inline-flex items-center justify-center rounded-xl bg-slate-100 text-xs text-slate-400">WhatsApp not configured</span>}<a href="#finder" onClick={() => track("mobile_enroll_click")} className="mx-1 inline-flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-3 py-3 font-bold text-white">Enroll Now <ArrowRight className="size-4" /></a></div></>;
 }
