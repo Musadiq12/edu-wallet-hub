@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";\nconst db = supabase as any;\nimport { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -18,7 +17,7 @@ function useRows(table:string, select:string, order="sort_order") {
   return useQuery({
     queryKey:["admin-content",table],
     queryFn:async():Promise<Row[]>=>{
-      const {data,error}=await supabase.from(table as any).select(select).order(order,{ascending:true});
+      const {data,error}=await db.from(table as any).select(select).order(order,{ascending:true});
       if(error) throw error;
       return (data??[]) as Row[];
     }
@@ -34,19 +33,19 @@ function EditableList({ table, title, description, fields, rows, queryKey, defau
   const save=async(id:string)=>{
     const row=drafts[id]; if(!row)return;
     const payload={...row}; delete payload.id;
-    const {error}=await supabase.from(table as any).update(payload).eq("id",id);
+    const {error}=await db.from(table as any).update(payload).eq("id",id);
     if(error){toast.error(friendlyError(error,"Could not save this item."));return;}
     await qc.invalidateQueries({queryKey}); toast.success("Saved.");
   };
   const add=async()=>{
-    const {data,error}=await supabase.from(table as any).insert({...defaults}).select().single();
+    const {data,error}=await db.from(table as any).insert({...defaults}).select().single();
     if(error){toast.error(friendlyError(error,"Could not add this item."));return;}
     await qc.invalidateQueries({queryKey});
     if(data) setDrafts(d=>({...d,[data.id]:data}));
   };
   const remove=async(id:string)=>{
     if(!window.confirm("Delete this item? This cannot be undone.")) return;
-    const {error}=await supabase.from(table as any).delete().eq("id",id);
+    const {error}=await db.from(table as any).delete().eq("id",id);
     if(error){toast.error(friendlyError(error,"Could not delete this item."));return;}
     await qc.invalidateQueries({queryKey}); toast.success("Deleted.");
   };
@@ -74,10 +73,10 @@ function AdminContent(){
   const faq=useRows("faqs","id,question,answer,is_visible,sort_order");
   const testimonials=useRows("testimonials","id,name,photo_url,course,rating,testimonial,is_approved,is_visible,sort_order");
   const achievers=useRows("achiever_avatars","id,name,photo_url,alt_text,is_visible,sort_order");
-  const offer=useQuery({queryKey:["admin-offer"],queryFn:async()=>{const {data,error}=await supabase.from("offer_settings").select("id,text,link,end_at,is_enabled").eq("id",true).single();if(error)throw error;return data;}});
+  const offer=useQuery({queryKey:["admin-offer"],queryFn:async()=>{const {data,error}=await db.from("offer_settings").select("id,text,link,end_at,is_enabled").eq("id",true).single();if(error)throw error;return data;}});
   const [offerDraft,setOfferDraft]=useState<any>(null);
   useEffect(()=>{if(offer.data)setOfferDraft(offer.data)},[offer.data]);
-  const saveOffer=async()=>{if(!offerDraft)return;const {error}=await supabase.from("offer_settings").upsert({...offerDraft,id:true});if(error){toast.error(friendlyError(error,"Could not save the offer."));return;}toast.success("Offer saved.");};
+  const saveOffer=async()=>{if(!offerDraft)return;const {error}=await db.from("offer_settings").upsert({...offerDraft,id:true});if(error){toast.error(friendlyError(error,"Could not save the offer."));return;}toast.success("Offer saved.");};
   return <div className="space-y-7">
     <div><h1 className="text-3xl font-black tracking-tight">Homepage Content</h1><p className="mt-1 text-sm text-slate-500">Every item below is stored in Supabase and rendered by the public Revivor site.</p></div>
     <EditableList table="why_revivor_cards" title="Why Revivor" description="Five unique value cards with editable copy and icon names." fields={[{key:"title",label:"Title"},{key:"icon",label:"Icon name"},{key:"description",label:"Description",area:true},{key:"sort_order",label:"Sort order"}]} rows={why.data??[]} queryKey={["admin-content","why_revivor_cards"]} defaults={{title:"New benefit",description:"",icon:"Check",is_visible:true,sort_order:(why.data?.length??0)+1}} />
