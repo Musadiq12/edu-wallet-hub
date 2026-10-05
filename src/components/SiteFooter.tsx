@@ -6,8 +6,8 @@ import { isEmail, safeUrl, useSiteSettingsState, waLink } from "@/lib/settings";
 
 const SITE_LINKS = [
   { to: "/", label: "Home" },
-  { to: "/shop", label: "Shop" },
-  { to: "/free-resources", label: "Free Resources" },
+  { to: "/shop", label: "Test Series" },
+  { to: "/", hash: "sample", label: "Free Sample" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
   { to: "/terms", label: "Terms & Conditions" },
@@ -65,7 +65,7 @@ export function SiteFooter() {
           <ul className="mt-4 space-y-2.5 text-sm">
             {SITE_LINKS.map((l) => (
               <li key={l.to}>
-                <Link to={l.to} className="text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground">
+                <Link to={l.to} {...("hash" in l ? { hash: l.hash } : {})} className="text-muted-foreground transition-colors hover:text-foreground focus-visible:text-foreground">
                   {l.label}
                 </Link>
               </li>
