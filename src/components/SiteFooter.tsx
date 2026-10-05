@@ -1,8 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Instagram, Mail, MessageCircle, Send, Youtube } from "lucide-react";
-import { siteConfig } from "@/config/site";
-import { revivorConfig } from "@/config/revivor";
-import { isEmail, safeUrl, useSiteSettingsState, waLink } from "@/lib/settings";
+import { useSiteSettingsState } from "@/lib/settings";
+import { isEmail, safeUrl, waLink } from "@/lib/settings";
 
 const SITE_LINKS = [
   { to: "/", label: "Home" },
@@ -30,9 +29,9 @@ export function SiteFooter() {
     <footer className="mt-auto border-t border-border bg-surface">
       <div className="page-container grid gap-10 py-12 md:grid-cols-3">
         <div className="md:col-span-2">
-          <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-slate-950 text-sm font-black text-amber-400">R</span><div><p className="text-lg font-black text-foreground">{revivorConfig.brandName}</p><p className="text-xs text-muted-foreground">{revivorConfig.tagline}</p></div></div>
+          <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-xl bg-slate-950 text-sm font-black text-amber-400">R</span><div><p className="text-lg font-black text-foreground">{s.brandName}</p><p className="text-xs text-muted-foreground">{s.tagline}</p></div></div>
           <p className="mt-4 max-w-sm text-sm text-muted-foreground">
-            {revivorConfig.subline}
+            {s.seoDescription}
           </p>
           {!ready ? (
             <div className="mt-4 flex flex-col gap-2" aria-hidden="true">
@@ -78,9 +77,9 @@ export function SiteFooter() {
       <div className="border-t border-border">
         <div className="page-container flex flex-col gap-3 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © {siteConfig.copyrightYear} {revivorConfig.brandName}. All rights reserved.
+            © {new Date().getFullYear()} {s.brandName}. All rights reserved.
           </p>
-          <p className="max-w-xl sm:text-right">{siteConfig.disclaimer}</p>
+          <p className="max-w-xl sm:text-right">{s.footerText}</p>
         </div>
       </div>
     </footer>
