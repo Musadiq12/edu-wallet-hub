@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useSiteSettings } from "@/lib/settings";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Eye, FileText, ShieldCheck, Test SeriespingBag } from "lucide-react";
+import { ArrowRight, Eye, FileText, ShieldCheck, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
