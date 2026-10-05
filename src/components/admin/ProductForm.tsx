@@ -98,13 +98,13 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
 
   const validateField = (field: string) => {
     const errors: Record<string, string> = {};
-    if (field === "title" && !form.title.trim()) errors.title = "Product title is required.";
-    if (field === "slug" && (!form.slug.trim() || !/^[a-z0-9-]+$/.test(form.slug))) errors.slug = "Use lowercase letters, numbers and hyphens only.";
-    if (field === "category_id" && !form.category_id) errors.category_id = "Choose a category.";
-    if (field === "price" && !form.is_free && (!Number.isFinite(priceNum) || priceNum <= 0)) errors.price = "Enter a price greater than 0.";
-    if (field === "discounted_price" && !form.is_free && discNum != null && (!Number.isFinite(discNum) || discNum < 0 || discNum >= priceNum)) errors.discounted_price = "Discounted price must be lower than the original price.";
-    if (field === "page_count" && form.page_count && Number(form.page_count) < 0) errors.page_count = "Page count cannot be negative.";
-    setFieldErrors((current) => { const next = { ...current, [field]: errors[field] }; if (!errors[field]) delete next[field]; return next; });
+    if (field === "title" && !form.title.trim()) errors["title"] = "Product title is required.";
+    if (field === "slug" && (!form.slug.trim() || !/^[a-z0-9-]+$/.test(form.slug))) errors["slug"] = "Use lowercase letters, numbers and hyphens only.";
+    if (field === "category_id" && !form.category_id) errors["category_id"] = "Choose a category.";
+    if (field === "price" && !form.is_free && (!Number.isFinite(priceNum) || priceNum <= 0)) errors["price"] = "Enter a price greater than 0.";
+    if (field === "discounted_price" && !form.is_free && discNum != null && (!Number.isFinite(discNum) || discNum < 0 || discNum >= priceNum)) errors["discounted_price"] = "Discounted price must be lower than the original price.";
+    if (field === "page_count" && form.page_count && Number(form.page_count) < 0) errors["page_count"] = "Page count cannot be negative.";
+    setFieldErrors((current) => { const next: Record<string, string> = { ...current }; const msg = errors[field]; if (msg) next[field] = msg; else delete next[field]; return next; });
   };
 
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) =>
@@ -231,8 +231,8 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Basic information</h2>
         <div className="space-y-1.5">
           <Label htmlFor="title">Product title</Label>
-          <Input id="title" className="h-11" value={form.title} onChange={(e) => set("title", e.target.value)} onBlur={() => validateField("title")} aria-invalid={!!fieldErrors.title} required />
-          {fieldErrors.title && <p className="text-xs text-destructive">{fieldErrors.title}</p>}
+          <Input id="title" className="h-11" value={form.title} onChange={(e) => set("title", e.target.value)} onBlur={() => validateField("title")} aria-invalid={!!fieldErrors["title"]} required />
+          {fieldErrors["title"] && <p className="text-xs text-destructive">{fieldErrors["title"]}</p>}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="slug">Slug</Label>
@@ -273,7 +273,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
               <SelectTrigger
                 id="category"
                 className="h-11"
-                aria-invalid={!!fieldErrors.category_id}
+                aria-invalid={!!fieldErrors["category_id"]}
                 aria-label="Select product category"
                 disabled={busy || categoriesLoading}
                 onBlur={() => validateField("category_id")}
@@ -296,7 +296,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
                 )}
               </SelectContent>
             </Select>
-            {fieldErrors.category_id && <p className="text-xs text-destructive">{fieldErrors.category_id}</p>}
+            {fieldErrors["category_id"] && <p className="text-xs text-destructive">{fieldErrors["category_id"]}</p>}
             {!categoriesLoading && !categoriesError && !categories?.length && (
               <p className="text-xs text-destructive">No categories are available. Add a category before creating a product.</p>
             )}
@@ -321,13 +321,13 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="price">Original price (₹)</Label>
-            <Input id="price" type="number" min="0" step="1" inputMode="decimal" className="h-11" value={form.price} disabled={form.is_free} onChange={(e) => set("price", e.target.value)} onBlur={() => validateField("price")} aria-invalid={!!fieldErrors.price} />
-            {fieldErrors.price && <p className="text-xs text-destructive">{fieldErrors.price}</p>}
+            <Input id="price" type="number" min="0" step="1" inputMode="decimal" className="h-11" value={form.price} disabled={form.is_free} onChange={(e) => set("price", e.target.value)} onBlur={() => validateField("price")} aria-invalid={!!fieldErrors["price"]} />
+            {fieldErrors["price"] && <p className="text-xs text-destructive">{fieldErrors["price"]}</p>}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="discounted">Discounted price (₹)</Label>
-            <Input id="discounted" type="number" min="0" step="1" inputMode="decimal" className="h-11" value={form.discounted_price} disabled={form.is_free} onChange={(e) => set("discounted_price", e.target.value)} onBlur={() => validateField("discounted_price")} aria-invalid={!!fieldErrors.discounted_price} />
-            {fieldErrors.discounted_price && <p className="text-xs text-destructive">{fieldErrors.discounted_price}</p>}
+            <Input id="discounted" type="number" min="0" step="1" inputMode="decimal" className="h-11" value={form.discounted_price} disabled={form.is_free} onChange={(e) => set("discounted_price", e.target.value)} onBlur={() => validateField("discounted_price")} aria-invalid={!!fieldErrors["discounted_price"]} />
+            {fieldErrors["discounted_price"] && <p className="text-xs text-destructive">{fieldErrors["discounted_price"]}</p>}
           </div>
         </div>
         {percent != null && (
@@ -362,8 +362,8 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="pages">Page count</Label>
-            <Input id="pages" type="number" min="0" className="h-11" value={form.page_count} onChange={(e) => set("page_count", e.target.value)} onBlur={() => validateField("page_count")} aria-invalid={!!fieldErrors.page_count} />
-            {fieldErrors.page_count && <p className="text-xs text-destructive">{fieldErrors.page_count}</p>}
+            <Input id="pages" type="number" min="0" className="h-11" value={form.page_count} onChange={(e) => set("page_count", e.target.value)} onBlur={() => validateField("page_count")} aria-invalid={!!fieldErrors["page_count"]} />
+            {fieldErrors["page_count"] && <p className="text-xs text-destructive">{fieldErrors["page_count"]}</p>}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="format">Format</Label>

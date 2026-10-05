@@ -63,10 +63,10 @@ function Analytics() {
     const script = document.createElement("script");
     script.async = true;
     script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
-    script.dataset.eduAnalytics = "true";
+    script.dataset["eduAnalytics"] = "true";
     document.head.appendChild(script);
     const init = document.createElement("script");
-    init.dataset.eduAnalytics = "true";
+    init.dataset["eduAnalytics"] = "true";
     init.text = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${id}');`;
     document.head.appendChild(init);
   }, []);

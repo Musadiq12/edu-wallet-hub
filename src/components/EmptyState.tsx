@@ -9,6 +9,7 @@ export function EmptyState({
   title: string;
   description?: string;
   action?: ReactNode;
+  className?: string;
 }) {
   return (
     <div className={`rounded-xl border border-dashed border-border bg-surface px-6 py-14 text-center transition-colors ${className ?? ""}`}>

@@ -49,7 +49,7 @@ const INTERVAL = 5500;
 export function StorefrontHero() {
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
-  const slide = slides[active];
+  const slide = slides[active] ?? slides[0]!;
 
   useEffect(() => {
     if (paused) return;

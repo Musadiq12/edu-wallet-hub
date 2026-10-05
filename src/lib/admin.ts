@@ -37,7 +37,7 @@ export function friendlyError(err: unknown, fallback = "Something went wrong. Pl
 
 export type UploadResult = { path: string };
 
-const R2_WORKER_URL = (import.meta.env.VITE_R2_WORKER_URL || "https://edu-wallet-r2.designeroutletmedia.workers.dev").replace(/\/$/, "");
+const R2_WORKER_URL = (import.meta.env["VITE_R2_WORKER_URL"] || "https://edu-wallet-r2.designeroutletmedia.workers.dev").replace(/\/$/, "");
 
 async function getAccessToken() {
   const { data, error } = await supabase.auth.getSession();

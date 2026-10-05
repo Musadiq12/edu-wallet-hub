@@ -6,11 +6,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { siteConfig } from "@/config/site";
 import { friendlyError } from "@/lib/admin";
 
-type Search = { redirect?: string };
+type Search = { redirect?: string | undefined };
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>): Search => ({
-    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+    redirect: typeof search["redirect"] === "string" ? search["redirect"] : undefined,
   }),
   head: () => ({
     meta: [

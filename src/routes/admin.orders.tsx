@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { adminOrdersQuery, friendlyError, type AdminOrder } from "@/lib/admin";
 import { formatPrice, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
+import { signedUrl } from "@/lib/catalog";
 
 export const Route = createFileRoute("/admin/orders")({ component: AdminOrders });
 
