@@ -84,7 +84,7 @@ function RegisterPage() {
     const { error } = await supabase.auth.resend({
       type: "signup",
       email: confirmationEmail,
-      options: { emailRedirectTo: window.location.origin + "/" },
+      options: { emailRedirectTo },
     });
     setBusy(false);
 
