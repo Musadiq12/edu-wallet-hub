@@ -4,30 +4,23 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/ProductCard";
 import { EmptyState, LoadingGrid } from "@/components/EmptyState";
-import { categoriesQuery, matchesSearch, productsQuery } from "@/lib/catalog";
-import { siteConfig } from "@/config/site";
+import { matchesSearch, productsQuery } from "@/lib/catalog";
 
-type ShopSearch = { q?: string | undefined; category?: string | undefined };
+type ShopSearch = { q?: string; course?: string };
+
+const courses = ["CSEET", "CS Executive", "CS Professional"] as const;
 
 export const Route = createFileRoute("/shop/")({
   validateSearch: (search: Record<string, unknown>): ShopSearch => ({
-    q: typeof search['q'] === "string" && search['q'] ? search['q'] : undefined,
-    category:
-      typeof search['category'] === "string" && search['category'] ? search['category'] : undefined,
+    q: typeof search.q === "string" && search.q ? search.q : undefined,
+    course: typeof search.course === "string" && courses.includes(search.course as typeof courses[number]) ? search.course : undefined,
   }),
   head: () => ({
     meta: [
       { title: "Revivor CS Test Series — CSEET, CS Executive & CS Professional" },
-      {
-        name: "description",
-        content:
-          "Chapter-wise and full-syllabus CS test series for CSEET, CS Executive and CS Professional.",
-      },
+      { name: "description", content: "Chapter-wise and full-syllabus CS test series for CSEET, CS Executive and CS Professional." },
       { property: "og:title", content: "Revivor CS Test Series — CSEET, CS Executive & CS Professional" },
-      {
-        property: "og:description",
-        content: "Chapter-wise and full-syllabus CS test series for CSEET, CS Executive and CS Professional.",
-      },
+      { property: "og:description", content: "Chapter-wise and full-syllabus CS test series for CSEET, CS Executive and CS Professional." },
     ],
     links: [{ rel: "canonical", href: "/shop" }],
   }),
@@ -38,69 +31,60 @@ function Shop() {
   const search = Route.useSearch();
   const navigate = useNavigate();
   const [term, setTerm] = useState(search.q ?? "");
+  const products = useQuery(productsQuery({ limit: 100 }));
+  const activeCourse = search.course ?? "all";
 
-  const products = useQuery(productsQuery());
-  const categories = useQuery(categoriesQuery());
-
-  const activeCategory = search.category ?? "all";
-  const categoryById = new Map((categories.data ?? []).map((c) => [c.id, c]));
-
-  const filtered = (products.data ?? []).filter((p) => {
-    const cat = p.category_id ? categoryById.get(p.category_id) : undefined;
-    if (activeCategory === "free-resources" && !p.is_free) return false;
-    if (activeCategory !== "all" && activeCategory !== "free-resources" && cat?.slug !== activeCategory)
-      return false;
-    return matchesSearch(p, term, cat?.name);
+  const filtered = (products.data ?? []).filter((product) => {
+    if (activeCourse !== "all" && product.course_label !== activeCourse) return false;
+    return matchesSearch(product, term);
   });
 
-  const setCategory = (slug: string) =>
-    navigate({
+  const setCourse = (course: string) => {
+    void navigate({
       to: "/shop",
-      search: { q: term || undefined, category: slug === "all" ? undefined : slug },
+      search: { q: term || undefined, course: course === "all" ? undefined : course },
     });
+  };
 
   const tabs = [
-    { slug: "all", name: "All" },
-    ...(categories.data ?? []).map((c) => ({ slug: c.slug, name: c.name })),
-    { slug: "free-resources", name: "Free Resources" },
+    { slug: "all", name: "All Test Series" },
+    ...courses.map((course) => ({ slug: course, name: course })),
   ];
 
   return (
     <div className="section-y">
       <div className="page-container">
-        <h1 className="text-3xl font-bold sm:text-4xl">Revivor CS Test Series</h1>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-700">Revivor CS Test Series</p>
+        <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Choose Your Test Series</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Chapter-wise and full-syllabus test series for CSEET, CS Executive and CS Professional. All plans are digital
-          (PDF) and delivered after payment verification.
+          Chapter-wise and full-syllabus preparation for CSEET, CS Executive and CS Professional, with expert checking and mentorship.
         </p>
 
         <div className="mt-6">
-          <label htmlFor="shop-search" className="sr-only">
-            Search resources
-          </label>
+          <label htmlFor="shop-search" className="sr-only">Search test series</label>
           <Input
             id="shop-search"
             value={term}
-            onChange={(e) => setTerm(e.target.value)}
-            placeholder="Search notes, subjects, courses..."
+            onChange={(event) => setTerm(event.target.value)}
+            placeholder="Search CSEET, CS Executive, modules..."
             className="h-12 max-w-xl"
           />
         </div>
 
         <div className="mt-5 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-          {tabs.map((t) => (
+          {tabs.map((tab) => (
             <button
-              key={t.slug}
+              key={tab.slug}
               type="button"
-              onClick={() => setCategory(t.slug)}
-              aria-pressed={activeCategory === t.slug}
+              onClick={() => setCourse(tab.slug)}
+              aria-pressed={activeCourse === tab.slug}
               className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
-                activeCategory === t.slug
+                activeCourse === tab.slug
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card text-muted-foreground hover:text-foreground"
               }`}
             >
-              {t.name}
+              {tab.name}
             </button>
           ))}
         </div>
@@ -109,28 +93,15 @@ function Shop() {
           {products.isLoading ? (
             <LoadingGrid count={8} />
           ) : products.isError ? (
-            <EmptyState
-              title="We couldn't load resources"
-              description="Please refresh the page and try again."
-            />
+            <EmptyState title="We couldn't load the test series" description="Please refresh the page and try again." />
           ) : filtered.length > 0 ? (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {filtered.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
+              {filtered.map((product) => <ProductCard key={product.id} product={product} />)}
             </div>
           ) : term ? (
-            <EmptyState title="No resources found" description="Try another search term." />
+            <EmptyState title="No test series found" description="Try another course, module, or search term." />
           ) : (
-            <EmptyState
-              title="Resources are being added soon"
-              description="Check back shortly."
-              action={
-                <Link to="/free-resources" className="text-sm font-medium text-primary hover:underline">
-                  Browse free resources
-                </Link>
-              }
-            />
+            <EmptyState title="Test series are being added" description="Please check back shortly." />
           )}
         </div>
       </div>
