@@ -15,7 +15,20 @@ export type SettingKey =
   | "instagram"
   | "telegram"
   | "youtube"
-  | "websiteUrl";
+  | "websiteUrl"
+  | "logoUrl"
+  | "faviconUrl"
+  | "ogImageUrl"
+  | "seoTitle"
+  | "seoDescription"
+  | "footerText"
+  | "studentCount"
+  | "rating"
+  | "ratingCount"
+  | "heroHeading"
+  | "heroSubline"
+  | "heroPrimaryCta"
+  | "heroSecondaryCta";
 
 export const SETTING_FIELDS: { key: SettingKey; label: string; help?: string }[] = [
   { key: "brandName", label: "Website name" },
@@ -30,6 +43,10 @@ export const SETTING_FIELDS: { key: SettingKey; label: string; help?: string }[]
   { key: "instagram", label: "Instagram link" },
   { key: "telegram", label: "Telegram link" },
   { key: "youtube", label: "YouTube link" },
+  { key: "logoUrl", label: "Logo URL" }, { key: "faviconUrl", label: "Favicon URL" }, { key: "ogImageUrl", label: "OG image URL" },
+  { key: "seoTitle", label: "SEO title" }, { key: "seoDescription", label: "SEO description" }, { key: "footerText", label: "Footer text" },
+  { key: "studentCount", label: "Student count" }, { key: "rating", label: "Rating" }, { key: "ratingCount", label: "Rating count label" },
+  { key: "heroHeading", label: "Hero heading" }, { key: "heroSubline", label: "Hero subtext" }, { key: "heroPrimaryCta", label: "Hero primary CTA" }, { key: "heroSecondaryCta", label: "Hero secondary CTA" },
 ];
 
 export type SiteSettings = Record<SettingKey, string>;
@@ -48,6 +65,7 @@ export const defaultSettings: SiteSettings = {
   telegram: "",
   youtube: "",
   websiteUrl: "",
+  logoUrl: "", faviconUrl: "", ogImageUrl: "", seoTitle: "", seoDescription: "", footerText: "", studentCount: "", rating: "", ratingCount: "", heroHeading: "", heroSubline: "", heroPrimaryCta: "", heroSecondaryCta: "",
 };
 
 export const settingsQuery = () =>
