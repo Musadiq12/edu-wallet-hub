@@ -32,11 +32,11 @@ function LoginPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password) return toast.error("Enter your email and password.");
+    if (!email.trim() || !password) { toast.error("Enter your email and password."); return; }
     setBusy(true);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
-    if (error) return toast.error(friendlyError(error, "Could not log in. Please try again."));
+    if (error) { toast.error(friendlyError(error, "Could not log in. Please try again.")); return; }
     toast.success("Logged in.");
     if (redirect?.startsWith("/")) window.location.assign(redirect);
     else void navigate({ to: "/library" });
