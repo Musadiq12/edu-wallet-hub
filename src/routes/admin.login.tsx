@@ -5,7 +5,6 @@ import { LogIn, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
-import { useIsAdmin } from "@/lib/auth";
 
 export const Route = createFileRoute("/admin/login")({ component: AdminLogin });
 
@@ -14,15 +13,12 @@ function AdminLogin(){
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
   const [busy,setBusy]=useState(false);
-  const [userId,setUserId]=useState<string|undefined>();
-  const access=useIsAdmin(userId);
   const submit=async(e:React.FormEvent)=>{
     e.preventDefault(); setBusy(true);
     try{
       const {data,error}=await supabase.auth.signInWithPassword({email:email.trim(),password});
       if(error) throw error;
       if(!data.user) throw new Error("Sign-in failed.");
-      setUserId(data.user.id);
       const {data:admin,error:roleError}=await supabase.from("admin_users").select("is_active").eq("user_id",data.user.id).maybeSingle();
       if(roleError || !admin?.is_active){await supabase.auth.signOut();throw new Error("This account is not an active Revivor administrator.");}
       void navigate({to:"/admin"});
