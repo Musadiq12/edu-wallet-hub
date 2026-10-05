@@ -6,7 +6,7 @@ import { useSession } from "@/lib/auth";
 
 const sectionLinks = [
   ["Find My Plan", "finder"],
-  ["Test Series", "series"],
+  ["Test Series", "shop"],
   ["How It Works", "details"],
   ["Free Sample", "sample"],
 ] as const;
@@ -17,7 +17,7 @@ export function SiteHeader() {
   const { user } = useSession();
   const pathname = useRouterState({ select: (state) => state.location.pathname });
 
-  const sectionHref = (hash: string) => (pathname === "/" ? `#${hash}` : `/#${hash}`);
+  const sectionHref = (target: string) => target === "shop" ? "/shop" : (pathname === "/" ? `#${target}` : `/#${target}`);
 
   return (
     <header className={cn(
@@ -85,7 +85,7 @@ export function SiteHeader() {
                 {label}
               </a>
             ))}
-            <Link to="/shop" onClick={() => setOpen(false)} className="rounded-xl bg-white px-4 py-3 text-sm font-bold">Test Series Shop</Link>
+            <Link to="/shop" onClick={() => setOpen(false)} className="rounded-xl bg-white px-4 py-3 text-sm font-bold">Test Series</Link>
             {user ? (
               <Link to="/dashboard" onClick={() => setOpen(false)} className="rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white">Dashboard</Link>
             ) : (
