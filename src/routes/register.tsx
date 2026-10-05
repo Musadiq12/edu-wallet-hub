@@ -65,7 +65,10 @@ function RegisterPage() {
     });
     setBusy(false);
 
-    if (error) return void toast.error(friendlyError(error, "Could not create your account."));
+    if (error) {
+      toast.error(friendlyError(error, "Could not create your account."), { duration: 7000 });
+      return;
+    }
 
     if (data.session) {
       toast.success("Account created successfully.");
@@ -88,7 +91,10 @@ function RegisterPage() {
     });
     setBusy(false);
 
-    if (error) return void toast.error(friendlyError(error, "Could not resend the confirmation email."));
+    if (error) {
+      toast.error(friendlyError(error, "Could not resend the confirmation email."), { duration: 7000 });
+      return;
+    }
     toast.success("Confirmation email sent again.");
   };
 
