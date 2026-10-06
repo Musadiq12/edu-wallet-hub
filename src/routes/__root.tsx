@@ -122,9 +122,8 @@ function RootComponent() {
       {!isAuthPage && !isAdminRoute && (
         <Banner
           id="site-announcement"
-          variant="rainbow"
           height="2.5rem"
-          message="🎉 New study resources and exam-focused materials are being added regularly."
+          message="New CS study resources are being added regularly."
         />
       )}
       <main className={isAdminRoute || isAuthPage ? "min-h-screen" : "flex-1"}><Outlet /></main>
