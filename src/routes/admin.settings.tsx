@@ -27,25 +27,37 @@ function AdminSettings() {
     if (values.contactEmail && !/^\S+@\S+\.\S+$/.test(values.contactEmail)) {
       return void toast.error("Enter a valid contact email address.");
     }
+
     setBusy(true);
+    let uploadedHero: string | null = null;
     try {
+      const nextValues = { ...values };
+
       if (heroFile) {
         if (!heroFile.type.startsWith("image/")) throw new Error("Please choose an image file.");
         if (heroFile.size > LIMITS.coverBytes) throw new Error("The homepage image must be 5 MB or smaller.");
+
         const oldValue = data?.homeHeroImage ?? "";
         const { path } = await uploadFile(BUCKETS.cover, heroFile, "homepage");
-        values.homeHeroImage = path;
-        if (oldValue && !oldValue.startsWith("http")) await removeFile(BUCKETS.cover, oldValue);
-        setHeroFile(null);
+        uploadedHero = path;
+        nextValues.homeHeroImage = path;
+
+        if (oldValue && !oldValue.startsWith("http") && oldValue !== path) {
+          await removeFile(BUCKETS.cover, oldValue);
+        }
       }
-      // Save only the fields that changed so other settings are never overwritten.
+
       const changed = Object.fromEntries(
-        Object.entries(values).filter(([k, v]) => (data?.[k as keyof SiteSettings] ?? "") !== v),
+        Object.entries(nextValues).filter(([k, v]) => (data?.[k as keyof SiteSettings] ?? "") !== v),
       ) as Partial<SiteSettings>;
+
       await saveSettings(changed);
+      setValues(nextValues);
+      setHeroFile(null);
       await qc.invalidateQueries({ queryKey: ["site-settings"] });
       toast.success("Settings saved.");
     } catch (err) {
+      if (uploadedHero) await removeFile(BUCKETS.cover, uploadedHero);
       toast.error(friendlyError(err, "Could not save the settings."));
     } finally {
       setBusy(false);
