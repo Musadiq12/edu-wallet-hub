@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ProductCard } from "@/components/ProductCard";
 import { categoriesQuery, productsQuery } from "@/lib/catalog";
 import { siteConfig } from "@/config/site";
-import { DarkGradientBg } from "@/components/ui/elegant-dark-pattern";
+import { DarkGradientBg } from "@/components/ui/elegant-dark-pattern";\nimport { useSiteSettings, safeUrl } from "@/lib/settings";\nimport { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const products = useQuery(productsQuery({ free: false, limit: 24 }));
+  const products = useQuery(productsQuery({ free: false, limit: 24 }));\n  const { homeHeroImage } = useSiteSettings();
   const categories = useQuery(categoriesQuery());
   const [course, setCourse] = useState("");
   const [category, setCategory] = useState("");
@@ -49,7 +49,15 @@ function Home() {
           </div>
           <div className="mt-4 flex flex-wrap items-center gap-3"><Link to="/shop" search={{ q: course || undefined, category: undefined }} className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"><Filter className="size-4" aria-hidden="true" />Get</Link><span className="text-sm text-muted-foreground">{products.isLoading ? "Loading courses…" : products.isError ? "Catalog unavailable" : matches.length + " matching resources"}</span></div>
         </div>
-        <div className="min-w-0">{products.isLoading ? <div className="aspect-[3/4] rounded-lg border border-border bg-muted" aria-hidden="true" /> : products.isError ? <EmptyState title="Catalog unavailable" description="The course catalog could not be loaded. Try again from the shop." /> : featured ? <ProductCard product={featured} /> : <EmptyState title="No course matches" description="Clear the filters or browse the full catalog." />}</div>
+        <div className="min-w-0">
+          {products.isLoading ? <div className="aspect-[3/4] rounded-lg border border-border bg-muted" aria-hidden="true" /> : products.isError ? <EmptyState title="Catalog unavailable" description="The course catalog could not be loaded. Try again from the shop." /> : featured ? (
+            homeHeroImage ? (
+              <Link to="/shop/$slug" params={{ slug: featured.slug }} className="block overflow-hidden rounded-xl border border-border bg-card shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg" aria-label={`View details for ${featured.title}`}>
+                <HomeFeatureImage value={homeHeroImage} title={featured.title} />
+              </Link>
+            ) : <ProductCard product={featured} />
+          ) : <EmptyState title="No course matches" description="Clear the filters or browse the full catalog." />}
+        </div>
       </div></section>
       <section className="border-y border-border bg-muted/20 backdrop-blur-sm"><div className="page-container grid gap-0 sm:grid-cols-3">{[{ icon: GraduationCap, title: "CS-focused", copy: "Built around CSEET, Executive and Professional preparation." },{ icon: BookOpen, title: "Practical material", copy: "Notes, tests and revision resources organised by use." },{ icon: FileCheck2, title: "Easy access", copy: "Digital resources delivered after purchase verification." }].map(({ icon: Icon, title, copy }) => <div key={title} className="flex items-center gap-3 border-b border-border py-5 last:border-b-0 sm:border-b-0 sm:px-5"><span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-card text-primary"><Icon className="size-4" aria-hidden="true" /></span><div><h2 className="text-sm font-semibold">{title}</h2><p className="mt-1 text-xs leading-5 text-muted-foreground">{copy}</p></div></div>)}</div></section>
     </div>
