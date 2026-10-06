@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { ProductCard } from "@/components/ProductCard";
 import { categoriesQuery, productsQuery } from "@/lib/catalog";
 import { siteConfig } from "@/config/site";
+import { DarkGradientBg } from "@/components/ui/elegant-dark-pattern";
 
 export const Route = createFileRoute("/")({
   head: () => ({
