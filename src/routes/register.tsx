@@ -32,11 +32,9 @@ export const Route = createFileRoute("/register")({
 function RegisterPage() {
   const { redirect } = Route.useSearch();
   const emailRedirectTo =
-    typeof window !== "undefined" &&
-    window.location.hostname !== "localhost" &&
-    window.location.hostname !== "127.0.0.1"
+    typeof window !== "undefined"
       ? window.location.origin + "/"
-      : "https://eduwalletorginal.designeroutletmedia.workers.dev/";
+      : "/";
   const [form, setForm] = useState({ full_name: "", email: "", whatsapp: "", password: "" });
   const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -55,14 +53,26 @@ function RegisterPage() {
     if (form.password.length < 8) return void toast.error("Password must be at least 8 characters.");
 
     setBusy(true);
-    const { data, error } = await supabase.auth.signUp({
-      email: form.email.trim(),
+    let data: Awaited<ReturnType<typeof supabase.auth.signUp>>["data"];
+    let error: Awaited<ReturnType<typeof supabase.auth.signUp>>["error"];
+
+    try {
+      const result = await supabase.auth.signUp({
+        email: form.email.trim(),
       password: form.password,
       options: {
         emailRedirectTo,
         data: { full_name: form.full_name.trim(), whatsapp: form.whatsapp.trim() },
-      },
-    });
+        },
+      });
+      data = result.data;
+      error = result.error;
+    } catch (err) {
+      console.error("[register] Supabase signup request failed:", err);
+      setBusy(false);
+      toast.error(friendlyError(err, "Could not reach the account service. Please try again."));
+      return;
+    }
     setBusy(false);
 
     if (error) {
