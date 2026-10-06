@@ -29,6 +29,15 @@ function AdminSettings() {
     }
     setBusy(true);
     try {
+      if (heroFile) {
+        if (!heroFile.type.startsWith("image/")) throw new Error("Please choose an image file.");
+        if (heroFile.size > LIMITS.coverBytes) throw new Error("The homepage image must be 5 MB or smaller.");
+        const oldValue = data?.homeHeroImage ?? "";
+        const { path } = await uploadFile(BUCKETS.cover, heroFile, "homepage");
+        values.homeHeroImage = path;
+        if (oldValue && !oldValue.startsWith("http")) await removeFile(BUCKETS.cover, oldValue);
+        setHeroFile(null);
+      }
       // Save only the fields that changed so other settings are never overwritten.
       const changed = Object.fromEntries(
         Object.entries(values).filter(([k, v]) => (data?.[k as keyof SiteSettings] ?? "") !== v),
@@ -55,7 +64,19 @@ function AdminSettings() {
       {isLoading ? (
         <div className="space-y-3">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-11 w-full" />)}</div>
       ) : (
-        <form onSubmit={submit} className="max-w-2xl space-y-4">\n          <div className="space-y-2 rounded-xl border border-border bg-surface p-4">\n            <Label htmlFor="homeHeroImage">Homepage feature image</Label>\n            <Input id="homeHeroImage" type="file" accept="image/*" className="h-11" onChange={(e) => setHeroFile(e.target.files?.[0] ?? null)} />\n            <p className="text-xs text-muted-foreground">Upload the image shown in the right-side frame of Popular Courses. JPG, PNG or WebP up to 5 MB.</p>\n            {values.homeHeroImage && <p className="text-xs text-muted-foreground">A custom homepage image is currently configured.</p>}\n          </div>
+        <form onSubmit={submit} className="max-w-2xl space-y-4">
+          <div className="space-y-2 rounded-xl border border-border bg-surface p-4">
+            <Label htmlFor="homeHeroImage">Homepage feature image</Label>
+            <Input id="homeHeroImage" type="file" accept="image/*" className="h-11" onChange={(e) => setHeroFile(e.target.files?.[0] ?? null)} />
+            <p className="text-xs text-muted-foreground">Upload the image shown in the right-side frame of Popular Courses. JPG, PNG or WebP up to 5 MB.</p>
+            {values.homeHeroImage && <p className="text-xs text-muted-foreground">A custom homepage image is currently configured.</p>}
+          </div>
+          <div className="space-y-2 rounded-xl border border-border bg-surface p-4">
+            <Label htmlFor="homeHeroImage">Homepage feature image</Label>
+            <Input id="homeHeroImage" type="file" accept="image/*" className="h-11" onChange={(e) => setHeroFile(e.target.files?.[0] ?? null)} />
+            <p className="text-xs text-muted-foreground">Upload the image shown in the right-side frame of Popular Courses. JPG, PNG or WebP up to 5 MB.</p>
+            {values.homeHeroImage && <p className="text-xs text-muted-foreground">A custom homepage image is currently configured.</p>}
+          </div>
           {SETTING_FIELDS.map((f) => (
             <div key={f.key} className="space-y-1.5">
               <Label htmlFor={f.key}>{f.label}</Label>
