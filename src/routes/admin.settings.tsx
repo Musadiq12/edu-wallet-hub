@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { friendlyError } from "@/lib/admin";
+import { BUCKETS, LIMITS, friendlyError, removeFile, uploadFile } from "@/lib/admin";
 import { SETTING_FIELDS, defaultSettings, saveSettings, settingsQuery, type SiteSettings } from "@/lib/settings";
 
 export const Route = createFileRoute("/admin/settings")({ component: AdminSettings });
@@ -16,6 +16,7 @@ function AdminSettings() {
   const { data, isLoading } = useQuery(settingsQuery());
   const [values, setValues] = useState<SiteSettings>(defaultSettings);
   const [busy, setBusy] = useState(false);
+  const [heroFile, setHeroFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (data) setValues(data);
@@ -54,7 +55,7 @@ function AdminSettings() {
       {isLoading ? (
         <div className="space-y-3">{Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-11 w-full" />)}</div>
       ) : (
-        <form onSubmit={submit} className="max-w-2xl space-y-4">
+        <form onSubmit={submit} className="max-w-2xl space-y-4">\n          <div className="space-y-2 rounded-xl border border-border bg-surface p-4">\n            <Label htmlFor="homeHeroImage">Homepage feature image</Label>\n            <Input id="homeHeroImage" type="file" accept="image/*" className="h-11" onChange={(e) => setHeroFile(e.target.files?.[0] ?? null)} />\n            <p className="text-xs text-muted-foreground">Upload the image shown in the right-side frame of Popular Courses. JPG, PNG or WebP up to 5 MB.</p>\n            {values.homeHeroImage && <p className="text-xs text-muted-foreground">A custom homepage image is currently configured.</p>}\n          </div>
           {SETTING_FIELDS.map((f) => (
             <div key={f.key} className="space-y-1.5">
               <Label htmlFor={f.key}>{f.label}</Label>
