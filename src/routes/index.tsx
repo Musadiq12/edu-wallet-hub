@@ -6,7 +6,9 @@ import { EmptyState } from "@/components/EmptyState";
 import { ProductCard } from "@/components/ProductCard";
 import { categoriesQuery, productsQuery } from "@/lib/catalog";
 import { siteConfig } from "@/config/site";
-import { DarkGradientBg } from "@/components/ui/elegant-dark-pattern";\nimport { useSiteSettings, safeUrl } from "@/lib/settings";\nimport { supabase } from "@/integrations/supabase/client";
+import { DarkGradientBg } from "@/components/ui/elegant-dark-pattern";
+import { useSiteSettings, safeUrl } from "@/lib/settings";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,7 +24,8 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
-  const products = useQuery(productsQuery({ free: false, limit: 24 }));\n  const { homeHeroImage } = useSiteSettings();
+  const products = useQuery(productsQuery({ free: false, limit: 24 }));
+  const { homeHeroImage } = useSiteSettings();
   const categories = useQuery(categoriesQuery());
   const [course, setCourse] = useState("");
   const [category, setCategory] = useState("");
@@ -62,4 +65,10 @@ function Home() {
       <section className="border-y border-border bg-muted/20 backdrop-blur-sm"><div className="page-container grid gap-0 sm:grid-cols-3">{[{ icon: GraduationCap, title: "CS-focused", copy: "Built around CSEET, Executive and Professional preparation." },{ icon: BookOpen, title: "Practical material", copy: "Notes, tests and revision resources organised by use." },{ icon: FileCheck2, title: "Easy access", copy: "Digital resources delivered after purchase verification." }].map(({ icon: Icon, title, copy }) => <div key={title} className="flex items-center gap-3 border-b border-border py-5 last:border-b-0 sm:border-b-0 sm:px-5"><span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-card text-primary"><Icon className="size-4" aria-hidden="true" /></span><div><h2 className="text-sm font-semibold">{title}</h2><p className="mt-1 text-xs leading-5 text-muted-foreground">{copy}</p></div></div>)}</div></section>
     </div>
   );
+}
+
+function HomeFeatureImage({ value, title }: { value: string; title: string }) {
+  const url = safeUrl(value) || (value && !value.startsWith("http") ? supabase.storage.from("product-covers").getPublicUrl(value).data.publicUrl : "");
+  if (!url) return <div className="flex aspect-[3/4] items-center justify-center bg-surface text-sm text-muted-foreground">Upload a homepage image in Admin → Settings.</div>;
+  return <img src={url} alt={title} loading="eager" decoding="async" className="block aspect-[3/4] h-full w-full object-cover" />;
 }
