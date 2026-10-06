@@ -21,7 +21,7 @@ export function useSession() {
     });
     return () => {
       active = false;
-      sub.subscription.unsubscribe();
+      sub?.subscription.unsubscribe();
     };
   }, []);
 
