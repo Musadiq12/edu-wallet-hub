@@ -1,10 +1,10 @@
-import { ArrowRight, BookOpen, BriefcaseBusiness, Building2, FileText, GraduationCap, Landmark, Scale, Sparkles } from "lucide-react";
+import { BookOpen, CalendarDays, CheckCircle2, FileCheck2, Filter, GraduationCap } from "lucide-react";
+import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { StorefrontHero } from "@/components/StorefrontHero";
-import { ProductCarousel } from "@/components/ProductCarousel";
 import { EmptyState } from "@/components/EmptyState";
-import { productsQuery, type Product } from "@/lib/catalog";
+import { ProductCard } from "@/components/ProductCard";
+import { categoriesQuery, productsQuery } from "@/lib/catalog";
 import { siteConfig } from "@/config/site";
 
 export const Route = createFileRoute("/")({
@@ -20,186 +20,37 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
-const EXAMS = [
-  { title: "NEET", icon: GraduationCap, query: "neet" },
-  { title: "JEE", icon: BookOpen, query: "jee" },
-  { title: "UPSC", icon: Landmark, query: "upsc" },
-  { title: "SSC CGL", icon: BriefcaseBusiness, query: "ssc" },
-  { title: "Banking", icon: Building2, query: "bank" },
-  { title: "CLAT", icon: Scale, query: "clat" },
-];
-
-function includesTerm(product: Product, term: string) {
-  const haystack = [
-    product.title,
-    product.description,
-    product.course_label,
-    product.subject_label,
-    product.keywords,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  return haystack.includes(term.toLowerCase());
-}
-
-function filterProducts(products: Product[], term: string) {
-  return products.filter((product) => includesTerm(product, term));
-}
-
 function Home() {
-  const products = useQuery(productsQuery({ free: false, limit: 32 }));
-  const freeProducts = useQuery(productsQuery({ free: true, limit: 12 }));
-  const allProducts = products.data ?? [];
-
-  const featured = allProducts.filter((product) => product.is_featured);
-  const discounted = allProducts.filter(
-    (product) =>
-      product.discounted_price != null &&
-      Number(product.discounted_price) < Number(product.price),
-  );
-
+  const products = useQuery(productsQuery({ free: false, limit: 24 }));
+  const categories = useQuery(categoriesQuery());
+  const [course, setCourse] = useState("");
+  const [category, setCategory] = useState("");
+  const courseOptions = Array.from(new Set((products.data ?? []).map((p) => p.course_label).filter(Boolean))) as string[];
+  const categoryOptions = categories.data ?? [];
+  const matches = (products.data ?? []).filter((p) => (!course || p.course_label === course) && (!category || p.category_id === category));
+  const featured = matches.find((p) => p.is_featured) ?? matches[0];
+  const quickLinks = [
+    { label: "Schedule & Syllabus", icon: CalendarDays, href: "/shop" },
+    { label: "Test Series Details", icon: BookOpen, href: "/shop" },
+    { label: "Procedure to Buy", icon: CheckCircle2, href: "/shop" },
+    { label: "Checked Sheets", icon: FileCheck2, href: "/shop" },
+  ];
   return (
-    <>
-      <StorefrontHero />
-
-      <section className="py-7 sm:py-9">
-        <div className="page-container">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Browse by exam</p>
-              <h2 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Find your preparation track</h2>
-            </div>
-            <Link to="/shop" className="hidden items-center gap-1 text-sm font-semibold text-primary hover:underline sm:inline-flex">
-              View all <ArrowRight className="h-4 w-4" aria-hidden="true" />
-            </Link>
+    <div>
+      <section className="border-b border-border bg-card"><div className="page-container py-4 sm:py-5"><nav aria-label="Quick links" className="grid grid-cols-2 gap-2 sm:grid-cols-4">{quickLinks.map(({ label, icon: Icon, href }) => <Link key={label} to={href as "/"} className="flex min-h-12 items-center justify-center gap-2 rounded-md border border-border bg-background px-3 text-center text-sm font-semibold transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground"><Icon className="size-4 shrink-0" aria-hidden="true" />{label}</Link>)}</nav></div></section>
+      <section className="page-container py-10 sm:py-14"><div className="grid items-center gap-8 rounded-xl border border-border bg-card p-5 shadow-sm sm:p-8 lg:grid-cols-[1fr_330px] lg:p-10">
+        <div className="max-w-2xl"><p className="text-sm font-semibold uppercase tracking-[0.12em] text-primary">CSEET · CS Executive · CS Professional</p><h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">Popular Courses</h1><p className="mt-3 max-w-xl text-base leading-7 text-muted-foreground">Choose your CS level, select the resource you need, and go straight to focused preparation material.</p>
+          <div className="mt-7 grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-1.5"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Course</span><select value={course} onChange={(e) => setCourse(e.target.value)} className="h-11 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><option value="">All courses</option>{courseOptions.map((option) => <option key={option}>{option}</option>)}</select></label>
+            <label className="grid gap-1.5"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Products</span><select className="h-11 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" defaultValue=""><option value="">All products</option>{matches.slice(0, 12).map((p) => <option key={p.id}>{p.title}</option>)}</select></label>
+            <label className="grid gap-1.5"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Category</span><select value={category} onChange={(e) => setCategory(e.target.value)} className="h-11 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><option value="">All categories</option>{categoryOptions.map((option) => <option key={option.id} value={option.id}>{option.name}</option>)}</select></label>
+            <label className="grid gap-1.5"><span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Levels</span><select className="h-11 rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" defaultValue=""><option value="">All levels</option><option>CSEET</option><option>CS Executive</option><option>CS Professional</option></select></label>
           </div>
-
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-            {EXAMS.map(({ title, icon: Icon, query }) => (
-              <Link
-                key={title}
-                to="/shop"
-                search={{ q: query, category: undefined }}
-                className="group rounded-xl border border-border bg-card p-4 transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <Icon className="h-5 w-5" aria-hidden="true" />
-                </div>
-                <p className="mt-3 text-sm font-semibold">{title}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">Study resources</p>
-              </Link>
-            ))}
-          </div>
+          <div className="mt-4 flex flex-wrap items-center gap-3"><Link to="/shop" search={{ q: course || undefined, category: undefined }} className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90"><Filter className="size-4" aria-hidden="true" />Get</Link><span className="text-sm text-muted-foreground">{products.isLoading ? "Loading courses…" : products.isError ? "Catalog unavailable" : matches.length + " matching resources"}</span></div>
         </div>
-      </section>
-
-      {products.isLoading ? (
-        <section className="section-y">
-          <div className="page-container">
-            <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-            <div className="mt-7 flex gap-4 overflow-hidden">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-96 w-[72vw] shrink-0 animate-pulse rounded-xl bg-muted sm:w-[280px]" />
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : allProducts.length === 0 ? (
-        <section className="section-y">
-          <div className="page-container">
-            <EmptyState
-              title="Resources are being added"
-              description="Check back shortly for notes, guess papers and exam guides."
-              action={<Link to="/free-resources" className="text-sm font-semibold text-primary hover:underline">Explore free resources</Link>}
-            />
-          </div>
-        </section>
-      ) : (
-        <>
-          <ProductCarousel
-            title="Featured resources"
-            description="Hand-picked study material worth exploring."
-            products={(featured.length ? featured : allProducts).slice(0, 10)}
-          />
-
-
-          {discounted.length > 0 && (
-            <ProductCarousel
-              title="Special offers"
-              description="Current resources available at a reduced price."
-              products={discounted.slice(0, 12)}
-            />
-          )}
-
-          {EXAMS.map(({ title, query }) => {
-            const matches = filterProducts(allProducts, query).slice(0, 10);
-            if (matches.length < 2) return null;
-            return (
-              <ProductCarousel
-                key={title}
-                title={`${title} preparation`}
-                description={`Resources matched to ${title} preparation.`}
-                products={matches}
-              />
-            );
-          })}
-
-          {freeProducts.data && freeProducts.data.length > 0 && (
-            <section className="border-y border-border bg-accent/35">
-              <ProductCarousel
-                title="Free resources"
-                description="Try useful study material before buying."
-                products={freeProducts.data.slice(0, 10)}
-              />
-            </section>
-          )}
-        </>
-      )}
-
-      <section className="section-y">
-        <div className="page-container">
-          <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="flex items-center gap-2 text-primary">
-                  <Sparkles className="h-5 w-5" aria-hidden="true" />
-                  <span className="text-sm font-semibold">Need something specific?</span>
-                </div>
-                <h2 className="mt-2 text-2xl font-semibold tracking-tight">Browse the complete EduWallet catalog.</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  Filter by resource type, exam, course or keyword and go directly to the material you need.
-                </p>
-              </div>
-              <Link
-                to="/shop"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-              >
-                Browse catalog
-                <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="border-t border-border bg-muted/30 py-10">
-        <div className="page-container grid gap-6 text-sm sm:grid-cols-3">
-          <div className="flex gap-3">
-            <FileText className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-            <div><p className="font-semibold">Digital-first</p><p className="mt-1 text-muted-foreground">Resources are delivered digitally after successful purchase verification.</p></div>
-          </div>
-          <div className="flex gap-3">
-            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-            <div><p className="font-semibold">Exam-focused</p><p className="mt-1 text-muted-foreground">Organized around practical study and revision needs.</p></div>
-          </div>
-          <div className="flex gap-3">
-            <BookOpen className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
-            <div><p className="font-semibold">Easy to browse</p><p className="mt-1 text-muted-foreground">Fast horizontal catalogs designed for desktop and mobile.</p></div>
-          </div>
-        </div>
-      </section>
-    </>
+        <div className="min-w-0">{products.isLoading ? <div className="aspect-[3/4] rounded-lg border border-border bg-muted" aria-hidden="true" /> : products.isError ? <EmptyState title="Catalog unavailable" description="The course catalog could not be loaded. Try again from the shop." /> : featured ? <ProductCard product={featured} /> : <EmptyState title="No course matches" description="Clear the filters or browse the full catalog." />}</div>
+      </div></section>
+      <section className="border-y border-border bg-muted/20"><div className="page-container grid gap-0 sm:grid-cols-3">{[{ icon: GraduationCap, title: "CS-focused", copy: "Built around CSEET, Executive and Professional preparation." },{ icon: BookOpen, title: "Practical material", copy: "Notes, tests and revision resources organised by use." },{ icon: FileCheck2, title: "Easy access", copy: "Digital resources delivered after purchase verification." }].map(({ icon: Icon, title, copy }) => <div key={title} className="flex items-center gap-3 border-b border-border py-5 last:border-b-0 sm:border-b-0 sm:px-5"><span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-card text-primary"><Icon className="size-4" aria-hidden="true" /></span><div><h2 className="text-sm font-semibold">{title}</h2><p className="mt-1 text-xs leading-5 text-muted-foreground">{copy}</p></div></div>)}</div></section>
+    </div>
   );
 }
