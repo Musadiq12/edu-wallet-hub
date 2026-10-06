@@ -28,8 +28,8 @@ export function SiteFooter() {
 
   return (
     <footer className="mt-auto border-t border-border bg-surface">
-      <div className="page-container grid gap-10 py-12 md:grid-cols-3">
-        <div className="md:col-span-2">
+      <div className="page-container grid gap-8 py-10 md:grid-cols-[1.2fr_0.8fr_0.8fr]">
+        <div>
           <Logo />
           <p className="mt-4 max-w-sm text-sm text-muted-foreground">
             {siteConfig.shortDescription}
@@ -58,8 +58,8 @@ export function SiteFooter() {
           )}
         </div>
 
-        <nav aria-label="Footer navigation">
-          <h2 className="font-serif text-sm font-semibold tracking-wide text-foreground uppercase">
+        <nav aria-label="Footer navigation" className="md:col-span-2 md:grid md:grid-cols-2 md:gap-10">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-foreground">
             Explore
           </h2>
           <ul className="mt-4 space-y-2.5 text-sm">
@@ -76,11 +76,11 @@ export function SiteFooter() {
       </div>
 
       <div className="border-t border-border">
-        <div className="page-container flex flex-col gap-3 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div className="page-container flex flex-col gap-3 py-6 text-xs text-muted-foreground sm:flex-col sm:items-start">
           <p>
             © {siteConfig.copyrightYear} {s.brandName}. All rights reserved.
           </p>
-          <p className="max-w-xl sm:text-right">{siteConfig.disclaimer}</p>
+          <p className="max-w-2xl text-left">{siteConfig.disclaimer}</p>
         </div>
       </div>
     </footer>
