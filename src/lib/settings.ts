@@ -15,7 +15,8 @@ export type SettingKey =
   | "instagram"
   | "telegram"
   | "youtube"
-  | "websiteUrl";
+  | "websiteUrl"
+  | "homeHeroImage";
 
 export const SETTING_FIELDS: { key: SettingKey; label: string; help?: string }[] = [
   { key: "brandName", label: "Website name" },
@@ -48,6 +49,7 @@ export const defaultSettings: SiteSettings = {
   telegram: "",
   youtube: "",
   websiteUrl: "",
+  homeHeroImage: "",
 };
 
 export const settingsQuery = () =>
