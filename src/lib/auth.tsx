@@ -9,16 +9,21 @@ export function useSession() {
 
   useEffect(() => {
     let active = true;
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
+    let sub: { subscription: { unsubscribe: () => void } } | null = null;
+    const init = async () => {
+      const { data, error } = await supabase.auth.getSession();
       if (!active) return;
-      setSession(next);
-      setLoading(false);
-    });
-    supabase.auth.getSession().then(({ data }) => {
-      if (!active) return;
+      if (error) console.error("[useSession] Failed to restore session:", error);
       setSession(data.session);
       setLoading(false);
-    });
+      const result = supabase.auth.onAuthStateChange((_event, next) => {
+        if (!active) return;
+        setSession(next);
+        setLoading(false);
+      });
+      sub = result.data;
+    };
+    void init();
     return () => {
       active = false;
       sub?.subscription.unsubscribe();
