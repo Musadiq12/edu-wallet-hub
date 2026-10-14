@@ -1,4 +1,4 @@
-name: Deploy Edu Wallet
+name: Build Edu Wallet
 
 on:
   push:
@@ -7,11 +7,9 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: build
   cancel-in-progress: true
 
 jobs:
@@ -25,7 +23,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install dependencies
         run: npm install
@@ -33,14 +31,7 @@ jobs:
       - name: Build website
         run: npm run build
 
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload website
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: ./dist
-
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
-        
+      - name: Verify Cloudflare build output
+        run: |
+          test -f .output/server/index.mjs
+          test -d .output/public
