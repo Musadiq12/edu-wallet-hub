@@ -62,6 +62,8 @@ export function StorefrontHero() {
   const previous = () => setActive((current) => (current - 1 + slides.length) % slides.length);
   const next = () => setActive((current) => (current + 1) % slides.length);
 
+  if (!slide) return null;
+
   return (
     <section
       className="page-container pt-4 sm:pt-6"

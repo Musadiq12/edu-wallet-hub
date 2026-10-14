@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminOrdersQuery, friendlyError, type AdminOrder } from "@/lib/admin";
 import { formatPrice, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/format";
+import { signedUrl } from "@/lib/catalog";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/orders")({ component: AdminOrders });
@@ -213,7 +214,7 @@ function AdminOrders() {
                       size="sm"
                       variant="outline"
                       disabled={busyId === o.id}
-                      onClick={() => void openProof(o.screenshot_path!, o.id)}
+                      onClick={() => { if (o.screenshot_path) void openProof(o.screenshot_path, o.id); }}
                     >
                       View screenshot
                     </Button>
