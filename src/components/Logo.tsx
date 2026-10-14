@@ -1,29 +1,25 @@
-import { useSiteSettings } from "@/lib/settings";
+import { useState } from "react";
 
-export function LogoMark({ className = "h-8 w-8" }: { className?: string }) {
-  const { brandName } = useSiteSettings();
+export function LogoMark({ className = "h-10 w-24" }: { className?: string }) {
+  const [loaded, setLoaded] = useState(false);
   return (
+    <span className={`${className} relative inline-flex shrink-0 items-center`}>
+      {!loaded && <span className="text-xs font-semibold text-foreground">Revivor CS Test Series</span>}
     <img
-      src="/edu-wallet-icon.svg"
-      alt={`${brandName} logo`}
-      className={`${className} shrink-0 transition-transform duration-200 group-hover:scale-[1.03]`}
+      src="/revivor-cs-test-series-logo.jpg"
+      alt="Revivor CS Test Series logo"
+      onLoad={() => setLoaded(true)}
+      onError={() => setLoaded(false)}
+      className={`${className} absolute inset-0 shrink-0 object-contain ${loaded ? "" : "hidden"}`}
     />
+    </span>
   );
 }
 
 export function Logo({ compact = false }: { compact?: boolean }) {
-  const { brandName, tagline } = useSiteSettings();
   return (
-    <span className="group flex items-center gap-2.5">
-      <LogoMark className="h-8 w-8 shrink-0" />
-      <span className="flex min-w-0 flex-col leading-none">
-        <span className="font-serif text-lg font-semibold tracking-tight text-foreground">
-          {brandName}
-        </span>
-        {!compact && tagline && (
-          <span className="mt-0.5 text-xs text-muted-foreground">{tagline}</span>
-        )}
-      </span>
+    <span className="inline-flex min-w-0 items-center">
+      <LogoMark className={compact ? "h-10 w-24" : "h-16 w-32"} />
     </span>
   );
 }

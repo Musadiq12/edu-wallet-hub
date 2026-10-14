@@ -126,7 +126,7 @@ function AdminLayout() {
       {NAV.map((item) => {
         const Icon = item.icon;
 
-        if (item.external) {
+        if ("external" in item && item.external) {
           return (
             <Link
               key={item.label}

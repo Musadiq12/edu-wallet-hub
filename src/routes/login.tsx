@@ -10,7 +10,7 @@ type Search = { redirect?: string };
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>): Search => ({
-    redirect: typeof search.redirect === "string" ? search.redirect : undefined,
+    ...(typeof search["redirect"] === "string" ? { redirect: search["redirect"] } : {}),
   }),
   head: () => ({
     meta: [
@@ -32,11 +32,11 @@ function LoginPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password) return toast.error("Enter your email and password.");
+    if (!email.trim() || !password) return void toast.error("Enter your email and password.");
     setBusy(true);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
-    if (error) return toast.error(friendlyError(error, "Could not log in. Please try again."));
+    if (error) return void toast.error(friendlyError(error, "Could not log in. Please try again."));
     toast.success("Logged in.");
     if (redirect?.startsWith("/")) window.location.assign(redirect);
     else void navigate({ to: "/library" });
