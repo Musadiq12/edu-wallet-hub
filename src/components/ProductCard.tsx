@@ -17,10 +17,10 @@ export function ProductCard({ product, compact = false }: { product: Product; co
       <Link
         to="/shop/$slug"
         params={{ slug: product.slug }}
-        className="block overflow-hidden"
+        className="block overflow-hidden rounded-t-xl"
         aria-label={`View details for ${product.title}`}
       >
-        <CoverImage path={product.cover_image} title={product.title} className="aspect-[3/4]" />
+        <CoverImage path={product.cover_image} title={product.title} className="aspect-[4/3]" />
       </Link>
 
       <div className={compact ? "flex flex-1 flex-col p-3.5" : "flex flex-1 flex-col p-4"}>
