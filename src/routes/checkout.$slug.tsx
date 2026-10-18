@@ -133,7 +133,7 @@ function Checkout() {
           <CheckCircle2 className="mx-auto h-10 w-10 text-success" aria-hidden="true" />
           <h1 className="mt-4 font-serif text-2xl font-semibold">Payment confirmation received.</h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            We will verify your payment and prepare your order for delivery to the shipping address you provided. {siteSettings.deliveryEstimate ? `${siteSettings.deliveryEstimate}.` : ""}
+            {p.product_type === "physical" ? `We will verify your payment and prepare your order for delivery to the shipping address you provided. ${siteSettings.deliveryEstimate ? `${siteSettings.deliveryEstimate}.` : ""}` : "We will verify your payment and prepare your digital PDF for delivery."}
           </p>
           <div className="mt-5 rounded-lg border border-border bg-surface p-4 text-left text-sm">
             <p className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-success" /> Your payment is reviewed manually before delivery.</p>
@@ -185,19 +185,19 @@ function Checkout() {
       setError("Please enter a valid WhatsApp number.");
       return;
     }
-    if (!form.delivery_address.trim() || form.delivery_address.trim().length > 300) {
+    if (p.product_type === "physical" && (!form.delivery_address.trim() || form.delivery_address.trim().length > 300)) {
       setError("Please enter your complete delivery address.");
       return;
     }
-    if (!form.delivery_city.trim() || !form.delivery_state.trim()) {
+    if (p.product_type === "physical" && (!form.delivery_city.trim() || !form.delivery_state.trim())) {
       setError("Please enter your city and state.");
       return;
     }
-    if (!/^[0-9]{5,10}$/.test(form.delivery_postal_code.trim())) {
+    if (p.product_type === "physical" && !/^[0-9]{5,10}$/.test(form.delivery_postal_code.trim())) {
       setError("Please enter a valid postal PIN code.");
       return;
     }
-    if (!form.delivery_country.trim()) {
+    if (p.product_type === "physical" && !form.delivery_country.trim()) {
       setError("Please enter your country.");
       return;
     }
@@ -237,11 +237,11 @@ function Checkout() {
         full_name: form.full_name.trim(),
         email: form.email.trim(),
         whatsapp: form.whatsapp.trim(),
-        delivery_address: form.delivery_address.trim(),
-        delivery_city: form.delivery_city.trim(),
-        delivery_state: form.delivery_state.trim(),
-        delivery_postal_code: form.delivery_postal_code.trim(),
-        delivery_country: form.delivery_country.trim(),
+        delivery_address: p.product_type === "physical" ? form.delivery_address.trim() : null,
+        delivery_city: p.product_type === "physical" ? form.delivery_city.trim() : null,
+        delivery_state: p.product_type === "physical" ? form.delivery_state.trim() : null,
+        delivery_postal_code: p.product_type === "physical" ? form.delivery_postal_code.trim() : null,
+        delivery_country: p.product_type === "physical" ? form.delivery_country.trim() : null,
         amount: paid,
         payment_method: "UPI",
         transaction_id: form.transaction_id.trim(),
@@ -326,7 +326,7 @@ function Checkout() {
           <section className="rounded-lg border border-border bg-card p-6">
             <h2 className="text-lg font-semibold">Delivery & payment details</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Enter the address where your physical book or printed notes should be delivered, then submit payment details.
+              {p.product_type === "physical" ? "Enter the shipping address for your physical book or printed notes, then submit payment details." : "Submit your payment details to order this digital PDF."}
             </p>
 
             <form className="mt-5 space-y-4" onSubmit={onSubmit} noValidate>
@@ -364,34 +364,36 @@ function Checkout() {
                   required
                 />
               </div>
-              <div className="border-t border-border pt-4">
-                <h3 className="font-semibold">Shipping address</h3>
-                <p className="mt-1 text-sm text-muted-foreground">Use the complete address where the courier should deliver your order.</p>
-              </div>
-              <div>
-                <Label htmlFor="delivery_address">House / street / locality</Label>
-                <Input id="delivery_address" value={form.delivery_address} maxLength={300} onChange={(e) => setForm({ ...form, delivery_address: e.target.value })} className="mt-1.5 h-11" autoComplete="street-address" required />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="delivery_city">City / town</Label>
-                  <Input id="delivery_city" value={form.delivery_city} onChange={(e) => setForm({ ...form, delivery_city: e.target.value })} className="mt-1.5 h-11" autoComplete="address-level2" required />
+              {p.product_type === "physical" && <>
+                <div className="border-t border-border pt-4">
+                  <h3 className="font-semibold">Shipping address</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">Use the complete address where the courier should deliver your order.</p>
                 </div>
                 <div>
-                  <Label htmlFor="delivery_state">State</Label>
-                  <Input id="delivery_state" value={form.delivery_state} onChange={(e) => setForm({ ...form, delivery_state: e.target.value })} className="mt-1.5 h-11" autoComplete="address-level1" required />
+                  <Label htmlFor="delivery_address">House / street / locality</Label>
+                  <Input id="delivery_address" value={form.delivery_address} maxLength={300} onChange={(e) => setForm({ ...form, delivery_address: e.target.value })} className="mt-1.5 h-11" autoComplete="street-address" required />
                 </div>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="delivery_postal_code">PIN code</Label>
-                  <Input id="delivery_postal_code" inputMode="numeric" value={form.delivery_postal_code} maxLength={10} onChange={(e) => setForm({ ...form, delivery_postal_code: e.target.value })} className="mt-1.5 h-11" autoComplete="postal-code" required />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="delivery_city">City / town</Label>
+                    <Input id="delivery_city" value={form.delivery_city} onChange={(e) => setForm({ ...form, delivery_city: e.target.value })} className="mt-1.5 h-11" autoComplete="address-level2" required />
+                  </div>
+                  <div>
+                    <Label htmlFor="delivery_state">State</Label>
+                    <Input id="delivery_state" value={form.delivery_state} onChange={(e) => setForm({ ...form, delivery_state: e.target.value })} className="mt-1.5 h-11" autoComplete="address-level1" required />
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="delivery_country">Country</Label>
-                  <Input id="delivery_country" value={form.delivery_country} onChange={(e) => setForm({ ...form, delivery_country: e.target.value })} className="mt-1.5 h-11" autoComplete="country-name" required />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <Label htmlFor="delivery_postal_code">PIN code</Label>
+                    <Input id="delivery_postal_code" inputMode="numeric" value={form.delivery_postal_code} maxLength={10} onChange={(e) => setForm({ ...form, delivery_postal_code: e.target.value })} className="mt-1.5 h-11" autoComplete="postal-code" required />
+                  </div>
+                  <div>
+                    <Label htmlFor="delivery_country">Country</Label>
+                    <Input id="delivery_country" value={form.delivery_country} onChange={(e) => setForm({ ...form, delivery_country: e.target.value })} className="mt-1.5 h-11" autoComplete="country-name" required />
+                  </div>
                 </div>
-              </div>
+              </>}
               <div>
                 <Label htmlFor="amount">Amount paid (₹)</Label>
                 <Input
