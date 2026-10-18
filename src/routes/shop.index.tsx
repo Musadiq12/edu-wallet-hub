@@ -87,14 +87,18 @@ function Shop() {
           />
         </div>
 
-        <div className="mt-5 -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+        <div
+          className="mt-5 flex flex-wrap items-center gap-2"
+          role="group"
+          aria-label="Filter resources by category"
+        >
           {tabs.map((t) => (
             <button
               key={t.slug}
               type="button"
               onClick={() => setCategory(t.slug)}
               aria-pressed={activeCategory === t.slug}
-              className={`shrink-0 rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
+              className={`rounded-full border px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
                 activeCategory === t.slug
                   ? "border-primary bg-primary text-primary-foreground"
                   : "border-border bg-card text-muted-foreground hover:text-foreground"
