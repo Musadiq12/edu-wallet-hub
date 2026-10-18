@@ -267,6 +267,7 @@ Thank you for shopping with us!`;
                     </div>
                     <p className="truncate text-sm font-medium">{order.full_name} · {order.whatsapp}</p>
                     <p className="text-sm text-muted-foreground">{order.product_title} · {formatPrice(Number(order.amount))}</p>
+                    <p className="break-all text-xs text-muted-foreground">{order.transaction_id ? `Transaction ID: ${order.transaction_id}` : order.screenshot_path ? "Payment proof attached" : "Payment proof not attached"}</p>
                     <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString()}</p>
                   </div>
                   <ChevronDown className={`mt-1 h-5 w-5 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`} />
