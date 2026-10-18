@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowRight, BookOpen, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AuroraBackground } from "@/components/ui/aurora-background";
+import { useSiteSettings } from "@/lib/settings";
 
 type HeroSlide = {
   eyebrow: string;
@@ -13,6 +14,7 @@ type HeroSlide = {
   to: "/shop" | "/free-resources";
   accent: string;
   secondary: string;
+  imageUrl?: string;
 };
 
 const slides: HeroSlide[] = [
@@ -45,23 +47,42 @@ const slides: HeroSlide[] = [
   },
 ];
 
-const INTERVAL = 5500;
+const DEFAULT_INTERVAL = 4500;
+
+function parseSlides(value: string): HeroSlide[] {
+  if (!value.trim()) return slides;
+  try {
+    const parsed = JSON.parse(value);
+    if (!Array.isArray(parsed) || parsed.length === 0) return slides;
+    const valid = parsed.filter((item): item is HeroSlide =>
+      item && typeof item.title === "string" && typeof item.description === "string" &&
+      typeof item.eyebrow === "string" && typeof item.cta === "string" &&
+      (item.to === "/shop" || item.to === "/free-resources")
+    );
+    return valid.length ? valid : slides;
+  } catch {
+    return slides;
+  }
+}
 
 export function StorefrontHero() {
+  const settings = useSiteSettings();
+  const heroSlides = useMemo(() => parseSlides(settings.heroSlides), [settings.heroSlides]);
+  const interval = Math.min(30000, Math.max(2500, Number(settings.heroIntervalMs) || DEFAULT_INTERVAL));
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
-  const slide = slides[active];
+  const slide = heroSlides[active] ?? heroSlides[0];
 
   useEffect(() => {
     if (paused) return;
     const timer = window.setInterval(() => {
-      setActive((current) => (current + 1) % slides.length);
-    }, INTERVAL);
+      setActive((current) => (current + 1) % heroSlides.length);
+    }, interval);
     return () => window.clearInterval(timer);
-  }, [paused]);
+  }, [paused, interval, heroSlides.length]);
 
-  const previous = () => setActive((current) => (current - 1 + slides.length) % slides.length);
-  const next = () => setActive((current) => (current + 1) % slides.length);
+  const previous = () => setActive((current) => (current - 1 + heroSlides.length) % heroSlides.length);
+  const next = () => setActive((current) => (current + 1) % heroSlides.length);
 
   if (!slide) return null;
 
@@ -77,7 +98,7 @@ export function StorefrontHero() {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
       }}
     >
-      <div className={cn("relative overflow-hidden rounded-2xl bg-gradient-to-br", slide.accent)}>
+      <div className={cn("relative overflow-hidden rounded-2xl bg-gradient-to-br", slide.accent || "from-primary/15 via-background to-secondary/10")} style={slide.imageUrl ? { backgroundImage: `linear-gradient(90deg, hsl(var(--background) / 0.94), hsl(var(--background) / 0.58)), url("${slide.imageUrl}")`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}>
         <AuroraBackground className="absolute inset-0 z-0 h-full min-h-0 w-full rounded-2xl bg-transparent" showRadialGradient />
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl" aria-hidden="true" />
         <div className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-secondary/10 blur-3xl" aria-hidden="true" />
@@ -124,7 +145,7 @@ export function StorefrontHero() {
 
         <div className="absolute bottom-5 left-6 right-6 flex items-center justify-between sm:left-10 sm:right-10">
           <div className="flex gap-1.5" role="tablist" aria-label="Hero slides">
-            {slides.map((item, index) => (
+            {heroSlides.map((item, index) => (
               <button
                 key={item.title}
                 type="button"
