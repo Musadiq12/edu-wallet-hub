@@ -233,6 +233,7 @@ function Checkout() {
       const { error: insertError } = await supabase.from("orders").insert({
         user_id: user.id,
         product_id: p.id,
+        product_type: p.product_type,
         product_title: p.title,
         full_name: form.full_name.trim(),
         email: form.email.trim(),
