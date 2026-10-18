@@ -12,24 +12,26 @@ export function CoverImage({
 }) {
   const url = path ? supabase.storage.from("product-covers").getPublicUrl(path).data.publicUrl : null;
 
-  if (path && url) {
-    return (
-      <img
-        src={url}
-        alt={`Cover of ${title}`}
-        loading="lazy"
-        decoding="async"
-        className={`block h-full w-full object-contain bg-surface ${className}`}
-      />
-    );
-  }
-
   return (
     <div
-      className={`flex min-h-64 w-full items-center justify-center border-b border-border bg-surface ${className}`}
-      aria-hidden="true"
+      className={`relative w-full overflow-hidden bg-muted ${className}`}
     >
-      <BookOpen className="h-8 w-8 text-muted-foreground/60" />
+      {url ? (
+        <img
+          src={url}
+          alt={`Cover of ${title}`}
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 block h-full w-full object-cover object-center"
+        />
+      ) : (
+        <div
+          className="absolute inset-0 flex items-center justify-center bg-muted"
+          aria-hidden="true"
+        >
+          <BookOpen className="h-8 w-8 text-muted-foreground/60" />
+        </div>
+      )}
     </div>
   );
 }
