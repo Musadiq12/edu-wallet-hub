@@ -88,7 +88,7 @@ function Shop() {
         </div>
 
         <div
-          className="mt-5 flex flex-wrap items-center gap-2"
+          className="hidden"
           role="group"
           aria-label="Filter resources by category"
         >
