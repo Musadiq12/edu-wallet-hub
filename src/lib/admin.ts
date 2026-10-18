@@ -106,7 +106,7 @@ export async function removeFile(bucket: string, path: string | null | undefined
   await supabase.storage.from(bucket).remove([path]);
 }
 export const ADMIN_PRODUCT_FIELDS =
-  "id,title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,is_archived,created_at";
+  "id,product_type,title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,is_archived,created_at";
 
 export type AdminProduct = Product & { is_archived: boolean };
 
@@ -140,6 +140,7 @@ export type AdminOrder = {
   id: string;
   user_id: string;
   product_id: string | null;
+  product_type: "pdf" | "physical";
   product_title: string;
   full_name: string;
   email: string;
@@ -171,11 +172,11 @@ export const adminOrdersQuery = () =>
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id,user_id,product_id,product_title,full_name,email,whatsapp,delivery_address,delivery_city,delivery_state,delivery_postal_code,delivery_country,courier_name,courier_tracking_id,courier_tracking_url,amount,payment_method,transaction_id,screenshot_path,payment_status,order_status,admin_note,created_at,verified_at,delivered_at",
+          "id,user_id,product_id,product_title,full_name,email,whatsapp,delivery_address,delivery_city,delivery_state,delivery_postal_code,delivery_country,courier_name,courier_tracking_id,courier_tracking_url,amount,payment_method,transaction_id,screenshot_path,payment_status,order_status,admin_note,created_at,verified_at,delivered_at,products(product_type)",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as unknown as AdminOrder[];
+      return (data ?? []).map((row: any) => ({ ...row, product_type: row.products?.product_type ?? "pdf" })) as AdminOrder[];
     },
   });
 
