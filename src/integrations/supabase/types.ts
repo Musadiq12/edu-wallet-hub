@@ -132,6 +132,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          product_type: string
           admin_note: string | null
           amount: number
           created_at: string
@@ -159,6 +160,7 @@ export type Database = {
           whatsapp: string
         }
         Insert: {
+          product_type?: string
           admin_note?: string | null
           amount: number
           created_at?: string
@@ -186,6 +188,7 @@ export type Database = {
           whatsapp: string
         }
         Update: {
+          product_type?: string
           admin_note?: string | null
           amount?: number
           created_at?: string
