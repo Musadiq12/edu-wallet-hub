@@ -198,7 +198,7 @@ function AdminOrders() {
       toast.error("The customer phone number is invalid.");
       return;
     }
-    const message = `Hi ${order.full_name}, your order #${order.id} has been confirmed and dispatched! 📦
+    const message = `Hi ${order.full_name}, your order for ${order.product_title || "your purchased book"} has been confirmed and dispatched! 📦
 Courier: ${order.courier_name}
 Tracking ID: ${order.courier_tracking_id}
 Track your order here: ${order.courier_tracking_url || "Please check the courier's official tracking page."}
