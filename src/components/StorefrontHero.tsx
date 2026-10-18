@@ -96,10 +96,20 @@ export function StorefrontHero() {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
       }}
     >
-      <div className={cn("relative overflow-hidden rounded-2xl bg-gradient-to-br", slide.accent || "from-primary/15 via-background to-secondary/10")} style={slide.imageUrl ? { backgroundImage: `linear-gradient(90deg, hsl(var(--background) / 0.94), hsl(var(--background) / 0.58)), url("${slide.imageUrl}")`, backgroundSize: "cover", backgroundPosition: "center" } : undefined}>
+      <div className={cn("relative overflow-hidden rounded-2xl bg-gradient-to-br", slide.accent || "from-primary/15 via-background to-secondary/10")}>
         <AuroraBackground className="absolute inset-0 z-0 h-full min-h-0 w-full rounded-2xl bg-transparent" showRadialGradient />
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl" aria-hidden="true" />
         <div className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-secondary/10 blur-3xl" aria-hidden="true" />
+        {slide.imageUrl ? (
+          <div className="relative min-h-[300px] aspect-[2.7/1] w-full sm:min-h-[360px] lg:min-h-[440px]">
+            <img
+              src={slide.imageUrl}
+              alt={`EduWallet banner slide ${active + 1}`}
+              className="absolute inset-0 h-full w-full object-cover"
+              fetchPriority={active === 0 ? "high" : "auto"}
+            />
+          </div>
+        ) : (
         <div className="relative z-10 grid min-h-[390px] items-center gap-8 px-6 py-10 sm:px-10 lg:min-h-[440px] lg:grid-cols-[1.15fr_.85fr] lg:px-14">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-card/75 px-3 py-1.5 text-xs font-semibold text-muted-foreground backdrop-blur">
@@ -140,7 +150,7 @@ export function StorefrontHero() {
             </div>
           </div>
         </div>
-
+        )}
         <div className="absolute bottom-5 left-6 right-6 flex items-center justify-between sm:left-10 sm:right-10">
           <div className="flex gap-1.5" role="tablist" aria-label="Hero slides">
             {heroSlides.map((item, index) => (
