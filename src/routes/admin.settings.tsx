@@ -20,6 +20,7 @@ function AdminSettings() {
   const [busy, setBusy] = useState(false);
   const [heroInterval, setHeroInterval] = useState("4500");
   const [pickedHeroImages, setPickedHeroImages] = useState<(PickedFile | null)[]>([null, null, null]);
+  const [pickedMobileHeroImages, setPickedMobileHeroImages] = useState<(PickedFile | null)[]>([null, null, null]);
   const [heroSlides, setHeroSlides] = useState([
     { eyebrow: "Exam preparation, simplified", title: "Study smarter with the right resources.", description: "Find focused notes, solved papers, guess papers and exam guides without digging through scattered sources.", cta: "Explore resources", to: "/shop", secondary: "Trusted study format", imageUrl: "" },
     { eyebrow: "Built for competitive exams", title: "One place for NEET, JEE, UPSC, SSC, Banking and CLAT.", description: "Browse resources by exam and resource type, then get straight to the material you need.", cta: "Browse the shop", to: "/shop", secondary: "Exam-focused collections", imageUrl: "" },
@@ -54,11 +55,18 @@ function AdminSettings() {
       ) as Partial<SiteSettings>;
       const updatedSlides = [...heroSlides];
       for (let index = 0; index < pickedHeroImages.length; index++) {
-        const picked = pickedHeroImages[index];
-        if (!picked) continue;
-        const { path } = await uploadFile(BUCKETS.cover, picked.file, "hero-banners");
-        const { data: publicData } = supabase.storage.from(BUCKETS.cover).getPublicUrl(path);
-        updatedSlides[index] = { ...updatedSlides[index], imageUrl: publicData.publicUrl };
+        const desktopPicked = pickedHeroImages[index];
+        const mobilePicked = pickedMobileHeroImages[index];
+        if (desktopPicked) {
+          const { path } = await uploadFile(BUCKETS.cover, desktopPicked.file, "hero-banners");
+          const { data: publicData } = supabase.storage.from(BUCKETS.cover).getPublicUrl(path);
+          updatedSlides[index] = { ...updatedSlides[index], imageUrl: publicData.publicUrl };
+        }
+        if (mobilePicked) {
+          const { path } = await uploadFile(BUCKETS.cover, mobilePicked.file, "hero-banners-mobile");
+          const { data: publicData } = supabase.storage.from(BUCKETS.cover).getPublicUrl(path);
+          updatedSlides[index] = { ...updatedSlides[index], mobileImageUrl: publicData.publicUrl };
+        }
       }
       await saveSettings({
         ...changed,
@@ -67,6 +75,7 @@ function AdminSettings() {
       });
       setHeroSlides(updatedSlides);
       setPickedHeroImages([null, null, null]);
+      setPickedMobileHeroImages([null, null, null]);
       await qc.invalidateQueries({ queryKey: ["site-settings"] });
       toast.success("Settings saved.");
     } catch (err) {
@@ -116,14 +125,25 @@ function AdminSettings() {
                 <h3 className="font-semibold">Slide {index + 1}</h3>
                 <AdminFileField
                   id={`hero-image-${index}`}
-                  label={`Upload full-slide image ${index + 1}`}
-                  help="Upload one complete banner image. It will be shown as-is without separate heading or description overlays. Recommended: wide 16:5 image, JPG, PNG or WebP, max 5 MB."
+                  label="Desktop banner image"
+                  help="Wide image for computers. Recommended 1920 × 700 px, maximum 5 MB."
                   accept="image/*"
                   maxBytes={LIMITS.coverBytes}
                   kind="image"
                   existingPath={pickedHeroImages[index] ? null : (slide.imageUrl || null)}
                   picked={pickedHeroImages[index]}
                   onPick={(picked) => setPickedHeroImages((current) => current.map((item, i) => i === index ? picked : item))}
+                />
+                <AdminFileField
+                  id={`hero-mobile-image-${index}`}
+                  label="Mobile banner image (recommended)"
+                  help="Portrait image for phones. Recommended 900 × 1200 px. This prevents the desktop banner from being cropped on mobile. Maximum 5 MB."
+                  accept="image/*"
+                  maxBytes={LIMITS.coverBytes}
+                  kind="image"
+                  existingPath={pickedMobileHeroImages[index] ? null : (slide.mobileImageUrl || null)}
+                  picked={pickedMobileHeroImages[index]}
+                  onPick={(picked) => setPickedMobileHeroImages((current) => current.map((item, i) => i === index ? picked : item))}
                 />
               </section>
             ))}
