@@ -25,6 +25,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
 
       <div className={compact ? "flex flex-1 flex-col p-3.5" : "flex flex-1 flex-col p-4"}>
         <div className="flex flex-wrap items-center gap-1.5">
+          <Badge variant="secondary">{product.product_type === "physical" ? "Physical copy" : "Digital PDF"}</Badge>
           {product.is_demo && (
             <Badge variant="outline" className="text-[10px] tracking-wide uppercase">
               Demo
@@ -44,7 +45,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
         </h3>
 
         <p className="mt-1 text-xs text-muted-foreground">
-          {[product.course_label, product.subject_label].filter(Boolean).join(" · ") || "Digital study resource"}
+          {[product.course_label, product.subject_label].filter(Boolean).join(" · ") || (product.product_type === "physical" ? "Physical book / printed notes" : "Digital study resource")}
         </p>
 
         {product.description && !compact && (
