@@ -144,6 +144,14 @@ export type AdminOrder = {
   full_name: string;
   email: string;
   whatsapp: string;
+  delivery_address: string | null;
+  delivery_city: string | null;
+  delivery_state: string | null;
+  delivery_postal_code: string | null;
+  delivery_country: string;
+  courier_name: string | null;
+  courier_tracking_id: string | null;
+  courier_tracking_url: string | null;
   amount: number | string;
   payment_method: string;
   transaction_id: string | null;
@@ -163,7 +171,7 @@ export const adminOrdersQuery = () =>
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id,user_id,product_id,product_title,full_name,email,whatsapp,amount,payment_method,transaction_id,screenshot_path,payment_status,order_status,admin_note,created_at,verified_at,delivered_at",
+          "id,user_id,product_id,product_title,full_name,email,whatsapp,delivery_address,delivery_city,delivery_state,delivery_postal_code,delivery_country,courier_name,courier_tracking_id,courier_tracking_url,amount,payment_method,transaction_id,screenshot_path,payment_status,order_status,admin_note,created_at,verified_at,delivered_at",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
