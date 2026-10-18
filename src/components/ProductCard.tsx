@@ -3,7 +3,7 @@ import { FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CoverImage } from "@/components/CoverImage";
-import { discountPercent, formatPrice } from "@/lib/format";
+import { discountPercent, effectivePrice, formatPrice, hasDiscount } from "@/lib/format";
 import type { Product } from "@/lib/catalog";
 
 export function ProductCard({ product, compact = false }: { product: Product; compact?: boolean }) {
@@ -11,6 +11,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
   const discounted =
     product.discounted_price != null ? Number(product.discounted_price) : null;
   const off = discountPercent(price, discounted);
+  const discountedPrice = hasDiscount(price, discounted);
 
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg">
@@ -34,7 +35,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
           {product.is_free ? (
             <Badge className="bg-success text-success-foreground">Free</Badge>
           ) : (
-            off && <Badge className="bg-accent text-accent-foreground">{off}% OFF</Badge>
+            discountedPrice && <Badge className="bg-accent text-accent-foreground">{off}% OFF</Badge>
           )}
         </div>
 
@@ -64,9 +65,9 @@ export function ProductCard({ product, compact = false }: { product: Product; co
           ) : (
             <>
               <span className="text-lg font-semibold">
-                {formatPrice(discounted ?? price)}
+                {formatPrice(effectivePrice(product))}
               </span>
-              {off && (
+              {discountedPrice && (
                 <span className="text-sm text-muted-foreground line-through">
                   {formatPrice(price)}
                 </span>

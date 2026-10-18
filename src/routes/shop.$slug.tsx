@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { CoverImage } from "@/components/CoverImage";
 import { EmptyState } from "@/components/EmptyState";
 import { categoriesQuery, productBySlugQuery, signedUrl } from "@/lib/catalog";
-import { discountPercent, formatPrice } from "@/lib/format";
+import { discountPercent, effectivePrice, formatPrice, hasDiscount } from "@/lib/format";
 import { siteConfig } from "@/config/site";
 import { toast } from "sonner";
 
@@ -100,6 +100,7 @@ function ProductDetail() {
   const price = Number(p.price ?? 0);
   const discounted = p.discounted_price != null ? Number(p.discounted_price) : null;
   const off = discountPercent(price, discounted);
+  const discountedPrice = hasDiscount(price, discounted);
   const category = categories.data?.find((c) => c.id === p.category_id);
   const isAssignment = category?.slug === "assignment-guidance";
 
@@ -193,8 +194,8 @@ function ProductDetail() {
                 <p className="text-2xl font-semibold text-success">Free</p>
               ) : (
                 <div className="flex flex-wrap items-baseline gap-3">
-                  <span className="text-3xl font-semibold">{formatPrice(discounted ?? price)}</span>
-                  {off && (
+                  <span className="text-3xl font-semibold">{formatPrice(effectivePrice(p))}</span>
+                  {discountedPrice && (
                     <>
                       <span className="text-lg text-muted-foreground line-through">
                         {formatPrice(price)}

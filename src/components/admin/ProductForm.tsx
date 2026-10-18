@@ -18,7 +18,7 @@ import {
 import { AdminFileField, type PickedFile } from "@/components/admin/AdminFileField";
 import { BUCKETS, LIMITS, friendlyError, removeFile, uploadFile, type AdminProduct } from "@/lib/admin";
 import { categoriesQuery } from "@/lib/catalog";
-import { discountPercent, slugify } from "@/lib/format";
+import { discountPercent, slugify, validateProductPricing } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 
 type FormState = {
@@ -105,7 +105,10 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
     if (field === "slug" && (!form.slug.trim() || !/^[a-z0-9-]+$/.test(form.slug))) errors["slug"] = "Use lowercase letters, numbers and hyphens only.";
     if (field === "category_id" && !form.category_id) errors["category_id"] = "Choose a category.";
     if (field === "price" && !form.is_free && (!Number.isFinite(priceNum) || priceNum <= 0)) errors["price"] = "Enter a price greater than 0.";
-    if (field === "discounted_price" && !form.is_free && discNum != null && (!Number.isFinite(discNum) || discNum < 0 || discNum >= priceNum)) errors["discounted_price"] = "Discounted price must be lower than the original price.";
+    if (field === "discounted_price") {
+      const problem = validateProductPricing(priceNum, discNum, form.is_free);
+      if (problem) errors["discounted_price"] = problem;
+    }
     if (field === "page_count" && form.page_count && Number(form.page_count) < 0) errors["page_count"] = "Page count cannot be negative.";
     setFieldErrors((current) => { const next = { ...current }; const message = errors[field]; if (message) next[field] = message; else delete next[field]; return next; });
   };
@@ -126,13 +129,8 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
     if (!form.slug.trim()) return "Enter a slug for the product URL.";
     if (!/^[a-z0-9-]+$/.test(form.slug)) return "The slug may only contain lowercase letters, numbers and hyphens.";
     if (!form.category_id) return "Choose a category.";
-    if (!form.is_free) {
-      if (!Number.isFinite(priceNum) || priceNum <= 0) return "Enter a valid price greater than 0.";
-      if (discNum != null) {
-        if (!Number.isFinite(discNum) || discNum < 0) return "Enter a valid discounted price.";
-        if (discNum >= priceNum) return "The discounted price must be lower than the original price.";
-      }
-    }
+    const pricingProblem = validateProductPricing(priceNum, discNum, form.is_free);
+    if (pricingProblem) return pricingProblem;
     if (form.page_count && Number(form.page_count) < 0) return "Page count cannot be negative.";
     return null;
   };
