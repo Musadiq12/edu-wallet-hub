@@ -226,7 +226,7 @@ function AdminOrders() {
                     courier_name: courierName || null,
                     courier_tracking_id: trackingId || null,
                     courier_tracking_url: trackingUrl || null,
-                    order_status: trackingId ? "processing" : o.order_status,
+                    order_status: trackingId && o.payment_status === "verified" && o.order_status !== "delivered" ? "processing" : o.order_status,
                   }, "Courier details saved.");
                 }}>
                   <p className="text-sm font-semibold sm:col-span-2"><Truck className="mr-2 inline h-4 w-4" />Courier / shipment details</p>
