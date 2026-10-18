@@ -97,7 +97,7 @@ export function StorefrontHero() {
       <div className={cn("relative overflow-hidden rounded-2xl bg-gradient-to-br", slide.accent || "from-primary/15 via-background to-secondary/10")}>
         {!slide.imageUrl && (
           <>
-            <AuroraBackground className="absolute inset-0 z-0 h-full min-h-0 w-full rounded-2xl bg-transparent" showRadialGradient />
+            <AuroraBackground className="absolute inset-0 z-0 h-full min-h-0 w-full rounded-2xl bg-transparent" showRadialGradient children={null} />
             <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl" aria-hidden="true" />
             <div className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-secondary/10 blur-3xl" aria-hidden="true" />
           </>

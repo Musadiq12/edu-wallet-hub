@@ -11,11 +11,27 @@ import { adminOrdersQuery, friendlyError, type AdminOrder } from "@/lib/admin";
 import { formatPrice } from "@/lib/format";
 import { signedUrl } from "@/lib/catalog";
 import { supabase } from "@/integrations/supabase/client";
+import type { TablesUpdate } from "@/integrations/supabase/types";
+import type { PostgrestClient } from "@supabase/supabase-js";
 
 export const Route = createFileRoute("/admin/orders")({ component: AdminOrders });
 
 type OrderStatus = AdminOrder["status"];
 type HistoryItem = { id: string; status: OrderStatus; changed_at: string };
+
+// This optional feature is deployed separately from the generated core schema.
+type HistorySchema = {
+  Tables: {
+    order_status_history: {
+      Row: HistoryItem & { order_id: string };
+      Insert: never;
+      Update: never;
+      Relationships: [];
+    };
+  };
+  Views: {};
+  Functions: {};
+};
 
 const STATUSES: { value: "All" | OrderStatus; label: string }[] = [
   { value: "All", label: "All" },
@@ -53,10 +69,12 @@ function AdminOrders() {
     queryKey: ["admin", "order-status-history", expandedId],
     enabled: !!expandedId,
     queryFn: async (): Promise<HistoryItem[]> => {
-      const { data: rows, error } = await supabase
+      if (!expandedId) return [];
+      const historyClient = supabase.schema("public") as unknown as PostgrestClient<HistorySchema>;
+      const { data: rows, error } = await historyClient
         .from("order_status_history")
         .select("id,status,changed_at")
-        .eq("order_id", expandedId!)
+        .eq("order_id", expandedId)
         .order("changed_at", { ascending: false });
       if (error) throw error;
       return (rows ?? []) as HistoryItem[];
@@ -95,7 +113,8 @@ function AdminOrders() {
   ) => {
     setBusyId(order.id);
     try {
-      const { error } = await supabase.from("orders").update(patch).eq("id", order.id);
+      const corePatch: TablesUpdate<"orders"> = patch;
+      const { error } = await supabase.from("orders").update(corePatch).eq("id", order.id);
       if (error) throw error;
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["admin", "orders"] }),

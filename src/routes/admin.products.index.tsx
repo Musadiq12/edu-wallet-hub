@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { adminProductsQuery, friendlyError, type AdminProduct } from "@/lib/admin";
 import { categoriesQuery } from "@/lib/catalog";
-import { formatPrice } from "@/lib/format";
+import { effectivePrice, formatPrice, hasDiscount } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/products/")({ component: AdminProducts });
@@ -171,13 +171,13 @@ function AdminProducts() {
                   <td className="px-4 py-3">
                     {p.is_free ? (
                       "Free"
-                    ) : p.discounted_price ? (
+                    ) : hasDiscount(Number(p.price), p.discounted_price != null ? Number(p.discounted_price) : null) ? (
                       <span>
                         <span className="line-through text-muted-foreground">{formatPrice(Number(p.price))}</span>{" "}
                         {formatPrice(Number(p.discounted_price))}
                       </span>
                     ) : (
-                      formatPrice(Number(p.price))
+                      formatPrice(effectivePrice(p))
                     )}
                   </td>
                   <td className="px-4 py-3">

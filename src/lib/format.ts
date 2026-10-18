@@ -3,14 +3,32 @@ export function formatPrice(value: number | null | undefined): string {
   return `₹${n % 1 === 0 ? n.toFixed(0) : n.toFixed(2)}`;
 }
 
+export function hasDiscount(
+  price: number | null | undefined,
+  discounted: number | null | undefined,
+): boolean {
+  const p = Number(price ?? 0);
+  const d = Number(discounted);
+  return discounted != null && Number.isFinite(p) && Number.isFinite(d) && p > 0 && d >= 0 && d < p;
+}
+
 export function discountPercent(
   price: number | null | undefined,
   discounted: number | null | undefined,
 ): number | null {
-  const p = Number(price ?? 0);
-  const d = Number(discounted ?? 0);
-  if (!p || !discounted || d >= p) return null;
-  return Math.round(((p - d) / p) * 100);
+  if (!hasDiscount(price, discounted)) return null;
+  const percent = ((Number(price) - Number(discounted)) / Number(price)) * 100;
+  return Math.round(percent) || Number(percent.toPrecision(2));
+}
+
+export function validateProductPricing(price: number, discounted: number | null, isFree: boolean): string | null {
+  if (isFree) return null;
+  if (!Number.isFinite(price) || price <= 0) return "Enter a valid price greater than 0.";
+  if (discounted != null) {
+    if (!Number.isFinite(discounted) || discounted < 0) return "Enter a valid discounted price.";
+    if (discounted > price) return "The discounted price cannot exceed the original price.";
+  }
+  return null;
 }
 
 export function effectivePrice(product: {
@@ -20,7 +38,7 @@ export function effectivePrice(product: {
 }): number {
   if (product.is_free) return 0;
   const d = product.discounted_price != null ? Number(product.discounted_price) : null;
-  return d != null && d > 0 ? d : Number(product.price ?? 0);
+  return d != null && Number.isFinite(d) && d >= 0 && d <= Number(product.price) ? d : Number(product.price ?? 0);
 }
 
 export function slugify(input: string): string {

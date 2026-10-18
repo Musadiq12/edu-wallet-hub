@@ -13,6 +13,17 @@ import { SETTING_FIELDS, defaultSettings, saveSettings, settingsQuery, type Site
 
 export const Route = createFileRoute("/admin/settings")({ component: AdminSettings });
 
+type EditableHeroSlide = {
+  eyebrow: string;
+  title: string;
+  description: string;
+  cta: string;
+  to: string;
+  secondary: string;
+  imageUrl: string;
+  mobileImageUrl?: string;
+};
+
 function AdminSettings() {
   const qc = useQueryClient();
   const { data, isLoading } = useQuery(settingsQuery());
@@ -21,7 +32,7 @@ function AdminSettings() {
   const [heroInterval, setHeroInterval] = useState("4500");
   const [pickedHeroImages, setPickedHeroImages] = useState<(PickedFile | null)[]>([null, null, null]);
   const [pickedMobileHeroImages, setPickedMobileHeroImages] = useState<(PickedFile | null)[]>([null, null, null]);
-  const [heroSlides, setHeroSlides] = useState([
+  const [heroSlides, setHeroSlides] = useState<EditableHeroSlide[]>([
     { eyebrow: "Exam preparation, simplified", title: "Study smarter with the right resources.", description: "Find focused notes, solved papers, guess papers and exam guides without digging through scattered sources.", cta: "Explore resources", to: "/shop", secondary: "Trusted study format", imageUrl: "" },
     { eyebrow: "Built for competitive exams", title: "One place for NEET, JEE, UPSC, SSC, Banking and CLAT.", description: "Browse resources by exam and resource type, then get straight to the material you need.", cta: "Browse the shop", to: "/shop", secondary: "Exam-focused collections", imageUrl: "" },
     { eyebrow: "Start without spending", title: "Explore free resources before you buy.", description: "Preview the kind of material available on EduWallet and decide what fits your preparation.", cta: "View free resources", to: "/free-resources", secondary: "Free study material", imageUrl: "" },
@@ -55,17 +66,19 @@ function AdminSettings() {
       ) as Partial<SiteSettings>;
       const updatedSlides = [...heroSlides];
       for (let index = 0; index < pickedHeroImages.length; index++) {
+        const slide = updatedSlides[index];
+        if (!slide) continue;
         const desktopPicked = pickedHeroImages[index];
         const mobilePicked = pickedMobileHeroImages[index];
         if (desktopPicked) {
           const { path } = await uploadFile(BUCKETS.cover, desktopPicked.file, "hero-banners");
           const { data: publicData } = supabase.storage.from(BUCKETS.cover).getPublicUrl(path);
-          updatedSlides[index] = { ...updatedSlides[index], imageUrl: publicData.publicUrl };
+          updatedSlides[index] = { ...slide, imageUrl: publicData.publicUrl };
         }
         if (mobilePicked) {
           const { path } = await uploadFile(BUCKETS.cover, mobilePicked.file, "hero-banners-mobile");
           const { data: publicData } = supabase.storage.from(BUCKETS.cover).getPublicUrl(path);
-          updatedSlides[index] = { ...updatedSlides[index], mobileImageUrl: publicData.publicUrl };
+          updatedSlides[index] = { ...(updatedSlides[index] ?? slide), mobileImageUrl: publicData.publicUrl };
         }
       }
       await saveSettings({
@@ -131,7 +144,7 @@ function AdminSettings() {
                   maxBytes={LIMITS.coverBytes}
                   kind="image"
                   existingPath={pickedHeroImages[index] ? null : (slide.imageUrl || null)}
-                  picked={pickedHeroImages[index]}
+                  picked={pickedHeroImages[index] ?? null}
                   onPick={(picked) => setPickedHeroImages((current) => current.map((item, i) => i === index ? picked : item))}
                 />
                 <AdminFileField
@@ -142,7 +155,7 @@ function AdminSettings() {
                   maxBytes={LIMITS.coverBytes}
                   kind="image"
                   existingPath={pickedMobileHeroImages[index] ? null : (slide.mobileImageUrl || null)}
-                  picked={pickedMobileHeroImages[index]}
+                  picked={pickedMobileHeroImages[index] ?? null}
                   onPick={(picked) => setPickedMobileHeroImages((current) => current.map((item, i) => i === index ? picked : item))}
                 />
               </section>

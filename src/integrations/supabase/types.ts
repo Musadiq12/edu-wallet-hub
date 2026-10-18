@@ -132,22 +132,10 @@ export type Database = {
       }
       orders: {
         Row: {
-          product_type: string
-          status: string
-          dispatched_at: string | null
-          whatsapp_sent_at: string | null
           admin_note: string | null
           amount: number
           created_at: string
           delivered_at: string | null
-          delivery_address: string | null
-          delivery_city: string | null
-          delivery_state: string | null
-          delivery_postal_code: string | null
-          delivery_country: string | null
-          courier_name: string | null
-          courier_tracking_id: string | null
-          courier_tracking_url: string | null
           email: string
           full_name: string
           id: string
@@ -163,22 +151,10 @@ export type Database = {
           whatsapp: string
         }
         Insert: {
-          product_type?: string
-          status?: string
-          dispatched_at?: string | null
-          whatsapp_sent_at?: string | null
           admin_note?: string | null
           amount: number
           created_at?: string
           delivered_at?: string | null
-          delivery_address?: string | null
-          delivery_city?: string | null
-          delivery_state?: string | null
-          delivery_postal_code?: string | null
-          delivery_country?: string | null
-          courier_name?: string | null
-          courier_tracking_id?: string | null
-          courier_tracking_url?: string | null
           email: string
           full_name: string
           id?: string
@@ -194,22 +170,10 @@ export type Database = {
           whatsapp: string
         }
         Update: {
-          product_type?: string
-          status?: string
-          dispatched_at?: string | null
-          whatsapp_sent_at?: string | null
           admin_note?: string | null
           amount?: number
           created_at?: string
           delivered_at?: string | null
-          delivery_address?: string | null
-          delivery_city?: string | null
-          delivery_state?: string | null
-          delivery_postal_code?: string | null
-          delivery_country?: string
-          courier_name?: string | null
-          courier_tracking_id?: string | null
-          courier_tracking_url?: string | null
           email?: string
           full_name?: string
           id?: string
@@ -241,41 +205,8 @@ export type Database = {
           },
         ]
       }
-      order_status_history: {
-        Row: {
-          id: string
-          order_id: string
-          status: string
-          changed_at: string
-          changed_by: string | null
-        }
-        Insert: {
-          id?: string
-          order_id: string
-          status: string
-          changed_at?: string
-          changed_by?: string | null
-        }
-        Update: {
-          id?: string
-          order_id?: string
-          status?: string
-          changed_at?: string
-          changed_by?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "order_status_history_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
       products: {
         Row: {
-          product_type: string
           category_id: string | null
           course_id: string | null
           course_label: string | null
@@ -305,7 +236,6 @@ export type Database = {
           whats_included: string | null
         }
         Insert: {
-          product_type?: string
           category_id?: string | null
           course_id?: string | null
           course_label?: string | null
@@ -335,7 +265,6 @@ export type Database = {
           whats_included?: string | null
         }
         Update: {
-          product_type?: string
           category_id?: string | null
           course_id?: string | null
           course_label?: string | null
