@@ -133,6 +133,9 @@ export type Database = {
       orders: {
         Row: {
           product_type: string
+          status: string
+          dispatched_at: string | null
+          whatsapp_sent_at: string | null
           admin_note: string | null
           amount: number
           created_at: string
@@ -161,6 +164,9 @@ export type Database = {
         }
         Insert: {
           product_type?: string
+          status?: string
+          dispatched_at?: string | null
+          whatsapp_sent_at?: string | null
           admin_note?: string | null
           amount: number
           created_at?: string
@@ -189,6 +195,9 @@ export type Database = {
         }
         Update: {
           product_type?: string
+          status?: string
+          dispatched_at?: string | null
+          whatsapp_sent_at?: string | null
           admin_note?: string | null
           amount?: number
           created_at?: string
@@ -230,6 +239,38 @@ export type Database = {
             referencedRelation: "products"
             referencedColumns: ["id"]
           },
+        ]
+      }
+      order_status_history: {
+        Row: {
+          id: string
+          order_id: string
+          status: string
+          changed_at: string
+          changed_by: string | null
+        }
+        Insert: {
+          id?: string
+          order_id: string
+          status: string
+          changed_at?: string
+          changed_by?: string | null
+        }
+        Update: {
+          id?: string
+          order_id?: string
+          status?: string
+          changed_at?: string
+          changed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          }
         ]
       }
       products: {
