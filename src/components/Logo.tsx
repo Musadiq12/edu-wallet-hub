@@ -1,25 +1,42 @@
-import { useState } from "react";
+import { useSiteSettings } from "@/lib/settings";
 
 export function LogoMark({ className = "h-10 w-24" }: { className?: string }) {
-  const [loaded, setLoaded] = useState(false);
+  const { brandName } = useSiteSettings();
+
   return (
-    <span className={`${className} relative inline-flex shrink-0 items-center`}>
-      {!loaded && <span className="text-xs font-semibold text-foreground">Revivor CS Test Series</span>}
-    <img
-      src="/revivor-cs-test-series-logo.jpg"
-      alt="Revivor CS Test Series logo"
-      onLoad={() => setLoaded(true)}
-      onError={() => setLoaded(false)}
-      className={`${className} absolute inset-0 shrink-0 object-contain ${loaded ? "" : "hidden"}`}
-    />
+    <span className={`${className} inline-flex shrink-0 items-center gap-2`}>
+      <img
+        src="/edu-wallet-icon.svg"
+        alt=""
+        aria-hidden="true"
+        className="h-9 w-9 shrink-0 object-contain"
+      />
+      <span className="min-w-0 truncate text-sm font-bold tracking-tight text-foreground">
+        {brandName || "Edu Wallet"}
+      </span>
     </span>
   );
 }
 
 export function Logo({ compact = false }: { compact?: boolean }) {
+  const { brandName, tagline } = useSiteSettings();
+
   return (
-    <span className="inline-flex min-w-0 items-center">
-      <LogoMark className={compact ? "h-10 w-24" : "h-16 w-32"} />
+    <span className="inline-flex min-w-0 items-center gap-3">
+      <img
+        src="/edu-wallet-icon.svg"
+        alt=""
+        aria-hidden="true"
+        className={compact ? "h-9 w-9 shrink-0 object-contain" : "h-12 w-12 shrink-0 object-contain"}
+      />
+      <span className="flex min-w-0 flex-col">
+        <span className="truncate text-base font-bold tracking-tight text-foreground">
+          {brandName || "Edu Wallet"}
+        </span>
+        {!compact && tagline && (
+          <span className="line-clamp-2 text-xs text-muted-foreground">{tagline}</span>
+        )}
+      </span>
     </span>
   );
 }
