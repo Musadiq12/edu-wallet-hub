@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export type Product = {
   id: string;
+  product_type: "pdf" | "physical";
   title: string;
   slug: string;
   description: string | null;
@@ -34,7 +35,7 @@ export type Category = {
 };
 
 const PRODUCT_FIELDS =
-  "id,title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,created_at";
+  "id,product_type,title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,created_at";
 
 export const categoriesQuery = () =>
   queryOptions({
