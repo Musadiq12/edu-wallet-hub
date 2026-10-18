@@ -15,10 +15,9 @@ export function AuroraBackground({
   ...props
 }: AuroraBackgroundProps) {
   return (
-    <main>
-      <div
+    <div
         className={cn(
-          "relative flex h-screen flex-col items-center justify-center overflow-hidden bg-zinc-50 text-slate-950 transition-colors dark:bg-zinc-900",
+          "relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-zinc-50 text-slate-950 transition-colors dark:bg-zinc-900",
           className,
         )}
         {...props}
@@ -37,7 +36,6 @@ export function AuroraBackground({
           />
         </div>
         <div className="relative z-10">{children}</div>
-      </div>
-    </main>
+    </div>
   );
 }
