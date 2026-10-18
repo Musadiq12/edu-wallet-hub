@@ -230,7 +230,7 @@ function Checkout() {
         screenshotPath = path;
       }
 
-      const { error: insertError } = await supabase.from("orders").insert({
+      const order = {
         user_id: user.id,
         product_id: p.id,
         product_type: p.product_type,
@@ -247,9 +247,10 @@ function Checkout() {
         payment_method: "UPI",
         transaction_id: form.transaction_id.trim(),
         screenshot_path: screenshotPath,
-        payment_status: "submitted",
-        order_status: "payment_submitted",
-      });
+        payment_status: "submitted" as const,
+        order_status: "payment_submitted" as const,
+      };
+      const { error: insertError } = await supabase.from("orders").insert(order);
       if (insertError) throw insertError;
       setSubmitted(true);
     } catch {
