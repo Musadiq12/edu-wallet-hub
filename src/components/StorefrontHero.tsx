@@ -91,8 +91,6 @@ export function StorefrontHero() {
       className="page-container pt-4 sm:pt-6"
       aria-roledescription="carousel"
       aria-label="EduWallet promotions"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
