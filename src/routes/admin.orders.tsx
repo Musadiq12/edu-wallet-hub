@@ -1,411 +1,383 @@
-import type { Database } from "@/integrations/supabase/types";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, MessageCircle, Truck } from "lucide-react";
+import { CheckCircle2, ChevronDown, ExternalLink, Loader2, MessageCircle, PackageCheck, Search, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { adminOrdersQuery, friendlyError, type AdminOrder } from "@/lib/admin";
-import { formatPrice, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/format";
+import { formatPrice } from "@/lib/format";
 import { signedUrl } from "@/lib/catalog";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/orders")({ component: AdminOrders });
 
+type OrderStatus = AdminOrder["status"];
+type HistoryItem = { id: string; status: OrderStatus; changed_at: string };
+
+const STATUSES: { value: "All" | OrderStatus; label: string }[] = [
+  { value: "All", label: "All" },
+  { value: "Pending", label: "Pending" },
+  { value: "Payment Verified", label: "Payment Verified" },
+  { value: "Dispatched", label: "Dispatched" },
+  { value: "Cancelled", label: "Cancelled" },
+];
+
+const statusStyles: Record<OrderStatus, string> = {
+  Pending: "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200",
+  "Payment Verified": "border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200",
+  Dispatched: "border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200",
+  Cancelled: "border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200",
+};
+
+function normalizePhone(phone: string) {
+  return phone.replace(/[\s\-+]/g, "").replace(/\D/g, "");
+}
+
 function AdminOrders() {
   const qc = useQueryClient();
   const { data, isLoading, isError, refetch } = useQuery(adminOrdersQuery());
   const [busyId, setBusyId] = useState<string | null>(null);
-  const mutationLockRef = useRef(false);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [sort, setSort] = useState<"newest" | "oldest" | "amount">("newest");
+  const [statusFilter, setStatusFilter] = useState<"All" | OrderStatus>("All");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const historyQuery = useQuery({
+    queryKey: ["admin", "order-status-history", expandedId],
+    enabled: !!expandedId,
+    queryFn: async (): Promise<HistoryItem[]> => {
+      const { data: rows, error } = await supabase
+        .from("order_status_history")
+        .select("id,status,changed_at")
+        .eq("order_id", expandedId!)
+        .order("changed_at", { ascending: false });
+      if (error) throw error;
+      return (rows ?? []) as HistoryItem[];
+    },
+  });
 
   const visibleOrders = useMemo(() => {
     const term = search.trim().toLowerCase();
     return [...(data ?? [])]
-      .filter((o) => {
-        const matches = !term || [o.full_name, o.email, o.product_title, o.transaction_id, o.whatsapp, o.courier_tracking_id, o.delivery_postal_code]
-          .filter(Boolean).some((v) => String(v).toLowerCase().includes(term));
-        const status = statusFilter === "all" || o.payment_status === statusFilter || o.order_status === statusFilter;
-        return matches && status;
+      .filter((order) => {
+        const matchesSearch =
+          !term ||
+          [order.id, order.full_name, order.whatsapp, order.product_title]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(term));
+        return matchesSearch && (statusFilter === "All" || order.status === statusFilter);
       })
-      .sort((a,b) => sort === "amount" ? Number(b.amount) - Number(a.amount) : sort === "oldest" ? +new Date(a.created_at) - +new Date(b.created_at) : +new Date(b.created_at) - +new Date(a.created_at));
-  }, [data, search, statusFilter, sort]);
+      .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+  }, [data, search, statusFilter]);
 
-  const update = async (
-    o: AdminOrder,
-    patch: Database["public"]["Tables"]["orders"]["Update"],
-    message: string,
+  const updateOrder = async (
+    order: AdminOrder,
+    patch: {
+      status?: OrderStatus;
+      payment_status?: "pending" | "submitted" | "verified" | "rejected";
+      order_status?: "pending_payment" | "payment_submitted" | "payment_verified" | "payment_rejected" | "processing" | "delivered" | "cancelled";
+      verified_at?: string | null;
+      dispatched_at?: string | null;
+      delivered_at?: string | null;
+      courier_name?: string | null;
+      courier_tracking_id?: string | null;
+      courier_tracking_url?: string | null;
+      whatsapp_sent_at?: string | null;
+    },
+    successMessage: string,
   ) => {
-    if (mutationLockRef.current) return;
-    mutationLockRef.current = true;
-    setBusyId(o.id);
+    setBusyId(order.id);
     try {
-      const { error } = await supabase.from("orders").update(patch).eq("id", o.id);
-      if (error) {
-        toast.error(friendlyError(error, "Could not update this order."));
-        return;
-      }
-      await qc.invalidateQueries({ queryKey: ["admin", "orders"] });
-      toast.success(message);
-    } catch (err) {
-      toast.error(friendlyError(err, "Could not update this order."));
-    } finally {
-      setBusyId(null);
-      mutationLockRef.current = false;
-    }
-  };
-
-  const openProof = async (path: string, orderId: string) => {
-    if (mutationLockRef.current) return;
-    mutationLockRef.current = true;
-    setBusyId(orderId);
-    try {
-      const url = await signedUrl("payment-proofs", path, 300);
-      if (!url) {
-        toast.error("Could not open the payment screenshot.");
-        return;
-      }
-      window.open(url, "_blank", "noopener");
-    } finally {
-      setBusyId(null);
-      mutationLockRef.current = false;
-    }
-  };
-
-  const sendWhatsApp = async (o: AdminOrder) => {
-    if (mutationLockRef.current) return;
-    mutationLockRef.current = true;
-    setBusyId(o.id);
-    try {
-      if (o.payment_status !== "submitted" || o.order_status === "cancelled") {
-        throw new Error("This order is no longer awaiting payment verification.");
-      }
-      if (!o.whatsapp) throw new Error("This order has no WhatsApp number.");
-      if (!o.product_id) throw new Error("This order is missing its product.");
-
-      const { data, error } = await supabase.functions.invoke("verify-and-deliver", {
-        body: { orderId: o.id, action: "whatsapp" },
-      });
-
+      const { error } = await supabase.from("orders").update(patch).eq("id", order.id);
       if (error) throw error;
-      if (!data?.downloadUrl || typeof data.downloadUrl !== "string") {
-        throw new Error(typeof data?.error === "string" ? data.error : "Could not create the secure R2 download link.");
-      }
-
-      let phone = o.whatsapp.replace(/\D/g, "");
-      if (phone.startsWith("0")) phone = phone.slice(1);
-      if (phone.length === 10) phone = `91${phone}`;
-
-      const message = [
-        `Hello ${o.full_name},`,
-        "",
-        "*Your EduWallet purchase is confirmed!*",
-        "",
-        `Your payment for *${o.product_title}* has been successfully verified.`,
-        "",
-        "*Your document is ready:*",
-        data.downloadUrl,
-        "",
-        "This secure download link is valid for *48 hours*.",
-        "",
-        "If you have any issue accessing the document, please contact support and we’ll assist you.",
-        "",
-        "Thank you for choosing *EduWallet*.",
-        "We appreciate your purchase.",
-      ].join("\n");
-
-      await qc.invalidateQueries({ queryKey: ["admin", "orders"] });
-      window.open(
-        `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
-        "_blank",
-        "noopener",
-      );
-      toast.success("Payment verified, R2 delivery link created, and WhatsApp delivery prepared.");
-    } catch (err) {
-      toast.error(
-        friendlyError(err, "Could not verify the payment and prepare WhatsApp delivery."),
-      );
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin", "orders"] }),
+        qc.invalidateQueries({ queryKey: ["admin", "order-status-history", order.id] }),
+      ]);
+      toast.success(successMessage);
+    } catch (error) {
+      toast.error(friendlyError(error, "Could not update this order."));
     } finally {
       setBusyId(null);
-      mutationLockRef.current = false;
     }
+  };
+
+  const verifyPayment = async (order: AdminOrder) => {
+    if (order.status !== "Pending") return;
+    if (!window.confirm(`Verify payment for order #${order.id}? Make sure the payment has reached your account.`)) return;
+    await updateOrder(order, {
+      status: "Payment Verified",
+      payment_status: "verified",
+      order_status: "payment_verified",
+      verified_at: new Date().toISOString(),
+    }, "Payment verified.");
+  };
+
+  const cancelOrder = async (order: AdminOrder) => {
+    if (order.status === "Cancelled") return;
+    if (!window.confirm(`Cancel order #${order.id}? This action will be recorded in the order history.`)) return;
+    await updateOrder(order, {
+      status: "Cancelled",
+      payment_status: order.payment_status === "verified" ? "verified" : "rejected",
+      order_status: "cancelled",
+    }, "Order cancelled.");
+  };
+
+  const dispatchOrder = async (order: AdminOrder, form: HTMLFormElement) => {
+    if (order.status !== "Payment Verified" || order.payment_status !== "verified") {
+      toast.error("Verify payment before dispatching this order.");
+      return;
+    }
+    const values = new FormData(form);
+    const courier = String(values.get("courier_name") || "").trim();
+    const trackingId = String(values.get("courier_tracking_id") || "").trim();
+    const trackingUrl = String(values.get("courier_tracking_url") || "").trim();
+    if (!courier) {
+      toast.error("Choose a courier company.");
+      return;
+    }
+    if (!trackingId) {
+      toast.error("Tracking ID / courier number is required.");
+      return;
+    }
+    if (courier === "Other" && !trackingUrl) {
+      toast.error("A tracking URL is required when the courier is Other.");
+      return;
+    }
+    if (trackingUrl && !/^https?:\/\//i.test(trackingUrl)) {
+      toast.error("Enter a valid tracking URL starting with http:// or https://.");
+      return;
+    }
+    if (!window.confirm(`Dispatch order #${order.id} with ${courier}, tracking ID ${trackingId}?`)) return;
+    await updateOrder(order, {
+      status: "Dispatched",
+      order_status: "processing",
+      courier_name: courier,
+      courier_tracking_id: trackingId,
+      courier_tracking_url: trackingUrl || null,
+      dispatched_at: new Date().toISOString(),
+    }, "Order dispatched and tracking details saved.");
+  };
+
+  const openPaymentProof = async (order: AdminOrder) => {
+    if (!order.screenshot_path) return;
+    setBusyId(order.id);
+    try {
+      const url = await signedUrl("payment-proofs", order.screenshot_path, 300);
+      if (!url) throw new Error("Could not open the payment proof.");
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (error) {
+      toast.error(friendlyError(error, "Could not open the payment proof."));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const openWhatsApp = (order: AdminOrder) => {
+    if (order.status !== "Dispatched") {
+      toast.error("Dispatch the order before sending tracking details.");
+      return;
+    }
+    if (!order.whatsapp) {
+      toast.error("This order has no customer phone number.");
+      return;
+    }
+    if (!order.courier_name || !order.courier_tracking_id) {
+      toast.error("Save the courier name and tracking ID before messaging the customer.");
+      return;
+    }
+    const phone = normalizePhone(order.whatsapp);
+    if (!phone) {
+      toast.error("The customer phone number is invalid.");
+      return;
+    }
+    const message = `Hi ${order.full_name}, your order #${order.id} has been confirmed and dispatched! 📦
+Courier: ${order.courier_name}
+Tracking ID: ${order.courier_tracking_id}
+Track your order here: ${order.courier_tracking_url || "Please check the courier's official tracking page."}
+Thank you for shopping with us!`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+    toast.success("WhatsApp opened. After sending the message, return here and mark it as sent.");
+  };
+
+  const markWhatsAppSent = async (order: AdminOrder) => {
+    if (!window.confirm("Confirm that you sent the WhatsApp message to the customer?")) return;
+    await updateOrder(order, { whatsapp_sent_at: new Date().toISOString() }, "WhatsApp message marked as sent.");
   };
 
   return (
-    <div className="space-y-6">
-      <div>
+    <div className="space-y-5">
+      <header>
         <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Review digital PDF orders separately from physical-copy orders, with courier tracking for shipped items.
-        </p>
-      </div>
+        <p className="mt-1 text-sm text-muted-foreground">Review payments, dispatch physical books, and send customers their tracking details.</p>
+      </header>
 
-      {isLoading ? (
-        <div className="space-y-2">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 w-full" />
+      <section className="space-y-3 rounded-xl border border-border bg-card p-3 sm:p-4">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search order ID, customer name, or phone" aria-label="Search orders by ID, customer name, or phone" className="h-11 pl-9" />
+        </div>
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filter orders by status">
+          {STATUSES.map((status) => (
+            <button
+              key={status.value}
+              type="button"
+              role="tab"
+              aria-selected={statusFilter === status.value}
+              onClick={() => setStatusFilter(status.value)}
+              className={`rounded-full border px-3 py-2 text-sm font-medium transition-colors ${statusFilter === status.value ? "border-primary bg-primary text-primary-foreground" : "border-border bg-background text-muted-foreground hover:text-foreground"}`}
+            >
+              {status.label}
+              {status.value === "All" ? ` (${data?.length ?? 0})` : ` (${(data ?? []).filter((order) => order.status === status.value).length})`}
+            </button>
           ))}
         </div>
+      </section>
+
+      {isLoading ? (
+        <div className="space-y-3">{Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-36 w-full" />)}</div>
       ) : isError ? (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5 text-sm"><p>We could not load orders right now. Please try again.</p><Button size="sm" variant="outline" className="mt-3" onClick={() => void refetch()}>Retry</Button></div>
-      ) : (data ?? []).length === 0 ? (
-        <p className="rounded-lg border border-border p-8 text-center text-sm text-muted-foreground">
-          No orders yet.
-        </p>
+        <div className="rounded-xl border border-destructive/30 p-5 text-sm">
+          <p>We could not load orders right now. Please try again.</p>
+          <Button size="sm" variant="outline" className="mt-3" onClick={() => void refetch()}>Retry</Button>
+        </div>
+      ) : visibleOrders.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+          {data?.length ? "No orders match your search or selected status." : "No orders have been placed yet."}
+        </div>
       ) : (
-        <div className="space-y-4">
-          <div className="grid gap-2 rounded-xl border border-border bg-surface p-3 sm:grid-cols-[1fr_auto_auto]">
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search customer, email, product or transaction ID" aria-label="Search orders" className="h-10 bg-background" />
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} aria-label="Filter orders by status" className="h-10 rounded-md border border-input bg-background px-3 text-sm">
-              <option value="all">All statuses</option><option value="submitted">Payment submitted</option><option value="verified">Verified</option><option value="rejected">Rejected</option><option value="cancelled">Cancelled</option>
-            </select>
-            <select value={sort} onChange={(e) => setSort(e.target.value as typeof sort)} aria-label="Sort orders" className="h-10 rounded-md border border-input bg-background px-3 text-sm">
-              <option value="newest">Newest first</option><option value="oldest">Oldest first</option><option value="amount">Highest amount</option>
-            </select>
-          </div>
-          {visibleOrders.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No orders match your filters.</div>
-          ) : (
-            <div className="space-y-3">
-              {visibleOrders.map((o) => {
-            const isSubmitted = o.payment_status === "submitted" && o.order_status !== "cancelled";
-            const isRejected = o.payment_status === "rejected" && o.order_status !== "cancelled";
-            const isCancelled = o.order_status === "cancelled";
-            const isVerified = o.payment_status === "verified";
-
+        <div className="space-y-3">
+          {visibleOrders.map((order) => {
+            const expanded = expandedId === order.id;
+            const busy = busyId === order.id;
             return (
-              <article key={o.id} className="rounded-lg border border-border p-4">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-medium">{o.product_title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {o.product_type === "physical" ? "Physical copy" : "Digital PDF"} · Order {o.id.slice(0, 8)} · {new Date(o.created_at).toLocaleString()}
-                    </p>
+              <article key={order.id} className="overflow-hidden rounded-xl border border-border bg-card">
+                <button
+                  type="button"
+                  onClick={() => setExpandedId(expanded ? null : order.id)}
+                  aria-expanded={expanded}
+                  className="flex w-full min-w-0 items-start justify-between gap-3 p-4 text-left hover:bg-muted/30 sm:items-center sm:p-5"
+                >
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold">#{order.id}</span>
+                      <Badge className={statusStyles[order.status]}>{order.status}</Badge>
+                    </div>
+                    <p className="truncate text-sm font-medium">{order.full_name} · {order.whatsapp}</p>
+                    <p className="text-sm text-muted-foreground">{order.product_title} · {formatPrice(Number(order.amount))}</p>
+                    <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString()}</p>
                   </div>
-                  <div className="flex gap-2">
-                    <Badge variant={isVerified ? "default" : "secondary"}>
-                      {PAYMENT_STATUS_LABELS[o.payment_status] ?? o.payment_status}
-                    </Badge>
-                    <Badge variant="outline">
-                      {ORDER_STATUS_LABELS[o.order_status] ?? o.order_status}
-                    </Badge>
-                  </div>
-                </div>
+                  <ChevronDown className={`mt-1 h-5 w-5 shrink-0 transition-transform ${expanded ? "rotate-180" : ""}`} />
+                </button>
 
-                <dl className="mt-3 grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2 lg:grid-cols-3">
-                  <div><dt className="text-xs text-muted-foreground">Customer</dt><dd>{o.full_name}</dd></div>
-                  <div><dt className="text-xs text-muted-foreground">Email</dt><dd className="break-all">{o.email}</dd></div>
-                  <div><dt className="text-xs text-muted-foreground">WhatsApp</dt><dd>{o.whatsapp}</dd></div>
-                  <div><dt className="text-xs text-muted-foreground">Amount</dt><dd>{formatPrice(Number(o.amount))}</dd></div>
-                  <div><dt className="text-xs text-muted-foreground">UPI transaction ID</dt><dd className="break-all">{o.transaction_id ?? "—"}</dd></div>
-                  <div><dt className="text-xs text-muted-foreground">Payment method</dt><dd>{o.payment_method}</dd></div>
-                  {o.product_type === "physical" && <>
-                    <div className="sm:col-span-2 lg:col-span-3"><dt className="text-xs text-muted-foreground">Delivery address</dt><dd className="break-words">{[o.delivery_address, o.delivery_city, o.delivery_state, o.delivery_postal_code, o.delivery_country].filter(Boolean).join(", ") || "No shipping address saved"}</dd></div>
-                    <div><dt className="text-xs text-muted-foreground">Courier</dt><dd>{o.courier_name || "—"}</dd></div>
-                    <div><dt className="text-xs text-muted-foreground">Courier tracking ID</dt><dd className="break-all">{o.courier_tracking_id || "—"}</dd></div>
-                    <div className="break-all"><dt className="text-xs text-muted-foreground">Tracking URL</dt><dd>{o.courier_tracking_url ? <a className="text-primary underline" href={o.courier_tracking_url} target="_blank" rel="noreferrer">Track shipment</a> : "—"}</dd></div>
-                  </>}
-                </dl>
+                {expanded && (
+                  <div className="space-y-5 border-t border-border p-4 sm:p-5">
+                    <section>
+                      <h2 className="mb-3 text-sm font-semibold">Order and customer details</h2>
+                      <dl className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-3">
+                        <div><dt className="text-xs text-muted-foreground">Order ID</dt><dd className="break-all font-mono">{order.id}</dd></div>
+                        <div><dt className="text-xs text-muted-foreground">Customer name</dt><dd>{order.full_name}</dd></div>
+                        <div><dt className="text-xs text-muted-foreground">Phone</dt><dd>{order.whatsapp || "—"}</dd></div>
+                        <div><dt className="text-xs text-muted-foreground">Email</dt><dd className="break-all">{order.email || "—"}</dd></div>
+                        <div><dt className="text-xs text-muted-foreground">Book(s)</dt><dd>{order.product_title}</dd></div>
+                        <div><dt className="text-xs text-muted-foreground">Amount</dt><dd className="font-semibold">{formatPrice(Number(order.amount))}</dd></div>
+                        <div><dt className="text-xs text-muted-foreground">Order date</dt><dd>{new Date(order.created_at).toLocaleString()}</dd></div>
+                        <div><dt className="text-xs text-muted-foreground">Payment method</dt><dd>{order.payment_method}</dd></div>
+                        <div><dt className="text-xs text-muted-foreground">Transaction ID</dt><dd className="break-all">{order.transaction_id || "Not provided"}</dd></div>
+                        <div className="sm:col-span-2 xl:col-span-3"><dt className="text-xs text-muted-foreground">Delivery address</dt><dd className="break-words">{[order.delivery_address, order.delivery_city, order.delivery_state, order.delivery_postal_code, order.delivery_country].filter(Boolean).join(", ") || "No address recorded"}</dd></div>
+                        <div><dt className="text-xs text-muted-foreground">Payment verified</dt><dd>{order.verified_at ? new Date(order.verified_at).toLocaleString() : "—"}</dd></div>
+                        <div><dt className="text-xs text-muted-foreground">Dispatched</dt><dd>{order.dispatched_at ? new Date(order.dispatched_at).toLocaleString() : "—"}</dd></div>
+                      </dl>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {order.screenshot_path && <Button size="sm" variant="outline" disabled={busy} onClick={() => void openPaymentProof(order)}>View payment proof</Button>}
+                        {order.courier_tracking_url && <Button size="sm" variant="outline" asChild><a href={order.courier_tracking_url} target="_blank" rel="noreferrer"><ExternalLink className="mr-1.5 h-4 w-4" />Open tracking page</a></Button>}
+                      </div>
+                    </section>
 
-                {o.product_type === "physical" && <form className="mt-4 grid gap-3 rounded-lg bg-surface p-3 sm:grid-cols-2" onSubmit={(e) => {
-                  e.preventDefault();
-                  const formData = new FormData(e.currentTarget);
-                  const courierName = String(formData.get("courier_name") || "").trim();
-                  const trackingId = String(formData.get("courier_tracking_id") || "").trim();
-                  const trackingUrl = String(formData.get("courier_tracking_url") || "").trim();
-                  if (trackingUrl && !/^https:\/\//i.test(trackingUrl)) {
-                    toast.error("Tracking URL must start with https://");
-                    return;
-                  }
-                  void update(o, {
-                    courier_name: courierName || null,
-                    courier_tracking_id: trackingId || null,
-                    courier_tracking_url: trackingUrl || null,
-                    order_status: trackingId && o.payment_status === "verified" && o.order_status !== "delivered" ? "processing" : o.order_status,
-                  }, "Courier details saved.");
-                }}>
-                  <p className="text-sm font-semibold sm:col-span-2"><Truck className="mr-2 inline h-4 w-4" />Courier / shipment details</p>
-                  <Input name="courier_name" aria-label="Courier company" placeholder="Courier company (e.g. India Post)" defaultValue={o.courier_name ?? ""} maxLength={100} />
-                  <Input name="courier_tracking_id" aria-label="Courier tracking ID" placeholder="Courier tracking ID" defaultValue={o.courier_tracking_id ?? ""} maxLength={150} />
-                  <Input name="courier_tracking_url" aria-label="Courier tracking URL" placeholder="Tracking URL (https://...)" defaultValue={o.courier_tracking_url ?? ""} maxLength={500} className="sm:col-span-2" />
-                  <div className="flex flex-wrap gap-2 sm:col-span-2">
-                    <Button type="submit" size="sm" variant="outline" disabled={busyId === o.id}>Save courier details</Button>
-                    {o.courier_tracking_id && o.whatsapp && <Button type="button" size="sm" disabled={busyId === o.id} onClick={() => {
-                      let phone = o.whatsapp.replace(/\D/g, "");
-                      if (phone.startsWith("0")) phone = phone.slice(1);
-                      if (phone.length === 10) phone = `91${phone}`;
-                      const message = [
-                        `Hello ${o.full_name},`,
-                        "",
-                        `Your EduWallet order for *${o.product_title}* has been prepared for dispatch.`,
-                        o.courier_name ? `Courier: ${o.courier_name}` : "",
-                        `Courier tracking ID: *${o.courier_tracking_id}*`,
-                        o.courier_tracking_url ? `Track your order: ${o.courier_tracking_url}` : "",
-                        "",
-                        "Thank you for ordering from EduWallet."
-                      ].filter(Boolean).join("\n");
-                      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
-                    }}><MessageCircle className="mr-1 h-4 w-4" />Send tracking via WhatsApp</Button>}
-                  </div>
-                </form>}
-
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {busyId === o.id && <Loader2 className="h-4 w-4 animate-spin self-center" />}
-
-                  {o.screenshot_path && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={busyId === o.id}
-                      onClick={() => { if (o.screenshot_path) void openProof(o.screenshot_path, o.id); }}
-                    >
-                      View screenshot
-                    </Button>
-                  )}
-
-                  {isSubmitted && (
-                    <>
-                      {o.product_type === "physical" ? (
-                        <Button size="sm" disabled={busyId === o.id} onClick={() => void update(o, { payment_status: "verified", order_status: "processing", verified_at: new Date().toISOString() }, "Payment verified. You can now dispatch the physical order.")}>
-                          Verify Payment
-                        </Button>
-                      ) : (
-                        <Button size="sm" disabled={busyId === o.id} onClick={() => void sendWhatsApp(o)}>
-                          <MessageCircle className="mr-1.5 h-4 w-4" /> Verify & Send PDF via WhatsApp
-                        </Button>
+                    <section className="rounded-lg border border-border p-3 sm:p-4">
+                      <h2 className="mb-3 text-sm font-semibold">Order actions</h2>
+                      {order.status === "Pending" && (
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" disabled={busy} onClick={() => void verifyPayment(order)}>Verify Payment</Button>
+                          <Button size="sm" variant="destructive" disabled={busy} onClick={() => void cancelOrder(order)}>Reject / Cancel</Button>
+                        </div>
                       )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={busyId === o.id}
-                        onClick={() =>
-                          void update(
-                            o,
-                            { payment_status: "rejected", order_status: "payment_rejected" },
-                            "Payment rejected. Click Reject Payment again to restore it.",
-                          )
-                        }
-                      >
-                        Reject Payment
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={busyId === o.id}
-                        onClick={() =>
-                          void update(
-                            o,
-                            { order_status: "cancelled" },
-                            "Order cancelled. Click Cancel Order again to restore it.",
-                          )
-                        }
-                      >
-                        Cancel Order
-                      </Button>
-                    </>
-                  )}
 
-                  {isRejected && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={busyId === o.id}
-                        onClick={() =>
-                          void update(
-                            o,
-                            { payment_status: "submitted", order_status: "payment_submitted" },
-                            "Payment restored. You can verify it again.",
-                          )
-                        }
-                      >
-                        Reject Payment
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={busyId === o.id}
-                        onClick={() =>
-                          void update(
-                            o,
-                            { payment_status: "rejected", order_status: "cancelled" },
-                            "Order cancelled.",
-                          )
-                        }
-                      >
-                        Cancel Order
-                      </Button>
-                    </>
-                  )}
+                      {order.status === "Payment Verified" && (
+                        <form className="grid gap-3 sm:grid-cols-2" onSubmit={(event) => { event.preventDefault(); void dispatchOrder(order, event.currentTarget); }}>
+                          <div className="sm:col-span-2 flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300"><PackageCheck className="h-4 w-4" />Payment verified. Add courier details to dispatch.</div>
+                          <label className="grid gap-1.5 text-sm">
+                            <span>Courier company</span>
+                            <select name="courier_name" defaultValue={order.courier_name || ""} className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm" required>
+                              <option value="" disabled>Select courier</option>
+                              <option>India Post</option><option>DTDC</option><option>Delhi</option><option>Blue Dart</option><option>Other</option>
+                            </select>
+                          </label>
+                          <label className="grid gap-1.5 text-sm">
+                            <span>Tracking ID / courier number</span>
+                            <Input name="courier_tracking_id" defaultValue={order.courier_tracking_id || ""} placeholder="Enter tracking ID" required maxLength={150} />
+                          </label>
+                          <label className="grid gap-1.5 text-sm sm:col-span-2">
+                            <span>Tracking URL <span className="text-muted-foreground">(required for Other)</span></span>
+                            <Input name="courier_tracking_url" type="url" defaultValue={order.courier_tracking_url || ""} placeholder="https://..." maxLength={500} />
+                          </label>
+                          <div className="flex flex-wrap gap-2 sm:col-span-2">
+                            <Button type="submit" disabled={busy}>{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<Truck className="mr-1.5 h-4 w-4" />Dispatch Order</Button>
+                            <Button type="button" variant="destructive" disabled={busy} onClick={() => void cancelOrder(order)}>Cancel Order</Button>
+                          </div>
+                        </form>
+                      )}
 
-                  {isVerified && o.product_type === "physical" && o.order_status !== "delivered" && !isCancelled && (
-                    <Button size="sm" variant="outline" disabled={busyId === o.id} onClick={() => void update(o, { order_status: "delivered", delivered_at: new Date().toISOString() }, "Physical order marked as delivered.")}>
-                      Mark Delivered
-                    </Button>
-                  )}
+                      {order.status === "Dispatched" && (
+                        <div className="space-y-3">
+                          <div className="flex flex-wrap items-center gap-2 text-sm text-green-700 dark:text-green-300">
+                            <CheckCircle2 className="h-4 w-4" />Dispatched{order.dispatched_at ? ` on ${new Date(order.dispatched_at).toLocaleString()}` : ""}
+                          </div>
+                          <dl className="grid gap-2 text-sm sm:grid-cols-2">
+                            <div><dt className="text-xs text-muted-foreground">Courier</dt><dd>{order.courier_name || "—"}</dd></div>
+                            <div><dt className="text-xs text-muted-foreground">Tracking ID</dt><dd className="break-all">{order.courier_tracking_id || "—"}</dd></div>
+                          </dl>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Button size="sm" className="bg-green-600 text-white hover:bg-green-700" onClick={() => openWhatsApp(order)}>
+                              <MessageCircle className="mr-1.5 h-4 w-4" />{order.whatsapp_sent_at ? "Resend WhatsApp Message" : "Send WhatsApp Message"}
+                            </Button>
+                            {order.whatsapp_sent_at ? (
+                              <Badge className="border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200"><CheckCircle2 className="mr-1 h-3.5 w-3.5" />WhatsApp sent</Badge>
+                            ) : (
+                              <Button size="sm" variant="outline" disabled={busy} onClick={() => void markWhatsAppSent(order)}>Mark WhatsApp Sent</Button>
+                            )}
+                          </div>
+                          {order.whatsapp_sent_at && <p className="text-xs text-muted-foreground">Last marked sent: {new Date(order.whatsapp_sent_at).toLocaleString()}</p>}
+                        </div>
+                      )}
 
-                  {isVerified && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={busyId === o.id}
-                      onClick={() =>
-                        void update(
-                          o,
-                          { order_status: "cancelled" },
-                          "Order cancelled. The dashboard revenue has been adjusted.",
-                        )
-                      }
-                    >
-                      Cancel Order
-                    </Button>
-                  )}
+                      {order.status === "Cancelled" && <p className="text-sm text-muted-foreground">This order has been cancelled.</p>}
+                      {order.status !== "Cancelled" && order.status !== "Dispatched" && order.status !== "Payment Verified" && order.status !== "Pending" && <p className="text-sm text-muted-foreground">No actions available for this status.</p>}
+                    </section>
 
-                  {isCancelled && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={busyId === o.id}
-                        onClick={() =>
-                          void update(
-                            o,
-                            o.payment_status === "verified"
-                              ? { payment_status: "verified", order_status: o.product_type === "physical" ? "processing" : "delivered" }
-                              : { payment_status: "submitted", order_status: "payment_submitted" },
-                            "Order restored. You can continue managing it.",
-                          )
-                        }
-                      >
-                        Cancel Order
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={busyId === o.id}
-                        onClick={() =>
-                          void update(
-                            o,
-                            { payment_status: "rejected", order_status: "payment_rejected" },
-                            "Payment rejected.",
-                          )
-                        }
-                      >
-                        Reject Payment
-                      </Button>
-                    </>
-                  )}
-                </div>
+                    <section>
+                      <h2 className="mb-3 text-sm font-semibold">Status history</h2>
+                      {historyQuery.isLoading ? <Skeleton className="h-12 w-full" /> : historyQuery.isError ? (
+                        <p className="text-sm text-muted-foreground">Could not load status history.</p>
+                      ) : (historyQuery.data ?? []).length ? (
+                        <ol className="space-y-3 border-l border-border pl-4">
+                          {(historyQuery.data ?? []).map((item) => (
+                            <li key={item.id} className="relative">
+                              <span className="absolute -left-[1.32rem] top-1.5 h-2 w-2 rounded-full bg-primary" />
+                              <p className="text-sm font-medium">{item.status}</p>
+                              <p className="text-xs text-muted-foreground">{new Date(item.changed_at).toLocaleString()}</p>
+                            </li>
+                          ))}
+                        </ol>
+                      ) : <p className="text-sm text-muted-foreground">No status changes recorded yet.</p>}
+                    </section>
+                  </div>
+                )}
               </article>
             );
-              })}
-            </div>
-          )}
+          })}
         </div>
       )}
     </div>
