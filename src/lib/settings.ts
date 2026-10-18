@@ -102,7 +102,9 @@ export function safeUrl(value: string): string {
 export const isEmail = (v: string) => /^\S+@\S+\.\S+$/.test((v ?? "").trim());
 
 export const waLink = (number: string, message?: string) => {
-  const digits = (number ?? "").replace(/[^0-9]/g, "");
+  // wa.me accepts digits only; normalize pasted numbers such as "+91 98765 43210".
+  let digits = (number ?? "").replace(/\D/g, "").replace(/^0+/, "");
+  if (digits.length === 10) digits = `91${digits}`;
   if (digits.length < 8) return "";
   return `https://wa.me/${digits}${message ? `?text=${encodeURIComponent(message)}` : ""}`;
 };
