@@ -239,9 +239,10 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Basic information</h2>
         <div className="max-w-md space-y-1.5">
           <Label htmlFor="product_type">Product type</Label>
-          <Select value={form.product_type} onValueChange={(v: "pdf" | "physical") => {
-            setForm((current) => ({ ...current, product_type: v, format: v === "physical" ? "Physical copy" : "PDF" }));
-            if (v === "physical") { setPdf(null); setPreview(null); }
+          <Select value={form.product_type} onValueChange={(v) => {
+            const productType = v === "physical" ? "physical" : "pdf";
+            setForm((current) => ({ ...current, product_type: productType, format: productType === "physical" ? "Physical copy" : "PDF" }));
+            if (productType === "physical") { setPdf(null); setPreview(null); }
           }}>
             <SelectTrigger id="product_type" className="h-11"><SelectValue placeholder="Choose product type" /></SelectTrigger>
             <SelectContent position="popper" className="z-[100]">
