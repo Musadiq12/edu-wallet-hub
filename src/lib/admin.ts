@@ -172,11 +172,11 @@ export const adminOrdersQuery = () =>
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id,user_id,product_id,product_title,full_name,email,whatsapp,delivery_address,delivery_city,delivery_state,delivery_postal_code,delivery_country,courier_name,courier_tracking_id,courier_tracking_url,amount,payment_method,transaction_id,screenshot_path,payment_status,order_status,admin_note,created_at,verified_at,delivered_at,products(product_type)",
+          "id,user_id,product_id,product_title,full_name,email,whatsapp,delivery_address,delivery_city,delivery_state,delivery_postal_code,delivery_country,courier_name,courier_tracking_id,courier_tracking_url,amount,payment_method,transaction_id,screenshot_path,payment_status,order_status,admin_note,created_at,verified_at,delivered_at,product:products!orders_product_id_fkey(product_type)",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data ?? []).map((row: any) => ({ ...row, product_type: row.products?.product_type ?? "pdf" })) as AdminOrder[];
+      return (data ?? []).map((row: any) => ({ ...row, product_type: row.product?.product_type ?? "pdf" })) as AdminOrder[];
     },
   });
 
