@@ -136,6 +136,14 @@ export type Database = {
           amount: number
           created_at: string
           delivered_at: string | null
+          delivery_address: string | null
+          delivery_city: string | null
+          delivery_state: string | null
+          delivery_postal_code: string | null
+          delivery_country: string
+          courier_name: string | null
+          courier_tracking_id: string | null
+          courier_tracking_url: string | null
           email: string
           full_name: string
           id: string
@@ -155,6 +163,14 @@ export type Database = {
           amount: number
           created_at?: string
           delivered_at?: string | null
+          delivery_address??: string | null
+          delivery_city??: string | null
+          delivery_state??: string | null
+          delivery_postal_code??: string | null
+          delivery_country?: string
+          courier_name??: string | null
+          courier_tracking_id??: string | null
+          courier_tracking_url??: string | null
           email: string
           full_name: string
           id?: string
@@ -174,6 +190,14 @@ export type Database = {
           amount?: number
           created_at?: string
           delivered_at?: string | null
+          delivery_address??: string | null
+          delivery_city??: string | null
+          delivery_state??: string | null
+          delivery_postal_code??: string | null
+          delivery_country?: string
+          courier_name??: string | null
+          courier_tracking_id??: string | null
+          courier_tracking_url??: string | null
           email?: string
           full_name?: string
           id?: string
