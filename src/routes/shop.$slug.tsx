@@ -37,7 +37,7 @@ export const Route = createFileRoute("/shop/$slug")({
       ? trimDesc(
           p.description ||
             p.whats_included ||
-            `${p.title}: digital exam study resource from Edu Wallet.`,
+            `${p.title}: ${p.product_type === "physical" ? "physical study book or printed notes" : "digital exam study resource"} from Edu Wallet.`,
         )
       : "Digital exam study resource from Edu Wallet. See what's included, format and pricing before you buy.";
     const meta: Array<Record<string, string>> = [
@@ -119,7 +119,7 @@ function ProductDetail() {
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
               <CoverImage path={p.cover_image} title={p.title} />
             </div>
-            <p className="mt-3 text-center text-xs text-muted-foreground">Digital PDF resource</p>
+            <p className="mt-3 text-center text-xs text-muted-foreground">{p.product_type === "physical" ? "Physical book / printed notes" : "Digital PDF resource"}</p>
           </div>
 
           <div>
@@ -273,13 +273,12 @@ function ProductDetail() {
             <div className="mt-6 space-y-3 rounded-2xl border border-border bg-surface p-5 text-sm text-muted-foreground">
               <p className="flex gap-2">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
-                This is a digital product. No physical item will be shipped.
+                {p.product_type === "physical" ? "This is a physical product. A delivery address is required and courier details will be provided when dispatched." : "This is a digital product. No physical item will be shipped."}
               </p>
               <p>
-                Payment is made via UPI and verified manually. {s.deliveryEstimate ? `${s.deliveryEstimate}, the` : "Once verified, the"}
-                material is sent to your registered email address or WhatsApp number.
+                Payment is made via UPI and verified manually. {p.product_type === "physical" ? "After verification, your order will be prepared for dispatch and tracking details can be sent via WhatsApp." : `${s.deliveryEstimate ? `${s.deliveryEstimate}, the` : "Once verified, the"} material is sent to your registered email address or WhatsApp number.`}
               </p>
-              <p><strong className="text-foreground">Refund / access policy:</strong> Because this is a digital product, access is provided after payment verification. If you have a payment or delivery issue, contact support before taking further action.</p>
+              <p><strong className="text-foreground">Refund / access policy:</strong> {p.product_type === "physical" ? "For physical products, contact support about delivery issues, damaged items, or cancellation before dispatch." : "Because this is a digital product, access is provided after payment verification. If you have a payment or delivery issue, contact support before taking further action."}</p>
               <p><strong className="text-foreground">Need help?</strong> Use the Contact page and include your order details so our team can assist quickly.</p>
               {isAssignment && <p>{siteConfig.assignmentDisclaimer}</p>}
               <p>{siteConfig.disclaimer}</p>
