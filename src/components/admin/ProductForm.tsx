@@ -22,6 +22,7 @@ import { discountPercent, slugify } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 
 type FormState = {
+  product_type: "pdf" | "physical";
   title: string;
   slug: string;
   description: string;
@@ -40,6 +41,7 @@ type FormState = {
 };
 
 const emptyState: FormState = {
+  product_type: "pdf",
   title: "",
   slug: "",
   description: "",
@@ -65,6 +67,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
   const [form, setForm] = useState<FormState>(() =>
     product
       ? {
+          product_type: product.product_type ?? "pdf",
           title: product.title,
           slug: product.slug,
           description: product.description ?? "",
@@ -76,7 +79,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
           price: String(product.price ?? ""),
           discounted_price: product.discounted_price != null ? String(product.discounted_price) : "",
           page_count: product.page_count != null ? String(product.page_count) : "",
-          format: product.format ?? "PDF",
+          format: product.format ?? ((product.product_type ?? "pdf") === "physical" ? "Physical copy" : "PDF"),
           is_free: product.is_free,
           is_featured: product.is_featured,
           is_active: product.is_active,
@@ -142,7 +145,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
     if (problem) return void toast.error(problem);
 
     const willPublish = publish === null ? form.is_active : publish;
-    if (willPublish && !pdf && !paths.pdf_file && !form.is_free) {
+    if (willPublish && form.product_type === "pdf" && !pdf && !paths.pdf_file && !form.is_free) {
       return void toast.error("Upload the product PDF before publishing.");
     }
 
@@ -156,13 +159,13 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         uploaded.push({ bucket: BUCKETS.cover, path });
         next.cover_image = path;
       }
-      if (pdf) {
+      if (pdf && form.product_type === "pdf") {
         setStatus("Uploading product PDF…");
         const { path } = await uploadFile(BUCKETS.file, pdf.file, "files");
         uploaded.push({ bucket: BUCKETS.file, path });
         next.pdf_file = path;
       }
-      if (preview) {
+      if (preview && form.product_type === "pdf") {
         setStatus("Uploading preview PDF…");
         const { path } = await uploadFile(BUCKETS.preview, preview.file, "previews");
         uploaded.push({ bucket: BUCKETS.preview, path });
@@ -171,6 +174,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
 
       setStatus("Saving product…");
       const payload = {
+        product_type: form.product_type,
         title: form.title.trim(),
         slug: form.slug.trim(),
         description: form.description.trim() || null,
@@ -182,13 +186,13 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         price: form.is_free ? 0 : priceNum,
         discounted_price: form.is_free ? null : discNum,
         page_count: form.page_count ? Number(form.page_count) : null,
-        format: form.format.trim() || "PDF",
+        format: form.format.trim() || (form.product_type === "physical" ? "Physical copy" : "PDF"),
         is_free: form.is_free,
         is_featured: form.is_featured,
         is_active: willPublish,
         cover_image: next.cover_image,
-        pdf_file: next.pdf_file,
-        preview_file: next.preview_file,
+        pdf_file: form.product_type === "pdf" ? next.pdf_file : null,
+        preview_file: form.product_type === "pdf" ? next.preview_file : null,
       };
 
       const { error: saveError } = await (supabase as any).rpc("admin_upsert_product", {
@@ -201,6 +205,10 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         if (cover && paths.cover_image && paths.cover_image !== next.cover_image) await removeFile(BUCKETS.cover, paths.cover_image);
         if (pdf && paths.pdf_file && paths.pdf_file !== next.pdf_file) await removeFile(BUCKETS.file, paths.pdf_file);
         if (preview && paths.preview_file && paths.preview_file !== next.preview_file) await removeFile(BUCKETS.preview, paths.preview_file);
+        if (form.product_type === "physical") {
+          if (paths.pdf_file) await removeFile(BUCKETS.file, paths.pdf_file);
+          if (paths.preview_file) await removeFile(BUCKETS.preview, paths.preview_file);
+        }
       }
 
       await qc.invalidateQueries({ queryKey: ["admin"] });
@@ -229,6 +237,20 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
     >
       <section className="space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Basic information</h2>
+        <div className="max-w-md space-y-1.5">
+          <Label htmlFor="product_type">Product type</Label>
+          <Select value={form.product_type} onValueChange={(v: "pdf" | "physical") => {
+            setForm((current) => ({ ...current, product_type: v, format: v === "physical" ? "Physical copy" : "PDF" }));
+            if (v === "physical") { setPdf(null); setPreview(null); }
+          }}>
+            <SelectTrigger id="product_type" className="h-11"><SelectValue placeholder="Choose product type" /></SelectTrigger>
+            <SelectContent position="popper" className="z-[100]">
+              <SelectItem value="pdf">Digital PDF</SelectItem>
+              <SelectItem value="physical">Physical copy (printed book / notes)</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">Choose how this product will be delivered. PDF products use digital delivery; physical copies use a shipping address and courier tracking.</p>
+        </div>
         <div className="space-y-1.5">
           <Label htmlFor="title">Product title</Label>
           <Input id="title" className="h-11" value={form.title} onChange={(e) => set("title", e.target.value)} onBlur={() => validateField("title")} aria-invalid={!!fieldErrors["title"]} required />
@@ -335,8 +357,8 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         )}
       </section>
 
-      <section className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Files</h2>
+      {form.product_type === "pdf" && <section className="space-y-4">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">PDF files</h2>
         <AdminFileField
           id="cover" label="Product cover image" kind="image" accept="image/*"
           maxBytes={LIMITS.coverBytes} help="JPG or PNG, up to 5 MB."
@@ -355,7 +377,9 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
           existingPath={paths.preview_file} picked={preview} busy={busy} status={status ?? ""}
           onPick={setPreview} onRemoveExisting={() => setPaths((p) => ({ ...p, preview_file: null }))}
         />
-      </section>
+      </section>}
+
+      {form.product_type === "physical" && <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm"><p className="font-medium">Physical product selected</p><p className="mt-1 text-muted-foreground">No product PDF will be uploaded or required. Customers will provide a delivery address during checkout.</p></div>}
 
       <section className="space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Additional information</h2>
