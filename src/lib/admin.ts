@@ -149,7 +149,7 @@ export type AdminOrder = {
   delivery_city: string | null;
   delivery_state: string | null;
   delivery_postal_code: string | null;
-  delivery_country: string;
+  delivery_country: string | null;
   courier_name: string | null;
   courier_tracking_id: string | null;
   courier_tracking_url: string | null;
