@@ -126,15 +126,6 @@ function AdminSettings() {
                   onPick={(picked) => setPickedHeroImages((current) => current.map((item, i) => i === index ? picked : item))}
                 />
               </section>
-            ))}}
-                <div className="space-y-1.5">
-                  <Label htmlFor={`hero-${index}-to`}>Button destination</Label>
-                  <select id={`hero-${index}-to`} className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm" value={slide.to} onChange={(e) => setHeroSlides((current) => current.map((item, i) => i === index ? { ...item, to: e.target.value as "/shop" | "/free-resources" } : item))}>
-                    <option value="/shop">Shop / resources</option>
-                    <option value="/free-resources">Free resources</option>
-                  </select>
-                </div>
-              </section>
             ))}
           </div>
           <Button type="submit" className="h-11" disabled={busy}>{busy ? "Saving…" : "Save settings"}</Button>
