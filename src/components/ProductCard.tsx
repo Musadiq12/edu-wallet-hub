@@ -23,7 +23,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
         <CoverImage path={product.cover_image} title={product.title} className="aspect-[4/3]" />
       </Link>
 
-      <div className={compact ? "flex flex-1 flex-col p-3.5" : "flex flex-1 flex-col p-4"}>
+      <div className={compact ? "flex flex-1 flex-col px-3.5 pb-3.5 pt-2" : "flex flex-1 flex-col px-4 pb-4 pt-2"}>
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge variant="secondary">{product.product_type === "physical" ? "Physical copy" : "Digital PDF"}</Badge>
           {product.is_demo && (
