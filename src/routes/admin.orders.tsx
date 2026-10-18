@@ -33,7 +33,12 @@ const statusStyles: Record<OrderStatus, string> = {
 };
 
 function normalizePhone(phone: string) {
-  return phone.replace(/[\s\-+]/g, "").replace(/\D/g, "");
+  // WhatsApp wa.me URLs must contain digits only: no +, spaces, brackets, or hyphens.
+  let digits = (phone ?? "").replace(/\D/g, "");
+  digits = digits.replace(/^0+/, "");
+  // Checkout phone numbers without a country code are assumed to be Indian numbers.
+  if (digits.length === 10) digits = `91${digits}`;
+  return digits;
 }
 
 function AdminOrders() {
