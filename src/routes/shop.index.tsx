@@ -70,8 +70,7 @@ function Shop() {
       <div className="page-container">
         <h1 className="text-3xl font-bold sm:text-4xl">Exam Study Resources</h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Notes, guess papers, assignment guidance, solved papers and exam guides across popular Indian exams. All resources are digital
-          (PDF) and delivered after payment verification.
+          Notes, guess papers, assignment guidance, solved papers, digital PDFs and physical books across popular Indian exams. Delivery method depends on the product type.
         </p>
 
         <div className="mt-6">
