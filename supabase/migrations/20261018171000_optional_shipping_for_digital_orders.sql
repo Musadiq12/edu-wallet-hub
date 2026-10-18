@@ -1,0 +1,1 @@
+ALTER TABLE public.orders ALTER COLUMN delivery_country DROP NOT NULL;
