@@ -15,6 +15,7 @@ type HeroSlide = {
   accent: string;
   secondary: string;
   imageUrl?: string;
+  mobileImageUrl?: string;
 };
 
 const slides: HeroSlide[] = [
@@ -102,14 +103,17 @@ export function StorefrontHero() {
           </>
         )}
         {slide.imageUrl ? (
-          <div className="relative min-h-[300px] aspect-[2.7/1] w-full sm:min-h-[360px] lg:min-h-[440px]">
+          <picture className="block w-full">
+            {slide.mobileImageUrl && (
+              <source media="(max-width: 639px)" srcSet={slide.mobileImageUrl} />
+            )}
             <img
               src={slide.imageUrl}
               alt={`EduWallet banner slide ${active + 1}`}
-              className="absolute inset-0 h-full w-full object-cover"
+              className="block h-auto w-full object-contain"
               fetchPriority={active === 0 ? "high" : "auto"}
             />
-          </div>
+          </picture>
         ) : (
         <div className="relative z-10 grid min-h-[390px] items-center gap-8 px-6 py-10 sm:px-10 lg:min-h-[440px] lg:grid-cols-[1.15fr_.85fr] lg:px-14">
           <div className="max-w-2xl">
