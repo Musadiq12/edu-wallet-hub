@@ -142,10 +142,11 @@ function AdminProducts() {
         <div>
           {visible.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No products match your filters.</div> : (
         <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full min-w-[54rem] text-sm">
+          <table className="w-full min-w-[60rem] text-sm">
             <thead className="bg-surface text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-4 py-2.5 font-medium">Title</th>
+                <th className="px-4 py-2.5 font-medium">Type</th>
                 <th className="px-4 py-2.5 font-medium">Category</th>
                 <th className="px-4 py-2.5 font-medium">Course</th>
                 <th className="px-4 py-2.5 font-medium">Subject</th>
@@ -163,6 +164,7 @@ function AdminProducts() {
                     <p className="truncate font-medium">{p.title}</p>
                     <p className="truncate text-xs text-muted-foreground">/shop/{p.slug}</p>
                   </td>
+                  <td className="px-4 py-3 whitespace-nowrap">{p.product_type === "physical" ? "Physical copy" : "Digital PDF"}</td>
                   <td className="px-4 py-3">{categoryName(p.category_id)}</td>
                   <td className="px-4 py-3">{p.course_label ?? "—"}</td>
                   <td className="px-4 py-3">{p.subject_label ?? "—"}</td>
