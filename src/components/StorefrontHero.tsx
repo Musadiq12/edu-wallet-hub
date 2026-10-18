@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ArrowRight, BookOpen, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { ArrowRight, BookOpen, Sparkles } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -81,9 +81,6 @@ export function StorefrontHero() {
     return () => window.clearInterval(timer);
   }, [paused, interval, heroSlides.length]);
 
-  const previous = () => setActive((current) => (current - 1 + heroSlides.length) % heroSlides.length);
-  const next = () => setActive((current) => (current + 1) % heroSlides.length);
-
   if (!slide) return null;
 
   return (
@@ -97,9 +94,13 @@ export function StorefrontHero() {
       }}
     >
       <div className={cn("relative overflow-hidden rounded-2xl bg-gradient-to-br", slide.accent || "from-primary/15 via-background to-secondary/10")}>
-        <AuroraBackground className="absolute inset-0 z-0 h-full min-h-0 w-full rounded-2xl bg-transparent" showRadialGradient />
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl" aria-hidden="true" />
-        <div className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-secondary/10 blur-3xl" aria-hidden="true" />
+        {!slide.imageUrl && (
+          <>
+            <AuroraBackground className="absolute inset-0 z-0 h-full min-h-0 w-full rounded-2xl bg-transparent" showRadialGradient />
+            <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl" aria-hidden="true" />
+            <div className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-secondary/10 blur-3xl" aria-hidden="true" />
+          </>
+        )}
         {slide.imageUrl ? (
           <div className="relative min-h-[300px] aspect-[2.7/1] w-full sm:min-h-[360px] lg:min-h-[440px]">
             <img
@@ -165,14 +166,7 @@ export function StorefrontHero() {
               />
             ))}
           </div>
-          <div className="flex gap-2">
-            <button type="button" onClick={previous} aria-label="Previous promotion" className="rounded-full border border-border bg-card/80 p-2 shadow-sm backdrop-blur transition-colors hover:bg-card">
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button type="button" onClick={next} aria-label="Next promotion" className="rounded-full border border-border bg-card/80 p-2 shadow-sm backdrop-blur transition-colors hover:bg-card">
-              <ChevronRight className="h-4 w-4" />
-            </button>
-          </div>
+
         </div>
       </div>
     </section>
