@@ -2,7 +2,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { useMemo, useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, MessageCircle } from "lucide-react";
+import { Loader2, MessageCircle, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,7 +28,7 @@ function AdminOrders() {
     const term = search.trim().toLowerCase();
     return [...(data ?? [])]
       .filter((o) => {
-        const matches = !term || [o.full_name, o.email, o.product_title, o.transaction_id, o.whatsapp]
+        const matches = !term || [o.full_name, o.email, o.product_title, o.transaction_id, o.whatsapp, o.courier_tracking_id, o.delivery_postal_code]
           .filter(Boolean).some((v) => String(v).toLowerCase().includes(term));
         const status = statusFilter === "all" || o.payment_status === statusFilter || o.order_status === statusFilter;
         return matches && status;
@@ -204,7 +204,53 @@ function AdminOrders() {
                   <div><dt className="text-xs text-muted-foreground">Amount</dt><dd>{formatPrice(Number(o.amount))}</dd></div>
                   <div><dt className="text-xs text-muted-foreground">UPI transaction ID</dt><dd className="break-all">{o.transaction_id ?? "—"}</dd></div>
                   <div><dt className="text-xs text-muted-foreground">Payment method</dt><dd>{o.payment_method}</dd></div>
+                  <div className="sm:col-span-2 lg:col-span-3"><dt className="text-xs text-muted-foreground">Delivery address</dt><dd className="break-words">{[o.delivery_address, o.delivery_city, o.delivery_state, o.delivery_postal_code, o.delivery_country].filter(Boolean).join(", ") || "No shipping address saved"}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Courier</dt><dd>{o.courier_name || "—"}</dd></div>
+                  <div><dt className="text-xs text-muted-foreground">Courier tracking ID</dt><dd className="break-all">{o.courier_tracking_id || "—"}</dd></div>
+                  <div className="break-all"><dt className="text-xs text-muted-foreground">Tracking URL</dt><dd>{o.courier_tracking_url ? <a className="text-primary underline" href={o.courier_tracking_url} target="_blank" rel="noreferrer">Track shipment</a> : "—"}</dd></div>
                 </dl>
+
+                <form className="mt-4 grid gap-3 rounded-lg bg-surface p-3 sm:grid-cols-2" onSubmit={(e) => {
+                  e.preventDefault();
+                  const formData = new FormData(e.currentTarget);
+                  const courierName = String(formData.get("courier_name") || "").trim();
+                  const trackingId = String(formData.get("courier_tracking_id") || "").trim();
+                  const trackingUrl = String(formData.get("courier_tracking_url") || "").trim();
+                  if (trackingUrl && !/^https:\/\//i.test(trackingUrl)) {
+                    toast.error("Tracking URL must start with https://");
+                    return;
+                  }
+                  void update(o, {
+                    courier_name: courierName || null,
+                    courier_tracking_id: trackingId || null,
+                    courier_tracking_url: trackingUrl || null,
+                    order_status: trackingId ? "processing" : o.order_status,
+                  }, "Courier details saved.");
+                }}>
+                  <p className="text-sm font-semibold sm:col-span-2"><Truck className="mr-2 inline h-4 w-4" />Courier / shipment details</p>
+                  <Input name="courier_name" aria-label="Courier company" placeholder="Courier company (e.g. India Post)" defaultValue={o.courier_name ?? ""} maxLength={100} />
+                  <Input name="courier_tracking_id" aria-label="Courier tracking ID" placeholder="Courier tracking ID" defaultValue={o.courier_tracking_id ?? ""} maxLength={150} />
+                  <Input name="courier_tracking_url" aria-label="Courier tracking URL" placeholder="Tracking URL (https://...)" defaultValue={o.courier_tracking_url ?? ""} maxLength={500} className="sm:col-span-2" />
+                  <div className="flex flex-wrap gap-2 sm:col-span-2">
+                    <Button type="submit" size="sm" variant="outline" disabled={busyId === o.id}>Save courier details</Button>
+                    {o.courier_tracking_id && o.whatsapp && <Button type="button" size="sm" disabled={busyId === o.id} onClick={() => {
+                      let phone = o.whatsapp.replace(/\D/g, "");
+                      if (phone.startsWith("0")) phone = phone.slice(1);
+                      if (phone.length === 10) phone = `91${phone}`;
+                      const message = [
+                        `Hello ${o.full_name},`,
+                        "",
+                        `Your EduWallet order for *${o.product_title}* has been prepared for dispatch.`,
+                        o.courier_name ? `Courier: ${o.courier_name}` : "",
+                        `Courier tracking ID: *${o.courier_tracking_id}*`,
+                        o.courier_tracking_url ? `Track your order: ${o.courier_tracking_url}` : "",
+                        "",
+                        "Thank you for ordering from EduWallet."
+                      ].filter(Boolean).join("\n");
+                      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
+                    }}><MessageCircle className="mr-1 h-4 w-4" />Send tracking via WhatsApp</Button>}
+                  </div>
+                </form>
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   {busyId === o.id && <Loader2 className="h-4 w-4 animate-spin self-center" />}
