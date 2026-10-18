@@ -141,7 +141,7 @@ function AdminOrders() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Verify UPI payments manually and prepare the purchased PDF delivery through WhatsApp.
+          Review digital PDF orders separately from physical-copy orders, with courier tracking for shipped items.
         </p>
       </div>
 
@@ -184,7 +184,7 @@ function AdminOrders() {
                   <div className="min-w-0">
                     <p className="font-medium">{o.product_title}</p>
                     <p className="text-xs text-muted-foreground">
-                      Order {o.id.slice(0, 8)} · {new Date(o.created_at).toLocaleString()}
+                      {o.product_type === "physical" ? "Physical copy" : "Digital PDF"} · Order {o.id.slice(0, 8)} · {new Date(o.created_at).toLocaleString()}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -204,13 +204,15 @@ function AdminOrders() {
                   <div><dt className="text-xs text-muted-foreground">Amount</dt><dd>{formatPrice(Number(o.amount))}</dd></div>
                   <div><dt className="text-xs text-muted-foreground">UPI transaction ID</dt><dd className="break-all">{o.transaction_id ?? "—"}</dd></div>
                   <div><dt className="text-xs text-muted-foreground">Payment method</dt><dd>{o.payment_method}</dd></div>
-                  <div className="sm:col-span-2 lg:col-span-3"><dt className="text-xs text-muted-foreground">Delivery address</dt><dd className="break-words">{[o.delivery_address, o.delivery_city, o.delivery_state, o.delivery_postal_code, o.delivery_country].filter(Boolean).join(", ") || "No shipping address saved"}</dd></div>
-                  <div><dt className="text-xs text-muted-foreground">Courier</dt><dd>{o.courier_name || "—"}</dd></div>
-                  <div><dt className="text-xs text-muted-foreground">Courier tracking ID</dt><dd className="break-all">{o.courier_tracking_id || "—"}</dd></div>
-                  <div className="break-all"><dt className="text-xs text-muted-foreground">Tracking URL</dt><dd>{o.courier_tracking_url ? <a className="text-primary underline" href={o.courier_tracking_url} target="_blank" rel="noreferrer">Track shipment</a> : "—"}</dd></div>
+                  {o.product_type === "physical" && <>
+                    <div className="sm:col-span-2 lg:col-span-3"><dt className="text-xs text-muted-foreground">Delivery address</dt><dd className="break-words">{[o.delivery_address, o.delivery_city, o.delivery_state, o.delivery_postal_code, o.delivery_country].filter(Boolean).join(", ") || "No shipping address saved"}</dd></div>
+                    <div><dt className="text-xs text-muted-foreground">Courier</dt><dd>{o.courier_name || "—"}</dd></div>
+                    <div><dt className="text-xs text-muted-foreground">Courier tracking ID</dt><dd className="break-all">{o.courier_tracking_id || "—"}</dd></div>
+                    <div className="break-all"><dt className="text-xs text-muted-foreground">Tracking URL</dt><dd>{o.courier_tracking_url ? <a className="text-primary underline" href={o.courier_tracking_url} target="_blank" rel="noreferrer">Track shipment</a> : "—"}</dd></div>
+                  </>}
                 </dl>
 
-                <form className="mt-4 grid gap-3 rounded-lg bg-surface p-3 sm:grid-cols-2" onSubmit={(e) => {
+                {o.product_type === "physical" && <form className="mt-4 grid gap-3 rounded-lg bg-surface p-3 sm:grid-cols-2" onSubmit={(e) => {
                   e.preventDefault();
                   const formData = new FormData(e.currentTarget);
                   const courierName = String(formData.get("courier_name") || "").trim();
@@ -250,7 +252,7 @@ function AdminOrders() {
                       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener");
                     }}><MessageCircle className="mr-1 h-4 w-4" />Send tracking via WhatsApp</Button>}
                   </div>
-                </form>
+                </form>}
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   {busyId === o.id && <Loader2 className="h-4 w-4 animate-spin self-center" />}
@@ -268,9 +270,15 @@ function AdminOrders() {
 
                   {isSubmitted && (
                     <>
-                      <Button size="sm" disabled={busyId === o.id} onClick={() => void sendWhatsApp(o)}>
-                        <MessageCircle className="mr-1.5 h-4 w-4" /> Verify & Send via WhatsApp
-                      </Button>
+                      {o.product_type === "physical" ? (
+                        <Button size="sm" disabled={busyId === o.id} onClick={() => void update(o, { payment_status: "verified", order_status: "processing", verified_at: new Date().toISOString() }, "Payment verified. You can now dispatch the physical order.")}>
+                          Verify Payment
+                        </Button>
+                      ) : (
+                        <Button size="sm" disabled={busyId === o.id} onClick={() => void sendWhatsApp(o)}>
+                          <MessageCircle className="mr-1.5 h-4 w-4" /> Verify & Send PDF via WhatsApp
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="outline"
@@ -335,6 +343,12 @@ function AdminOrders() {
                     </>
                   )}
 
+                  {isVerified && o.product_type === "physical" && o.order_status !== "delivered" && !isCancelled && (
+                    <Button size="sm" variant="outline" disabled={busyId === o.id} onClick={() => void update(o, { order_status: "delivered", delivered_at: new Date().toISOString() }, "Physical order marked as delivered.")}>
+                      Mark Delivered
+                    </Button>
+                  )}
+
                   {isVerified && (
                     <Button
                       size="sm"
@@ -362,7 +376,7 @@ function AdminOrders() {
                           void update(
                             o,
                             o.payment_status === "verified"
-                              ? { payment_status: "verified", order_status: "delivered" }
+                              ? { payment_status: "verified", order_status: o.product_type === "physical" ? "processing" : "delivered" }
                               : { payment_status: "submitted", order_status: "payment_submitted" },
                             "Order restored. You can continue managing it.",
                           )
