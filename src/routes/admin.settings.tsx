@@ -16,9 +16,26 @@ function AdminSettings() {
   const { data, isLoading } = useQuery(settingsQuery());
   const [values, setValues] = useState<SiteSettings>(defaultSettings);
   const [busy, setBusy] = useState(false);
+  const [heroInterval, setHeroInterval] = useState("4500");
+  const [heroSlides, setHeroSlides] = useState([
+    { eyebrow: "Exam preparation, simplified", title: "Study smarter with the right resources.", description: "Find focused notes, solved papers, guess papers and exam guides without digging through scattered sources.", cta: "Explore resources", to: "/shop", secondary: "Trusted study format", imageUrl: "" },
+    { eyebrow: "Built for competitive exams", title: "One place for NEET, JEE, UPSC, SSC, Banking and CLAT.", description: "Browse resources by exam and resource type, then get straight to the material you need.", cta: "Browse the shop", to: "/shop", secondary: "Exam-focused collections", imageUrl: "" },
+    { eyebrow: "Start without spending", title: "Explore free resources before you buy.", description: "Preview the kind of material available on EduWallet and decide what fits your preparation.", cta: "View free resources", to: "/free-resources", secondary: "Free study material", imageUrl: "" },
+  ]);
 
   useEffect(() => {
-    if (data) setValues(data);
+    if (data) {
+      setValues(data);
+      setHeroInterval(data.heroIntervalMs || "4500");
+      if (data.heroSlides) {
+        try {
+          const parsed = JSON.parse(data.heroSlides);
+          if (Array.isArray(parsed) && parsed.length) setHeroSlides(parsed);
+        } catch {
+          // Keep the editable defaults if stored JSON is invalid.
+        }
+      }
+    }
   }, [data]);
 
   const submit = async (e: React.FormEvent) => {
@@ -32,7 +49,11 @@ function AdminSettings() {
       const changed = Object.fromEntries(
         Object.entries(values).filter(([k, v]) => (data?.[k as keyof SiteSettings] ?? "") !== v),
       ) as Partial<SiteSettings>;
-      await saveSettings(changed);
+      await saveSettings({
+        ...changed,
+        heroSlides: JSON.stringify(heroSlides),
+        heroIntervalMs: String(Math.min(30000, Math.max(2500, Number(heroInterval) || 4500))),
+      });
       await qc.invalidateQueries({ queryKey: ["site-settings"] });
       toast.success("Settings saved.");
     } catch (err) {
@@ -47,7 +68,7 @@ function AdminSettings() {
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          These values are used across the website — brand name, contact details, UPI payment details and social links.
+          Manage website details and the homepage hero banner. Saved changes are used by the public website.
         </p>
       </div>
 
@@ -67,6 +88,46 @@ function AdminSettings() {
               {f.help && <p className="text-xs text-muted-foreground">{f.help}</p>}
             </div>
           ))}
+          <div className="space-y-4 border-t border-border pt-6">
+            <div>
+              <h2 className="text-lg font-semibold">Homepage hero banner</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Edit all three slides and set how quickly they rotate. The public homepage updates from these saved settings.</p>
+            </div>
+            <div className="max-w-xs space-y-1.5">
+              <Label htmlFor="heroInterval">Slide interval (seconds)</Label>
+              <Input id="heroInterval" type="number" min="2.5" max="30" step="0.5" value={String(Number(heroInterval) / 1000)} onChange={(e) => setHeroInterval(String(Number(e.target.value) * 1000))} />
+              <p className="text-xs text-muted-foreground">Default: 4.5 seconds. Allowed range: 2.5–30 seconds.</p>
+            </div>
+            {heroSlides.map((slide, index) => (
+              <section key={index} className="space-y-3 rounded-xl border border-border p-4">
+                <h3 className="font-semibold">Slide {index + 1}</h3>
+                {([
+                  ["eyebrow", "Small label"],
+                  ["title", "Main heading"],
+                  ["description", "Description"],
+                  ["cta", "Button text"],
+                  ["secondary", "Supporting label"],
+                  ["imageUrl", "Background image URL (optional)"],
+                ] as const).map(([key, label]) => (
+                  <div key={key} className="space-y-1.5">
+                    <Label htmlFor={`hero-${index}-${key}`}>{label}</Label>
+                    <Input
+                      id={`hero-${index}-${key}`}
+                      value={slide[key] ?? ""}
+                      onChange={(e) => setHeroSlides((current) => current.map((item, i) => i === index ? { ...item, [key]: e.target.value } : item))}
+                    />
+                  </div>
+                ))}
+                <div className="space-y-1.5">
+                  <Label htmlFor={`hero-${index}-to`}>Button destination</Label>
+                  <select id={`hero-${index}-to`} className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm" value={slide.to} onChange={(e) => setHeroSlides((current) => current.map((item, i) => i === index ? { ...item, to: e.target.value as "/shop" | "/free-resources" } : item))}>
+                    <option value="/shop">Shop / resources</option>
+                    <option value="/free-resources">Free resources</option>
+                  </select>
+                </div>
+              </section>
+            ))}
+          </div>
           <Button type="submit" className="h-11" disabled={busy}>{busy ? "Saving…" : "Save settings"}</Button>
         </form>
       )}
