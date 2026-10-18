@@ -3,6 +3,7 @@ import { ArrowRight, BookOpen, ChevronLeft, ChevronRight, Sparkles } from "lucid
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 
 type HeroSlide = {
   eyebrow: string;
@@ -77,9 +78,10 @@ export function StorefrontHero() {
       }}
     >
       <div className={cn("relative overflow-hidden rounded-2xl bg-gradient-to-br", slide.accent)}>
+        <AuroraBackground className="absolute inset-0 z-0 h-full min-h-0 w-full rounded-2xl bg-transparent" showRadialGradient />
         <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary/10 blur-3xl" aria-hidden="true" />
         <div className="pointer-events-none absolute -bottom-28 -left-20 h-64 w-64 rounded-full bg-secondary/10 blur-3xl" aria-hidden="true" />
-        <div className="relative grid min-h-[390px] items-center gap-8 px-6 py-10 sm:px-10 lg:min-h-[440px] lg:grid-cols-[1.15fr_.85fr] lg:px-14">
+        <div className="relative z-10 grid min-h-[390px] items-center gap-8 px-6 py-10 sm:px-10 lg:min-h-[440px] lg:grid-cols-[1.15fr_.85fr] lg:px-14">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 rounded-full border border-border/80 bg-card/75 px-3 py-1.5 text-xs font-semibold text-muted-foreground backdrop-blur">
               <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
