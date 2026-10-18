@@ -103,17 +103,31 @@ export function StorefrontHero() {
           </>
         )}
         {slide.imageUrl ? (
-          <picture className="block w-full">
-            {slide.mobileImageUrl && (
-              <source media="(max-width: 639px)" srcSet={slide.mobileImageUrl} />
+          <div className="w-full">
+            {slide.mobileImageUrl ? (
+              <>
+                <img
+                  src={slide.imageUrl}
+                  alt={`EduWallet banner slide ${active + 1}`}
+                  className="hidden h-auto w-full max-w-full object-contain sm:block"
+                  fetchPriority={active === 0 ? "high" : "auto"}
+                />
+                <img
+                  src={slide.mobileImageUrl}
+                  alt={`EduWallet banner slide ${active + 1}`}
+                  className="block h-auto w-full max-w-full object-contain sm:hidden"
+                  fetchPriority={active === 0 ? "high" : "auto"}
+                />
+              </>
+            ) : (
+              <img
+                src={slide.imageUrl}
+                alt={`EduWallet banner slide ${active + 1}`}
+                className="block h-auto w-full max-w-full object-contain"
+                fetchPriority={active === 0 ? "high" : "auto"}
+              />
             )}
-            <img
-              src={slide.imageUrl}
-              alt={`EduWallet banner slide ${active + 1}`}
-              className="block h-auto w-full object-contain"
-              fetchPriority={active === 0 ? "high" : "auto"}
-            />
-          </picture>
+          </div>
         ) : (
         <div className="relative z-10 grid min-h-[390px] items-center gap-8 px-6 py-10 sm:px-10 lg:min-h-[440px] lg:grid-cols-[1.15fr_.85fr] lg:px-14">
           <div className="max-w-2xl">
