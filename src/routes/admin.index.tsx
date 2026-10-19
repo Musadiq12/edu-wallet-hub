@@ -69,8 +69,22 @@ function AdminDashboard() {
         body: { password: resetPassword, confirmText },
       });
       if (error) {
-        const response = (error as { context?: Response }).context;
-        const details = response ? await response.clone().json().catch(() => null) : null;
+        // Supabase Functions errors may expose a Response, a plain object, or no context.
+        // Only clone/parse context when it is actually a Response to avoid "clone is not a function".
+        let details: { error?: unknown } | null = null;
+        const context: unknown = (error as { context?: unknown }).context;
+        if (context instanceof Response) {
+          try {
+            const parsed: unknown = await context.clone().json();
+            if (parsed && typeof parsed === "object") {
+              details = parsed as { error?: unknown };
+            }
+          } catch {
+            // Keep the SDK's original message when the response body is not JSON.
+          }
+        } else if (context && typeof context === "object" && "error" in context) {
+          details = context as { error?: unknown };
+        }
         throw new Error(typeof details?.error === "string" ? details.error : error.message);
       }
       if (!data?.ok) throw new Error(typeof data?.error === "string" ? data.error : "Dashboard reset failed.");
