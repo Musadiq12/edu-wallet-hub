@@ -187,12 +187,8 @@ export default {
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     const fromEmail = Deno.env.get("EDUWALLET_FROM_EMAIL");
-
-    if (!resendApiKey || !fromEmail) {
-      return json({
-        error:
-          "Email delivery is not configured. Add RESEND_API_KEY and EDUWALLET_FROM_EMAIL to Supabase Edge Function secrets.",
-      }, 500);
+    if ((!resendApiKey || !fromEmail) && action !== "verify") {
+      return json({ error: "Email delivery is not configured. Add RESEND_API_KEY and EDUWALLET_FROM_EMAIL to Supabase Edge Function secrets." }, 500);
     }
 
     const r2WorkerUrl = Deno.env.get("R2_WORKER_URL")?.replace(/\/$/, "");
