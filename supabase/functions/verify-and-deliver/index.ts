@@ -232,7 +232,9 @@ export default {
     const productTitle = escapeHtml(product.title || order.product_title);
     const amount = formatInr(Number(order.amount));
 
-    const emailResponse = await fetch("https://api.resend.com/emails", {
+    let emailSent = false;
+    if (resendApiKey && fromEmail) {
+      const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -278,10 +280,12 @@ export default {
       }),
     });
 
-    if (!emailResponse.ok) {
-      const details = await emailResponse.text();
-      console.error("Resend error:", details);
-      return json({ error: "The payment was not delivered by email. Use Resend Document to try again." }, 502);
+      if (!emailResponse.ok) {
+        const details = await emailResponse.text();
+        console.error("Resend error:", details);
+        return json({ error: "Email delivery failed. No successful delivery was recorded; retry after fixing email configuration." }, 502);
+      }
+      emailSent = true;
     }
 
     const deliveredAt = new Date().toISOString();
@@ -290,6 +294,7 @@ export default {
       const { data: updatedOrder, error: updateError } = await ctx.supabaseAdmin
         .from("orders")
         .update({
+          status: "Payment Verified",
           payment_status: "verified",
           order_status: "delivered",
           verified_at: order.verified_at ?? deliveredAt,
@@ -327,7 +332,11 @@ export default {
 
     return json({
       ok: true,
-      message: action === "verify" ? "Payment verified and document emailed." : "Document resent successfully.",
+      downloadUrl,
+      emailSent,
+      message: action === "verify"
+        ? (emailSent ? "Payment verified and PDF delivered. A download link is ready for WhatsApp." : "Payment verified and PDF delivered to My Library. A download link is ready for WhatsApp.")
+        : (emailSent ? "Document resent successfully." : "Secure PDF link created."),
     });
   }),
 };
