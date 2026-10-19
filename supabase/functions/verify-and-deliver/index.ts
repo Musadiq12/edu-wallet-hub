@@ -291,7 +291,7 @@ export default {
     const deliveredAt = new Date().toISOString();
 
     if (action === "verify") {
-      const { error: updateError } = await ctx.supabaseAdmin
+      const { data: updatedOrder, error: updateError } = await ctx.supabaseAdmin
         .from("orders")
         .update({
           payment_status: "verified",
@@ -299,11 +299,16 @@ export default {
           verified_at: order.verified_at ?? deliveredAt,
           delivered_at: deliveredAt,
         })
-        .eq("id", order.id);
+        .eq("id", order.id)
+        .eq("product_type", "pdf")
+        .neq("payment_status", "rejected")
+        .neq("order_status", "cancelled")
+        .select("id")
+        .maybeSingle();
 
-      if (updateError) {
+      if (updateError || !updatedOrder) {
         console.error(updateError);
-        return json({ error: "Email sent, but the order status could not be updated. Please check the order before retrying." }, 500);
+        return json({ error: "Email was sent, but the order could not be marked delivered. Check the order before retrying." }, 500);
       }
     } else {
       const { error: updateError } = await ctx.supabaseAdmin
@@ -312,9 +317,13 @@ export default {
           order_status: "delivered",
           delivered_at: deliveredAt,
         })
-        .eq("id", order.id);
+        .eq("id", order.id)
+        .eq("payment_status", "verified");
 
-      if (updateError) console.error("Delivery status update failed:", updateError);
+      if (updateError) {
+        console.error("Delivery status update failed:", updateError);
+        return json({ error: "Document sent, but the order delivery status could not be updated." }, 500);
+      }
     }
 
     return json({
