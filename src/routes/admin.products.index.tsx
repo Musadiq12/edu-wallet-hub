@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Archive, Eye, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,7 @@ function AdminProducts() {
   const { data, isLoading, isError, refetch } = useQuery(adminProductsQuery(showArchived));
   const { data: categories } = useQuery(categoriesQuery());
   const [target, setTarget] = useState<AdminProduct | null>(null);
+  const [dialogAction, setDialogAction] = useState<"archive" | "delete">("archive");
   const [busyId, setBusyId] = useState<string | null>(null);
   const mutationLockRef = useRef(false);
   const [search, setSearch] = useState("");
@@ -79,13 +80,47 @@ function AdminProducts() {
     setTarget(null);
     await qc.invalidateQueries({ queryKey: ["admin"] });
     await qc.invalidateQueries({ queryKey: ["products"] });
-    toast.success("Product archived. Existing orders keep their records.");
+    toast.success("Product archived. Existing orders and files are preserved.");
     } finally {
       setBusyId(null);
       mutationLockRef.current = false;
     }
   };
 
+  const permanentlyDelete = async (p: AdminProduct) => {
+    if (mutationLockRef.current) return;
+    mutationLockRef.current = true;
+    setBusyId(p.id);
+    try {
+      // Protect order history: products with past orders must be archived.
+      const { count, error: ordersError } = await supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("product_id", p.id);
+      if (ordersError) {
+        toast.error(friendlyError(ordersError, "Could not verify whether this product has order history."));
+        return;
+      }
+      if ((count ?? 0) > 0) {
+        toast.error("This product has order history and cannot be permanently deleted. Archive it instead.");
+        setDialogAction("archive");
+        return;
+      }
+      // Keep stored files untouched; their ownership/references must be verified before cleanup.
+      const { error } = await supabase.from("products").delete().eq("id", p.id);
+      if (error) {
+        toast.error(friendlyError(error, "Could not permanently delete this product. It may still be referenced by another record."));
+        return;
+      }
+      setTarget(null);
+      await qc.invalidateQueries({ queryKey: ["admin"] });
+      await qc.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Product permanently deleted. Associated files were left untouched.");
+    } finally {
+      setBusyId(null);
+      mutationLockRef.current = false;
+    }
+  };
   const restore = async (p: AdminProduct) => {
     if (mutationLockRef.current) return;
     mutationLockRef.current = true;
@@ -205,11 +240,14 @@ function AdminProducts() {
                           <Button size="icon" variant="ghost" aria-label="Edit product" asChild>
                             <Link to="/admin/products/$id" params={{ id: p.id }}><Pencil className="h-4 w-4" /></Link>
                           </Button>
-                          <Button size="icon" variant="ghost" aria-label="Delete product" onClick={() => setTarget(p)}>
-                            <Trash2 className="h-4 w-4" />
+                          <Button size="sm" variant="outline" disabled={busyId === p.id} onClick={() => { setDialogAction("archive"); setTarget(p); }}>
+                            <Archive className="mr-1 h-4 w-4" /> Archive
                           </Button>
                         </>
                       )}
+                      <Button size="icon" variant="ghost" aria-label="Permanently delete product" disabled={busyId === p.id} onClick={() => { setDialogAction("delete"); setTarget(p); }}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -224,15 +262,23 @@ function AdminProducts() {
       <AlertDialog open={!!target} onOpenChange={(o) => !o && setTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to delete this product?</AlertDialogTitle>
+            <AlertDialogTitle>{dialogAction === "archive" ? "Archive this product?" : "Permanently delete this product?"}</AlertDialogTitle>
             <AlertDialogDescription>
-              “{target?.title}” will be archived: it disappears from the public Shop and from this list, while its files
-              and all past order records are kept intact. You can restore it at any time.
+              {dialogAction === "archive" ? (
+                <>“{target?.title}” will be hidden from the public Shop and moved to the archive. Existing orders and stored files remain intact, and you can restore the product later.</>
+              ) : (
+                <>“{target?.title}” will be permanently removed from the catalogue only if it has no order history. Historical orders are protected, and associated PDF and cover files will not be deleted.</>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => target && void archive(target)}>Delete product</AlertDialogAction>
+            <AlertDialogAction
+              onClick={() => target && void (dialogAction === "archive" ? archive(target) : permanentlyDelete(target))}
+              className={dialogAction === "delete" ? "bg-destructive text-destructive-foreground hover:bg-destructive/90" : undefined}
+            >
+              {dialogAction === "archive" ? "Archive product" : "Permanently delete"}
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
