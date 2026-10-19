@@ -285,8 +285,8 @@ export default {
         order_status?: string | null;
       }>;
       const hasVerifiedOrder = orders.some((order) =>
-        String(order.payment_status || "").toLowerCase() === "verified" ||
-        ["payment_verified", "verified", "processing", "delivered", "completed"].includes(
+        String(order.payment_status || "").toLowerCase() === "verified" &&
+        ["payment_verified", "processing", "delivered"].includes(
           String(order.order_status || "").toLowerCase(),
         )
       );
