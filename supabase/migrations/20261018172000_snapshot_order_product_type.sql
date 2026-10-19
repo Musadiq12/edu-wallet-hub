@@ -24,12 +24,3 @@ ALTER TABLE public.orders
   ADD CONSTRAINT orders_product_type_check
   CHECK (product_type IN ('pdf', 'physical'));
 
--- Existing physical orders must never be reclassified as digital merely because
--- they were created before product_type was introduced.
-UPDATE public.orders o
-SET product_type = p.product_type
-FROM public.products p
-WHERE o.product_id = p.id
-  AND p.product_type IN ('pdf', 'physical')
-  AND o.product_type IS DISTINCT FROM p.product_type
-  AND o.payment_status <> 'verified';
