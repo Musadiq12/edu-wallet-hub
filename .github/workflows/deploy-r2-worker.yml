@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - original-eduwallet
     paths:
       - "cloudflare/r2-worker/**"
       - ".github/workflows/deploy-r2-worker.yml"
