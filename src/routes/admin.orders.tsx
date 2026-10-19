@@ -228,9 +228,45 @@ function AdminOrders() {
     }
   };
 
+  const requestDigitalLink = async (order: AdminOrder): Promise<string> => {
+    const { data, error } = await supabase.functions.invoke("verify-and-deliver", {
+      body: { orderId: order.id, action: "whatsapp" },
+    });
+    if (error) throw error;
+    if (!data?.ok || typeof data?.downloadUrl !== "string") {
+      throw new Error(data?.error || "Could not create a secure PDF link.");
+    }
+    setDigitalLinks((current) => ({ ...current, [order.id]: data.downloadUrl }));
+    return data.downloadUrl as string;
+  };
+
+  const generateDigitalLink = async (order: AdminOrder) => {
+    if (
+      order.product_type !== "pdf" ||
+      order.payment_status !== "verified" ||
+      order.order_status !== "delivered"
+    ) {
+      toast.error("Deliver the PDF successfully before generating a customer link.");
+      return;
+    }
+    setBusyId(order.id);
+    try {
+      await requestDigitalLink(order);
+      toast.success("Secure PDF link generated. It expires after 48 hours.");
+    } catch (error) {
+      toast.error(friendlyError(error, "Could not generate a secure PDF link."));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const openDigitalWhatsApp = async (order: AdminOrder) => {
-    if (order.product_type !== "pdf" || order.payment_status !== "verified") {
-      toast.error("Verify payment before sharing the PDF.");
+    if (
+      order.product_type !== "pdf" ||
+      order.payment_status !== "verified" ||
+      order.order_status !== "delivered"
+    ) {
+      toast.error("Verify payment and deliver the PDF before sharing it.");
       return;
     }
     if (!order.whatsapp) {
@@ -244,17 +280,9 @@ function AdminOrders() {
     }
     setBusyId(order.id);
     try {
-      let downloadUrl = digitalLinks[order.id];
-      if (!downloadUrl) {
-        const { data, error } = await supabase.functions.invoke("verify-and-deliver", {
-          body: { orderId: order.id, action: "whatsapp" },
-        });
-        if (error) throw error;
-        if (!data?.ok || typeof data?.downloadUrl !== "string") throw new Error(data?.error || "Could not create a secure PDF link.");
-        downloadUrl = data.downloadUrl;
-        setDigitalLinks((current) => ({ ...current, [order.id]: downloadUrl }));
-      }
-      const message = `Hi ${order.full_name || "there"}, your payment for ${order.product_title} (order #${order.id}) has been verified. Download your PDF here: ${downloadUrl}\nYou can also access it anytime from My Library after signing in to EduWallet.`;
+      // Always create a fresh URL so an expired 48-hour link is never reused.
+      const downloadUrl = await requestDigitalLink(order);
+      const message = `Hi ${order.full_name || "there"}, your payment for ${order.product_title} (order #${order.id}) has been verified. Download your PDF here: ${downloadUrl}\\nYou can also access it anytime from My Library after signing in to EduWallet.`;
       window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
       toast.success("WhatsApp opened. The message is not marked as sent automatically.");
     } catch (error) {
@@ -433,7 +461,7 @@ Thank you for shopping with us!`;
                       {order.product_type === "pdf" && order.payment_status === "verified" && order.order_status === "delivered" && (
                         <div className="space-y-3">
                           <p className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300"><CheckCircle2 className="h-4 w-4" />Payment verified. The PDF can be delivered securely.</p>
-                          {digitalLinks[order.id] ? <Button size="sm" variant="outline" asChild><a href={digitalLinks[order.id]} target="_blank" rel="noreferrer"><ExternalLink className="mr-1.5 h-4 w-4" />Open secure PDF link</a></Button> : <Button size="sm" variant="outline" disabled={busy} onClick={() => void openDigitalWhatsApp(order)}><FileText className="mr-1.5 h-4 w-4" />Generate secure PDF link</Button>}
+                          {digitalLinks[order.id] ? <Button size="sm" variant="outline" asChild><a href={digitalLinks[order.id]} target="_blank" rel="noreferrer"><ExternalLink className="mr-1.5 h-4 w-4" />Open secure PDF link</a></Button> : <Button size="sm" variant="outline" disabled={busy} onClick={() => void generateDigitalLink(order)}><FileText className="mr-1.5 h-4 w-4" />Generate secure PDF link</Button>}
                           <div className="flex flex-wrap gap-2">
                             <Button size="sm" disabled={busy} onClick={() => void openDigitalWhatsApp(order)}><MessageCircle className="mr-1.5 h-4 w-4" />Send PDF via WhatsApp</Button>
                           </div>
