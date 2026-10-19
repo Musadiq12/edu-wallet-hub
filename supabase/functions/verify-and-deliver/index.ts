@@ -235,8 +235,8 @@ export default {
     let emailSent = false;
     if (resendApiKey && fromEmail) {
       const emailResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
+        method: "POST",
+        headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${resendApiKey}`,
         "Idempotency-Key":
@@ -244,8 +244,8 @@ export default {
             ? `edu-wallet-order-${order.id}-verified`
             : `edu-wallet-order-${order.id}-resend-${Date.now()}`,
       },
-      body: JSON.stringify({
-        from: fromEmail,
+        body: JSON.stringify({
+          from: fromEmail,
         to: [order.email],
         subject: `Your Edu Wallet purchase is ready — ${product.title}`,
         html: `<!doctype html>
@@ -277,8 +277,8 @@ export default {
     </div>
   </body>
 </html>`,
-      }),
-    });
+        }),
+      });
 
       if (!emailResponse.ok) {
         const details = await emailResponse.text();
@@ -309,7 +309,7 @@ export default {
 
       if (updateError || !updatedOrder) {
         console.error(updateError);
-        return json({ error: "Email was sent, but the order could not be marked delivered. Check the order before retrying." }, 500);
+        return json({ error: "The order could not be marked delivered. Check the order before retrying." }, 500);
       }
     } else {
       const { data: updatedOrder, error: updateError } = await ctx.supabaseAdmin
