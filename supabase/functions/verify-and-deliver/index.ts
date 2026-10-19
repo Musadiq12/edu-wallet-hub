@@ -138,7 +138,7 @@ export default {
           method: "POST",
           headers: {
             Authorization: authorization,
-            "X-Delivery-Secret": deliverySecret,
+            ...(authorization ? { Authorization: authorization } : {}),
             "Content-Type": "application/json",
           },
           body: JSON.stringify({ path: r2Path }),
@@ -163,7 +163,7 @@ export default {
         }
       }
 
-      const linkResponse = await fetch(r2WorkerUrl + "/delivery-link", {
+      const linkResponse = await fetch(r2WorkerUrl + "/admin-delivery-link", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -221,7 +221,6 @@ export default {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Delivery-Secret": deliverySecret,
         ...(req.headers.get("Authorization") ? { Authorization: req.headers.get("Authorization")! } : {}),
       },
       body: JSON.stringify({ key: r2Path, expiresIn: 48 * 60 * 60 }),
