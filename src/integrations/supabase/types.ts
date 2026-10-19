@@ -220,6 +220,7 @@ export type Database = {
       }
       products: {
         Row: {
+          product_type: string
           category_id: string | null
           course_id: string | null
           course_label: string | null
@@ -249,6 +250,7 @@ export type Database = {
           whats_included: string | null
         }
         Insert: {
+          product_type?: string
           category_id?: string | null
           course_id?: string | null
           course_label?: string | null
@@ -278,6 +280,7 @@ export type Database = {
           whats_included?: string | null
         }
         Update: {
+          product_type?: string
           category_id?: string | null
           course_id?: string | null
           course_label?: string | null
