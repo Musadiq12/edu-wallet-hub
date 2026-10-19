@@ -1339,7 +1339,7 @@ The admin must be able to replace them with real products.
 
 Preferred stack:
 
-React / modern frontend framework supported by Lovable
+React / TanStack Start
 
 TypeScript
 
@@ -1505,25 +1505,11 @@ Build the application around that core workflow first.
 
 Do not add unnecessary features merely to make the website look complicated.
 
-This project was built with [Lovable](https://lovable.dev).
-
-**Live app**: https://edu-wallet-hub.lovable.app
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/5a2b033c-198a-48c3-b1d9-f0530d11a1c2).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
-
 ## Development
 
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
+This project uses React, TypeScript, TanStack Start, Tailwind CSS, Supabase, and Cloudflare.
 
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+npm install
 npm run dev
 ```
