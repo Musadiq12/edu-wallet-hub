@@ -136,6 +136,7 @@ export type Database = {
           amount: number
           created_at: string
           delivered_at: string | null
+          product_type: string
           email: string
           full_name: string
           id: string
@@ -155,6 +156,7 @@ export type Database = {
           amount: number
           created_at?: string
           delivered_at?: string | null
+          product_type?: string
           email: string
           full_name: string
           id?: string
@@ -187,6 +189,17 @@ export type Database = {
           user_id?: string
           verified_at?: string | null
           whatsapp?: string
+          status?: string
+          dispatched_at?: string | null
+          whatsapp_sent_at?: string | null
+          courier_name?: string | null
+          courier_tracking_id?: string | null
+          courier_tracking_url?: string | null
+          delivery_address?: string | null
+          delivery_city?: string | null
+          delivery_state?: string | null
+          delivery_postal_code?: string | null
+          delivery_country?: string | null
         }
         Relationships: [
           {
