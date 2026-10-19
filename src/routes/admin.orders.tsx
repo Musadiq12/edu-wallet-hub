@@ -130,7 +130,7 @@ function AdminOrders() {
   };
 
   const verifyPayment = async (order: AdminOrder) => {
-    if (order.status !== "Pending" || order.product_type !== "physical") return;
+    if (order.status !== "Pending") return;
     if (!window.confirm(`Verify payment for order #${order.id}? Make sure the payment has reached your account.`)) return;
     await updateOrder(order, {
       status: "Payment Verified",
