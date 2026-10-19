@@ -1,7 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 
-const BASE = "https://edu-wallet-hub.lovable.app";
+const BASE = (
+  process.env["SITE_URL"] ??
+  import.meta.env["VITE_SITE_URL"] ??
+  "https://eduwallet.in"
+).replace(/\/+$/, "");
 const STATIC = ["/", "/shop", "/free-resources", "/about", "/contact"];
 
 export const Route = createFileRoute("/sitemap.xml")({
