@@ -77,7 +77,7 @@ export default {
     const { data: order, error: orderError } = await ctx.supabaseAdmin
       .from("orders")
       .select(
-        "id,user_id,product_id,product_title,full_name,email,amount,payment_status,order_status,verified_at,delivered_at",
+        "id,user_id,product_id,product_type,product_title,full_name,email,amount,payment_status,order_status,verified_at,delivered_at",
       )
       .eq("id", orderId)
       .maybeSingle();
@@ -92,8 +92,16 @@ export default {
       return json({ error: "The payment must be verified before the document can be sent." }, 400);
     }
 
-    if (action === "verify" && order.payment_status === "verified") {
-      return json({ error: "This payment is already verified. Use Resend Document if needed." }, 400);
+    if (order.product_type !== "pdf") {
+      return json({ error: "This delivery workflow is only for digital PDF orders." }, 400);
+    }
+
+    if (action === "resend" && order.payment_status !== "verified") {
+      return json({ error: "The payment must be verified before the document can be sent." }, 400);
+    }
+
+    if (action === "verify" && order.payment_status === "verified" && order.order_status === "delivered") {
+      return json({ error: "This order has already been delivered. Use the WhatsApp action to share a fresh secure link." }, 409);
     }
 
     if (!order.product_id) {
@@ -102,7 +110,7 @@ export default {
 
     const { data: product, error: productError } = await ctx.supabaseAdmin
       .from("products")
-      .select("id,title,pdf_file,is_free")
+      .select("id,title,pdf_file,is_free,product_type")
       .eq("id", order.product_id)
       .maybeSingle();
 
@@ -111,7 +119,7 @@ export default {
       return json({ error: "Could not load the purchased product." }, 500);
     }
 
-    if (!product?.pdf_file || product.is_free) {
+    if (!product || product.product_type !== "pdf" || !product.pdf_file || product.is_free) {
       return json({ error: "The purchased product does not have a paid PDF available for delivery." }, 400);
     }
 
@@ -171,26 +179,10 @@ export default {
         return json({ error: typeof linkData?.error === "string" ? linkData.error : "Could not create the secure R2 download link." }, 502);
       }
 
-      const deliveredAt = new Date().toISOString();
-      const { error: updateError } = await ctx.supabaseAdmin
-        .from("orders")
-        .update({
-          payment_status: "verified",
-          order_status: "delivered",
-          verified_at: order.verified_at ?? deliveredAt,
-          delivered_at: deliveredAt,
-        })
-        .eq("id", order.id);
-
-      if (updateError) {
-        console.error(updateError);
-        return json({ error: "The R2 link was created, but the order status could not be updated." }, 500);
-      }
-
       return json({
         ok: true,
         downloadUrl: linkData.url,
-        message: "Payment verified and R2 delivery link created.",
+        message: "Secure PDF link created.",
       });
     }
 
@@ -204,10 +196,29 @@ export default {
       }, 500);
     }
 
+    const r2WorkerUrl = Deno.env.get("R2_WORKER_URL")?.replace(/\\/$/, "");
+    const deliverySecret = Deno.env.get("R2_WORKER_DELIVERY_SECRET");
+    if (!r2WorkerUrl || !deliverySecret) return json({ error: "R2 delivery is not configured." }, 500);
+
+    let r2Path = product.pdf_file;
+    if (!r2Path.startsWith("products/")) {
+      return json({ error: "This PDF must be migrated to private Cloudflare R2 storage before delivery." }, 400);
+    }
+    const linkResponse = await fetch(r2WorkerUrl + "/delivery-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Delivery-Secret": deliverySecret },
+      body: JSON.stringify({ key: r2Path, expiresIn: 48 * 60 * 60 }),
+    });
+    const linkData = await linkResponse.json().catch(() => ({}));
+    if (!linkResponse.ok || typeof linkData?.url !== "string") {
+      console.error("R2 delivery-link failed:", linkData);
+      return json({ error: typeof linkData?.error === "string" ? linkData.error : "Could not create the secure R2 download link." }, 502);
+    }
+    const downloadUrl = linkData.url;
+
     const customerName = escapeHtml(order.full_name || "Customer");
     const productTitle = escapeHtml(product.title || order.product_title);
     const amount = formatInr(Number(order.amount));
-    const downloadUrl = signed.signedUrl;
 
     const emailResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -216,7 +227,7 @@ export default {
         Authorization: `Bearer ${resendApiKey}`,
         "Idempotency-Key":
           action === "verify"
-            ? `edu-wallet-order-${order.id}-verified-${order.verified_at ?? Date.now()}`
+            ? `edu-wallet-order-${order.id}-verified`
             : `edu-wallet-order-${order.id}-resend-${Date.now()}`,
       },
       body: JSON.stringify({
