@@ -278,14 +278,21 @@ function AdminOrders() {
       toast.error("The customer phone number is invalid.");
       return;
     }
+    const whatsappWindow = window.open("about:blank", "_blank");
+    if (!whatsappWindow) {
+      toast.error("Allow pop-ups to open WhatsApp and send the PDF link.");
+      return;
+    }
+    whatsappWindow.opener = null;
     setBusyId(order.id);
     try {
       // Always create a fresh URL so an expired 48-hour link is never reused.
       const downloadUrl = await requestDigitalLink(order);
       const message = `Hi ${order.full_name || "there"}, your payment for ${order.product_title} (order #${order.id}) has been verified. Download your PDF here: ${downloadUrl}\nYou can also access it anytime from My Library after signing in to EduWallet.`;
-      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
+      whatsappWindow.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
       toast.success("WhatsApp opened. The message is not marked as sent automatically.");
     } catch (error) {
+      whatsappWindow.close();
       toast.error(friendlyError(error, "Could not prepare the WhatsApp PDF link."));
     } finally {
       setBusyId(null);
