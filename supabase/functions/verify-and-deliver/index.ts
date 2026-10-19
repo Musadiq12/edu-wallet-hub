@@ -168,6 +168,7 @@ export default {
         headers: {
           "Content-Type": "application/json",
           "X-Delivery-Secret": deliverySecret,
+          ...(authorization ? { Authorization: authorization } : {}),
         },
         body: JSON.stringify({ key: r2Path, expiresIn: 48 * 60 * 60 }),
       });
@@ -218,7 +219,11 @@ export default {
     }
     const linkResponse = await fetch(r2WorkerUrl + "/delivery-link", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "X-Delivery-Secret": deliverySecret },
+      headers: {
+        "Content-Type": "application/json",
+        "X-Delivery-Secret": deliverySecret,
+        ...(req.headers.get("Authorization") ? { Authorization: req.headers.get("Authorization")! } : {}),
+      },
       body: JSON.stringify({ key: r2Path, expiresIn: 48 * 60 * 60 }),
     });
     const linkData = await linkResponse.json().catch(() => ({}));
