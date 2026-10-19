@@ -246,7 +246,7 @@ export default {
       // A customer may only receive a link when the requested R2 object belongs
       // to a product they purchased and the payment has been verified.
       const productResponse = await fetch(
-        `${env.SUPABASE_URL}/rest/v1/products?pdf_file=eq.${encodeURIComponent(key)}&is_free=eq.false&select=id&limit=1`,
+        `${env.SUPABASE_URL}/rest/v1/products?pdf_file=eq.${encodeURIComponent(key)}&product_type=eq.pdf&is_free=eq.false&select=id&limit=1`,
         {
           headers: {
             apikey: env.SUPABASE_SERVER_KEY,
@@ -265,7 +265,7 @@ export default {
       if (!productId) return json(request, env, { error: "Product not found." }, 404);
 
       const orderResponse = await fetch(
-        `${env.SUPABASE_URL}/rest/v1/orders?user_id=eq.${encodeURIComponent(userId)}&product_id=eq.${encodeURIComponent(productId)}&select=id,payment_status,order_status&limit=20`,
+        `${env.SUPABASE_URL}/rest/v1/orders?user_id=eq.${encodeURIComponent(userId)}&product_id=eq.${encodeURIComponent(productId)}&product_type=eq.pdf&select=id,payment_status,order_status&limit=20`,
         {
           headers: {
             apikey: env.SUPABASE_SERVER_KEY,
@@ -285,8 +285,8 @@ export default {
         order_status?: string | null;
       }>;
       const hasVerifiedOrder = orders.some((order) =>
-        String(order.payment_status || "").toLowerCase() === "verified" ||
-        ["payment_verified", "verified", "processing", "delivered", "completed"].includes(
+        String(order.payment_status || "").toLowerCase() === "verified" &&
+        ["payment_verified", "processing", "delivered"].includes(
           String(order.order_status || "").toLowerCase(),
         )
       );

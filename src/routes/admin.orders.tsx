@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, ChevronDown, ExternalLink, Loader2, MessageCircle, PackageCheck, Search, Truck } from "lucide-react";
+import { CheckCircle2, ChevronDown, ExternalLink, FileText, Loader2, MessageCircle, PackageCheck, Search, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,6 +64,7 @@ function AdminOrders() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"All" | OrderStatus>("All");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [digitalLinks, setDigitalLinks] = useState<Record<string, string>>({});
 
   const historyQuery = useQuery({
     queryKey: ["admin", "order-status-history", expandedId],
@@ -150,6 +151,10 @@ function AdminOrders() {
   };
 
   const dispatchOrder = async (order: AdminOrder, form: HTMLFormElement) => {
+    if (order.product_type !== "physical") {
+      toast.error("Courier dispatch is only available for physical products.");
+      return;
+    }
     if (order.status !== "Payment Verified" || order.payment_status !== "verified") {
       toast.error("Verify payment before dispatching this order.");
       return;
@@ -185,6 +190,115 @@ function AdminOrders() {
     }, "Order dispatched and tracking details saved.");
   };
 
+  const verifyAndDeliver = async (order: AdminOrder) => {
+    if (order.product_type !== "pdf") {
+      toast.error("Digital delivery is only available for PDF products.");
+      return;
+    }
+    if (order.payment_status === "verified" && order.order_status === "delivered") {
+      toast.error("This PDF order has already been delivered. Use the WhatsApp action to resend its link.");
+      return;
+    }
+    if (!window.confirm(`Verify payment and deliver the PDF for order #${order.id}? Confirm that payment has reached your account.`)) return;
+
+    setBusyId(order.id);
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error("Your admin session has expired. Please sign in again.");
+
+      const { data, error } = await supabase.functions.invoke("verify-and-deliver", {
+        body: { orderId: order.id, action: "verify" },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Digital delivery failed.");
+      if (typeof data?.downloadUrl === "string") {
+        setDigitalLinks((current) => ({ ...current, [order.id]: data.downloadUrl }));
+      }
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin", "orders"] }),
+        qc.invalidateQueries({ queryKey: ["my-library", order.user_id] }),
+      ]);
+      toast.success(data.message || "Payment verified and PDF delivered.");
+    } catch (error) {
+      toast.error(friendlyError(error, "Could not verify and deliver this PDF. You can safely retry."));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const requestDigitalLink = async (order: AdminOrder): Promise<string> => {
+    const { data, error } = await supabase.functions.invoke("verify-and-deliver", {
+      body: { orderId: order.id, action: "whatsapp" },
+    });
+    if (error) throw error;
+    if (!data?.ok || typeof data?.downloadUrl !== "string") {
+      throw new Error(data?.error || "Could not create a secure PDF link.");
+    }
+    setDigitalLinks((current) => ({ ...current, [order.id]: data.downloadUrl }));
+    return data.downloadUrl as string;
+  };
+
+  const generateDigitalLink = async (order: AdminOrder) => {
+    if (
+      order.product_type !== "pdf" ||
+      order.payment_status !== "verified" ||
+      order.order_status !== "delivered"
+    ) {
+      toast.error("Deliver the PDF successfully before generating a customer link.");
+      return;
+    }
+    setBusyId(order.id);
+    try {
+      await requestDigitalLink(order);
+      toast.success("Secure PDF link generated. It expires after 48 hours.");
+    } catch (error) {
+      toast.error(friendlyError(error, "Could not generate a secure PDF link."));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const openDigitalWhatsApp = async (order: AdminOrder) => {
+    if (
+      order.product_type !== "pdf" ||
+      order.payment_status !== "verified" ||
+      order.order_status !== "delivered"
+    ) {
+      toast.error("Verify payment and deliver the PDF before sharing it.");
+      return;
+    }
+    if (!order.whatsapp) {
+      toast.error("This order has no customer phone number.");
+      return;
+    }
+    const phone = normalizePhone(order.whatsapp);
+    if (!phone) {
+      toast.error("The customer phone number is invalid.");
+      return;
+    }
+    const whatsappWindow = window.open("about:blank", "_blank");
+    if (!whatsappWindow) {
+      toast.error("Allow pop-ups to open WhatsApp and send the PDF link.");
+      return;
+    }
+    whatsappWindow.opener = null;
+    setBusyId(order.id);
+    try {
+      // Always create a fresh URL so an expired 48-hour link is never reused.
+      const downloadUrl = await requestDigitalLink(order);
+      const message = `Hi ${order.full_name || "there"}, your payment for ${order.product_title} (order #${order.id}) has been verified. Download your PDF here: ${downloadUrl}\nYou can also access it anytime from My Library after signing in to EduWallet.`;
+      whatsappWindow.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+      toast.success("WhatsApp opened. The message is not marked as sent automatically.");
+    } catch (error) {
+      whatsappWindow.close();
+      toast.error(friendlyError(error, "Could not prepare the WhatsApp PDF link."));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const openPaymentProof = async (order: AdminOrder) => {
     if (!order.screenshot_path) return;
     setBusyId(order.id);
@@ -200,8 +314,8 @@ function AdminOrders() {
   };
 
   const openWhatsApp = (order: AdminOrder) => {
-    if (order.status !== "Dispatched") {
-      toast.error("Dispatch the order before sending tracking details.");
+    if (order.product_type !== "physical" || order.status !== "Dispatched") {
+      toast.error("Tracking messages are only available for dispatched physical orders.");
       return;
     }
     if (!order.whatsapp) {
@@ -227,6 +341,7 @@ Thank you for shopping with us!`;
   };
 
   const markWhatsAppSent = async (order: AdminOrder) => {
+    if (order.product_type !== "physical" || order.status !== "Dispatched") return;
     if (!window.confirm("Confirm that you sent the WhatsApp message to the customer?")) return;
     await updateOrder(order, { whatsapp_sent_at: new Date().toISOString() }, "WhatsApp message marked as sent.");
   };
@@ -235,7 +350,7 @@ Thank you for shopping with us!`;
     <div className="space-y-5">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Review payments, dispatch physical books, and send customers their tracking details.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Verify payments, deliver digital PDFs, and dispatch physical books.</p>
       </header>
 
       <section className="space-y-3 rounded-xl border border-border bg-card p-3 sm:p-4">
@@ -287,10 +402,10 @@ Thank you for shopping with us!`;
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-semibold">#{order.id}</span>
-                      <Badge className={statusStyles[order.status]}>{order.status}</Badge>
+                      <Badge className={order.product_type === "pdf" && order.order_status === "delivered" ? "border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200" : statusStyles[order.status]}>{order.product_type === "pdf" && order.order_status === "delivered" ? "Delivered" : order.status}</Badge>
                     </div>
                     <p className="truncate text-sm font-medium">{order.full_name} · {order.whatsapp}</p>
-                    <p className="text-sm text-muted-foreground">{order.product_title} · {formatPrice(Number(order.amount))}</p>
+                    <p className="text-sm text-muted-foreground">{order.product_type === "physical" ? "Physical copy" : "Digital PDF"} · {order.product_title} · {formatPrice(Number(order.amount))}</p>
                     <p className="break-all text-xs text-muted-foreground">{order.transaction_id ? `Transaction ID: ${order.transaction_id}` : order.screenshot_path ? "Payment proof attached" : "Payment proof not attached"}</p>
                     <p className="text-xs text-muted-foreground">{new Date(order.created_at).toLocaleString()}</p>
                   </div>
@@ -306,31 +421,66 @@ Thank you for shopping with us!`;
                         <div><dt className="text-xs text-muted-foreground">Customer name</dt><dd>{order.full_name}</dd></div>
                         <div><dt className="text-xs text-muted-foreground">Phone</dt><dd>{order.whatsapp || "—"}</dd></div>
                         <div><dt className="text-xs text-muted-foreground">Email</dt><dd className="break-all">{order.email || "—"}</dd></div>
-                        <div><dt className="text-xs text-muted-foreground">Book(s)</dt><dd>{order.product_title}</dd></div>
+                        <div><dt className="text-xs text-muted-foreground">Product type</dt><dd>{order.product_type === "physical" ? "Physical copy" : "Digital PDF"}</dd></div><div><dt className="text-xs text-muted-foreground">Product</dt><dd>{order.product_title}</dd></div>
                         <div><dt className="text-xs text-muted-foreground">Amount</dt><dd className="font-semibold">{formatPrice(Number(order.amount))}</dd></div>
                         <div><dt className="text-xs text-muted-foreground">Order date</dt><dd>{new Date(order.created_at).toLocaleString()}</dd></div>
                         <div><dt className="text-xs text-muted-foreground">Payment method</dt><dd>{order.payment_method}</dd></div>
                         <div><dt className="text-xs text-muted-foreground">Transaction ID</dt><dd className="break-all">{order.transaction_id || "Not provided"}</dd></div>
-                        <div className="sm:col-span-2 xl:col-span-3"><dt className="text-xs text-muted-foreground">Delivery address</dt><dd className="break-words">{[order.delivery_address, order.delivery_city, order.delivery_state, order.delivery_postal_code, order.delivery_country].filter(Boolean).join(", ") || "No address recorded"}</dd></div>
+                        {order.product_type === "physical" && <div className="sm:col-span-2 xl:col-span-3"><dt className="text-xs text-muted-foreground">Delivery address</dt><dd className="break-words">{[order.delivery_address, order.delivery_city, order.delivery_state, order.delivery_postal_code, order.delivery_country].filter(Boolean).join(", ") || "No address recorded"}</dd></div>}
                         <div><dt className="text-xs text-muted-foreground">Payment verified</dt><dd>{order.verified_at ? new Date(order.verified_at).toLocaleString() : "—"}</dd></div>
-                        <div><dt className="text-xs text-muted-foreground">Dispatched</dt><dd>{order.dispatched_at ? new Date(order.dispatched_at).toLocaleString() : "—"}</dd></div>
+                        {order.product_type === "physical" && <div><dt className="text-xs text-muted-foreground">Dispatched</dt><dd>{order.dispatched_at ? new Date(order.dispatched_at).toLocaleString() : "—"}</dd></div>}
                       </dl>
                       <div className="mt-3 flex flex-wrap gap-2">
                         {order.screenshot_path && <Button size="sm" variant="outline" disabled={busy} onClick={() => void openPaymentProof(order)}>View payment proof</Button>}
-                        {order.courier_tracking_url && <Button size="sm" variant="outline" asChild><a href={order.courier_tracking_url} target="_blank" rel="noreferrer"><ExternalLink className="mr-1.5 h-4 w-4" />Open tracking page</a></Button>}
+                        {order.product_type === "physical" && order.courier_tracking_url && <Button size="sm" variant="outline" asChild><a href={order.courier_tracking_url} target="_blank" rel="noreferrer"><ExternalLink className="mr-1.5 h-4 w-4" />Open tracking page</a></Button>}
                       </div>
                     </section>
 
                     <section className="rounded-lg border border-border p-3 sm:p-4">
                       <h2 className="mb-3 text-sm font-semibold">Order actions</h2>
-                      {order.status === "Pending" && (
+                      {order.status === "Pending" && order.product_type === "physical" && (
                         <div className="flex flex-wrap gap-2">
                           <Button size="sm" disabled={busy} onClick={() => void verifyPayment(order)}>Verify Payment</Button>
                           <Button size="sm" variant="destructive" disabled={busy} onClick={() => void cancelOrder(order)}>Reject / Cancel</Button>
                         </div>
                       )}
 
-                      {order.status === "Payment Verified" && (
+                      {order.product_type === "pdf" && order.payment_status !== "verified" && order.order_status !== "cancelled" && order.status !== "Cancelled" && (
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" disabled={busy} onClick={() => void verifyAndDeliver(order)}>
+                            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <FileText className="mr-1.5 h-4 w-4" />Verify & Deliver PDF
+                          </Button>
+                          <Button size="sm" variant="destructive" disabled={busy} onClick={() => void cancelOrder(order)}>Reject / Cancel</Button>
+                        </div>
+                      )}
+
+                      {order.product_type === "pdf" && order.payment_status === "verified" && order.order_status !== "delivered" && order.order_status !== "cancelled" && order.status !== "Cancelled" && (
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" disabled={busy} onClick={() => void verifyAndDeliver(order)}>
+                            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <FileText className="mr-1.5 h-4 w-4" />Finish PDF Delivery
+                          </Button>
+                          <Button size="sm" variant="destructive" disabled={busy} onClick={() => void cancelOrder(order)}>Cancel Order</Button>
+                        </div>
+                      )}
+
+                      {order.product_type === "pdf" && order.payment_status === "verified" && order.order_status === "delivered" && (
+                        <div className="space-y-3">
+                          <p className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300"><CheckCircle2 className="h-4 w-4" />Payment verified. The PDF can be delivered securely.</p>
+                          <div className="flex flex-wrap gap-2">
+                            {digitalLinks[order.id] && <Button size="sm" variant="outline" asChild><a href={digitalLinks[order.id]} target="_blank" rel="noreferrer"><ExternalLink className="mr-1.5 h-4 w-4" />Open secure PDF link</a></Button>}
+                            <Button size="sm" variant="outline" disabled={busy} onClick={() => void generateDigitalLink(order)}><FileText className="mr-1.5 h-4 w-4" />{digitalLinks[order.id] ? "Refresh secure PDF link" : "Generate secure PDF link"}</Button>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <Button size="sm" disabled={busy} onClick={() => void openDigitalWhatsApp(order)}><MessageCircle className="mr-1.5 h-4 w-4" />Send PDF via WhatsApp</Button>
+                          </div>
+                          {order.delivered_at && <p className="text-xs text-muted-foreground">Digital delivery recorded: {new Date(order.delivered_at).toLocaleString()}</p>}
+                          <p className="text-xs text-muted-foreground">The customer can also access the PDF from My Library. WhatsApp is not marked as sent automatically.</p>
+                        </div>
+                      )}
+
+                      {order.status === "Payment Verified" && order.product_type === "physical" && (
                         <form className="grid gap-3 sm:grid-cols-2" onSubmit={(event) => { event.preventDefault(); void dispatchOrder(order, event.currentTarget); }}>
                           <div className="sm:col-span-2 flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300"><PackageCheck className="h-4 w-4" />Payment verified. Add courier details to dispatch.</div>
                           <label className="grid gap-1.5 text-sm">
@@ -355,7 +505,7 @@ Thank you for shopping with us!`;
                         </form>
                       )}
 
-                      {order.status === "Dispatched" && (
+                      {order.status === "Dispatched" && order.product_type === "physical" && (
                         <div className="space-y-3">
                           <div className="flex flex-wrap items-center gap-2 text-sm text-green-700 dark:text-green-300">
                             <CheckCircle2 className="h-4 w-4" />Dispatched{order.dispatched_at ? ` on ${new Date(order.dispatched_at).toLocaleString()}` : ""}
