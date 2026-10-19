@@ -88,10 +88,6 @@ export default {
     }
     if (!order) return json({ error: "Order not found." }, 404);
 
-    if (action === "resend" && order.payment_status !== "verified") {
-      return json({ error: "The payment must be verified before the document can be sent." }, 400);
-    }
-
     if (order.product_type !== "pdf") {
       return json({ error: "This delivery workflow is only for digital PDF orders." }, 400);
     }
@@ -196,13 +192,30 @@ export default {
       }, 500);
     }
 
-    const r2WorkerUrl = Deno.env.get("R2_WORKER_URL")?.replace(/\\/$/, "");
+    const r2WorkerUrl = Deno.env.get("R2_WORKER_URL")?.replace(/\/$/, "");
     const deliverySecret = Deno.env.get("R2_WORKER_DELIVERY_SECRET");
     if (!r2WorkerUrl || !deliverySecret) return json({ error: "R2 delivery is not configured." }, 500);
 
     let r2Path = product.pdf_file;
     if (!r2Path.startsWith("products/")) {
-      return json({ error: "This PDF must be migrated to private Cloudflare R2 storage before delivery." }, 400);
+      const authorization = req.headers.get("Authorization");
+      if (!authorization) return json({ error: "Your admin session has expired. Please sign in again." }, 401);
+      const migrationResponse = await fetch(r2WorkerUrl + "/migrate-legacy", {
+        method: "POST",
+        headers: {
+          Authorization: authorization,
+          "X-Delivery-Secret": deliverySecret,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ path: r2Path }),
+      });
+      const migrationData = await migrationResponse.json().catch(() => ({}));
+      if (!migrationResponse.ok || typeof migrationData?.path !== "string" || !migrationData.path.startsWith("products/")) {
+        return json({ error: typeof migrationData?.error === "string" ? migrationData.error : "Could not migrate the PDF to private Cloudflare R2 storage." }, 502);
+      }
+      r2Path = migrationData.path;
+      const { error: productUpdateError } = await ctx.supabaseAdmin.from("products").update({ pdf_file: r2Path }).eq("id", product.id);
+      if (productUpdateError) return json({ error: "The PDF was moved to R2, but its product record could not be updated." }, 500);
     }
     const linkResponse = await fetch(r2WorkerUrl + "/delivery-link", {
       method: "POST",
