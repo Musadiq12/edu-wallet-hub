@@ -367,7 +367,7 @@ Thank you for shopping with us!`;
                   <div className="min-w-0 flex-1 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-semibold">#{order.id}</span>
-                      <Badge className={statusStyles[order.status]}>{order.status}</Badge>
+                      <Badge className={order.product_type === "pdf" && order.order_status === "delivered" ? "border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200" : statusStyles[order.status]}>{order.product_type === "pdf" && order.order_status === "delivered" ? "Delivered" : order.status}</Badge>
                     </div>
                     <p className="truncate text-sm font-medium">{order.full_name} · {order.whatsapp}</p>
                     <p className="text-sm text-muted-foreground">{order.product_type === "physical" ? "Physical copy" : "Digital PDF"} · {order.product_title} · {formatPrice(Number(order.amount))}</p>
@@ -403,29 +403,42 @@ Thank you for shopping with us!`;
 
                     <section className="rounded-lg border border-border p-3 sm:p-4">
                       <h2 className="mb-3 text-sm font-semibold">Order actions</h2>
-                      {order.status === "Pending" && (
+                      {order.status === "Pending" && order.product_type === "physical" && (
                         <div className="flex flex-wrap gap-2">
-                          {order.product_type === "physical" ? (
-                            <Button size="sm" disabled={busy} onClick={() => void verifyPayment(order)}>Verify Payment</Button>
-                          ) : (
-                            <Button size="sm" disabled={busy} onClick={() => void verifyAndDeliver(order)}>
-                              {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                              <FileText className="mr-1.5 h-4 w-4" />Verify & Deliver PDF
-                            </Button>
-                          )}
+                          <Button size="sm" disabled={busy} onClick={() => void verifyPayment(order)}>Verify Payment</Button>
                           <Button size="sm" variant="destructive" disabled={busy} onClick={() => void cancelOrder(order)}>Reject / Cancel</Button>
                         </div>
                       )}
 
-                      {order.status === "Payment Verified" && order.product_type === "pdf" && (
+                      {order.product_type === "pdf" && order.payment_status !== "verified" && order.order_status !== "cancelled" && order.status !== "Cancelled" && (
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" disabled={busy} onClick={() => void verifyAndDeliver(order)}>
+                            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <FileText className="mr-1.5 h-4 w-4" />Verify & Deliver PDF
+                          </Button>
+                          <Button size="sm" variant="destructive" disabled={busy} onClick={() => void cancelOrder(order)}>Reject / Cancel</Button>
+                        </div>
+                      )}
+
+                      {order.product_type === "pdf" && order.payment_status === "verified" && order.order_status !== "delivered" && order.order_status !== "cancelled" && order.status !== "Cancelled" && (
+                        <div className="flex flex-wrap gap-2">
+                          <Button size="sm" disabled={busy} onClick={() => void verifyAndDeliver(order)}>
+                            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <FileText className="mr-1.5 h-4 w-4" />Finish PDF Delivery
+                          </Button>
+                          <Button size="sm" variant="destructive" disabled={busy} onClick={() => void cancelOrder(order)}>Cancel Order</Button>
+                        </div>
+                      )}
+
+                      {order.product_type === "pdf" && order.payment_status === "verified" && order.order_status === "delivered" && (
                         <div className="space-y-3">
                           <p className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300"><CheckCircle2 className="h-4 w-4" />Payment verified. The PDF can be delivered securely.</p>
-                          {digitalLinks[order.id] && <Button size="sm" variant="outline" asChild><a href={digitalLinks[order.id]} target="_blank" rel="noreferrer"><ExternalLink className="mr-1.5 h-4 w-4" />Open secure PDF link</a></Button>}
+                          {digitalLinks[order.id] ? <Button size="sm" variant="outline" asChild><a href={digitalLinks[order.id]} target="_blank" rel="noreferrer"><ExternalLink className="mr-1.5 h-4 w-4" />Open secure PDF link</a></Button> : <Button size="sm" variant="outline" disabled={busy} onClick={() => void openDigitalWhatsApp(order)}><FileText className="mr-1.5 h-4 w-4" />Generate secure PDF link</Button>}
                           <div className="flex flex-wrap gap-2">
                             <Button size="sm" disabled={busy} onClick={() => void openDigitalWhatsApp(order)}><MessageCircle className="mr-1.5 h-4 w-4" />Send PDF via WhatsApp</Button>
-                            <Button size="sm" variant="destructive" disabled={busy} onClick={() => void cancelOrder(order)}>Cancel Order</Button>
                           </div>
-                          <p className="text-xs text-muted-foreground">After payment and delivery are recorded, the customer can access the PDF from My Library.</p>
+                          {order.delivered_at && <p className="text-xs text-muted-foreground">Digital delivery recorded: {new Date(order.delivered_at).toLocaleString()}</p>}
+                          <p className="text-xs text-muted-foreground">The customer can also access the PDF from My Library. WhatsApp is not marked as sent automatically.</p>
                         </div>
                       )}
 
