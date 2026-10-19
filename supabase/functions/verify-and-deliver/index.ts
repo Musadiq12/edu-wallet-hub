@@ -92,8 +92,8 @@ export default {
       return json({ error: "This delivery workflow is only for digital PDF orders." }, 400);
     }
 
-    if (action !== "verify" && order.payment_status !== "verified") {
-      return json({ error: "The payment must be verified before the document can be sent." }, 400);
+    if (action !== "verify" && (order.payment_status !== "verified" || order.order_status === "cancelled")) {
+      return json({ error: "Only active, payment-verified PDF orders can be delivered." }, 400);
     }
 
     if (action === "verify" && (order.payment_status === "rejected" || order.order_status === "cancelled")) {
