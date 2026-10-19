@@ -476,11 +476,12 @@ Thank you for shopping with us!`;
                             <Button size="sm" disabled={busy} onClick={() => void openDigitalWhatsApp(order)}><MessageCircle className="mr-1.5 h-4 w-4" />Send PDF via WhatsApp</Button>
                           </div>
                           {order.delivered_at && <p className="text-xs text-muted-foreground">Digital delivery recorded: {new Date(order.delivered_at).toLocaleString()}</p>}
-                          <p className="text-xs text-muted-foreground">The customer can also access the PDF from My Library. WhatsApp is not marked as sent automatically.</p>
+                          <p className="text-xs text-muted-foreground">My Library: after signing in, the customer can open this purchase from their My Library page. The secure link sent through WhatsApp expires after 48 hours; the library remains the long-term access point. WhatsApp is not marked as sent automatically.</p>
                         </div>
                       )}
 
-                      {order.status === "Payment Verified" && order.product_type === "physical" && (
+                      {/* Courier/tracking controls must never render for digital PDF orders. */}
+                      {order.product_type === "physical" && order.status === "Payment Verified" && (
                         <form className="grid gap-3 sm:grid-cols-2" onSubmit={(event) => { event.preventDefault(); void dispatchOrder(order, event.currentTarget); }}>
                           <div className="sm:col-span-2 flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300"><PackageCheck className="h-4 w-4" />Payment verified. Add courier details to dispatch.</div>
                           <label className="grid gap-1.5 text-sm">
