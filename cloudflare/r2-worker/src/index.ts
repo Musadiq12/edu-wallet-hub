@@ -500,7 +500,7 @@ export default {
       const size = object.size;
       const rangeHeader = request.headers.get("Range");
       if (rangeHeader) {
-        const match = /^bytes=(\\d*)-(\\d*)$/.exec(rangeHeader.trim());
+        const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader.trim());
         if (!match || (!match[1] && !match[2])) {
           headers.set("Content-Range", `bytes */${size}`);
           return new Response(null, { status: 416, headers });
