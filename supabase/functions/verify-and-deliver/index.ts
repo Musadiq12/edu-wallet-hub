@@ -92,10 +92,9 @@ export default {
       return json({ error: "This delivery workflow is only for digital PDF orders." }, 400);
     }
 
-    if (action === "resend" && order.payment_status !== "verified") {
-      return json({ error: "The payment must be verified before the document can be sent." }, 400);
+    if (action === "verify" && (order.payment_status === "rejected" || order.order_status === "cancelled")) {
+      return json({ error: "Cancelled or rejected orders cannot be delivered." }, 409);
     }
-
     if (action === "verify" && order.payment_status === "verified" && order.order_status === "delivered") {
       return json({ error: "This order has already been delivered. Use the WhatsApp action to share a fresh secure link." }, 409);
     }
