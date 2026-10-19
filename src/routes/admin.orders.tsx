@@ -279,8 +279,8 @@ function AdminOrders() {
   };
 
   const openWhatsApp = (order: AdminOrder) => {
-    if (order.status !== "Dispatched") {
-      toast.error("Dispatch the order before sending tracking details.");
+    if (order.product_type !== "physical" || order.status !== "Dispatched") {
+      toast.error("Tracking messages are only available for dispatched physical orders.");
       return;
     }
     if (!order.whatsapp) {
@@ -306,6 +306,7 @@ Thank you for shopping with us!`;
   };
 
   const markWhatsAppSent = async (order: AdminOrder) => {
+    if (order.product_type !== "physical" || order.status !== "Dispatched") return;
     if (!window.confirm("Confirm that you sent the WhatsApp message to the customer?")) return;
     await updateOrder(order, { whatsapp_sent_at: new Date().toISOString() }, "WhatsApp message marked as sent.");
   };
