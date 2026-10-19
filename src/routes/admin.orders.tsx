@@ -461,7 +461,10 @@ Thank you for shopping with us!`;
                       {order.product_type === "pdf" && order.payment_status === "verified" && order.order_status === "delivered" && (
                         <div className="space-y-3">
                           <p className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300"><CheckCircle2 className="h-4 w-4" />Payment verified. The PDF can be delivered securely.</p>
-                          {digitalLinks[order.id] ? <Button size="sm" variant="outline" asChild><a href={digitalLinks[order.id]} target="_blank" rel="noreferrer"><ExternalLink className="mr-1.5 h-4 w-4" />Open secure PDF link</a></Button> : <Button size="sm" variant="outline" disabled={busy} onClick={() => void generateDigitalLink(order)}><FileText className="mr-1.5 h-4 w-4" />Generate secure PDF link</Button>}
+                          <div className="flex flex-wrap gap-2">
+                            {digitalLinks[order.id] && <Button size="sm" variant="outline" asChild><a href={digitalLinks[order.id]} target="_blank" rel="noreferrer"><ExternalLink className="mr-1.5 h-4 w-4" />Open secure PDF link</a></Button>}
+                            <Button size="sm" variant="outline" disabled={busy} onClick={() => void generateDigitalLink(order)}><FileText className="mr-1.5 h-4 w-4" />{digitalLinks[order.id] ? "Refresh secure PDF link" : "Generate secure PDF link"}</Button>
+                          </div>
                           <div className="flex flex-wrap gap-2">
                             <Button size="sm" disabled={busy} onClick={() => void openDigitalWhatsApp(order)}><MessageCircle className="mr-1.5 h-4 w-4" />Send PDF via WhatsApp</Button>
                           </div>
