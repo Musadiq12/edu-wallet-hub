@@ -473,7 +473,7 @@ export default {
       return json(request, env, { ok: true, url: downloadUrl, expiresAt: new Date(exp * 1000).toISOString() });
     }
 
-    if (url.pathname === "/download" && request.method === "GET") {
+    if (url.pathname === "/download" && (request.method === "GET" || request.method === "HEAD")) {
       const key = safeKey(url.searchParams.get("key") || "");
       const exp = Number(url.searchParams.get("exp") || 0);
       const signature = url.searchParams.get("sig") || "";
@@ -482,18 +482,61 @@ export default {
         return new Response("Invalid or expired download link.", { status: 403 });
       }
 
+      // Fetch object metadata first, then honour browser PDF byte-range requests.
+      // Native PDF viewers use Range requests to render the first pages without
+      // downloading the entire document.
       const object = await env.PRODUCTS.get(key);
       if (!object) return new Response("File not found.", { status: 404 });
 
       const headers = new Headers();
       object.writeHttpMetadata(headers);
       headers.set("Content-Type", "application/pdf");
+      headers.set("Accept-Ranges", "bytes");
       const disposition = url.searchParams.get("disposition") === "inline" ? "inline" : "attachment";
       headers.set("Content-Disposition", `${disposition}; filename="${key.split("/").pop()?.replace(/"/g, "") || "document.pdf"}"`);
       headers.set("Cache-Control", "private, no-store");
       headers.set("X-Robots-Tag", "noindex, nofollow");
 
-      return new Response(object.body, { headers });
+      const size = object.size;
+      const rangeHeader = request.headers.get("Range");
+      if (rangeHeader) {
+        const match = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader.trim());
+        if (!match || (!match[1] && !match[2])) {
+          headers.set("Content-Range", `bytes */${size}`);
+          return new Response(null, { status: 416, headers });
+        }
+
+        let start: number;
+        let end: number;
+        if (!match[1]) {
+          const suffixLength = Number(match[2]);
+          if (!Number.isSafeInteger(suffixLength) || suffixLength <= 0) {
+            headers.set("Content-Range", `bytes */${size}`);
+            return new Response(null, { status: 416, headers });
+          }
+          start = Math.max(0, size - suffixLength);
+          end = size - 1;
+        } else {
+          start = Number(match[1]);
+          end = match[2] ? Number(match[2]) : size - 1;
+        }
+
+        if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || start >= size || end < start) {
+          headers.set("Content-Range", `bytes */${size}`);
+          return new Response(null, { status: 416, headers });
+        }
+
+        end = Math.min(end, size - 1);
+        const length = end - start + 1;
+        const rangedObject = await env.PRODUCTS.get(key, { range: { offset: start, length } });
+        if (!rangedObject) return new Response("File not found.", { status: 404 });
+        headers.set("Content-Range", `bytes ${start}-${end}/${size}`);
+        headers.set("Content-Length", String(length));
+        return new Response(request.method === "HEAD" ? null : rangedObject.body, { status: 206, headers });
+      }
+
+      headers.set("Content-Length", String(size));
+      return new Response(request.method === "HEAD" ? null : object.body, { headers });
     }
 
     return json(request, env, { error: "Not found." }, 404);
