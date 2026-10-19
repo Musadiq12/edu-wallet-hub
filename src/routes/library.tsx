@@ -52,6 +52,7 @@ function LibraryPage() {
 
   const library = useQuery({
     queryKey: ["my-library", user?.id],
+    refetchOnWindowFocus: true,
     enabled: !!user,
     queryFn: async (): Promise<LibraryItem[]> => {
       const { data, error } = await supabase
@@ -149,7 +150,7 @@ function LibraryPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Your account</p>
               <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">My Library</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Your verified purchases stay available here. WhatsApp delivery remains available as a convenient backup.
+                Your verified digital purchases stay available here. Open or download your PDFs securely from this library.
               </p>
             </div>
             <div className="hidden rounded-xl border border-border bg-card p-3 sm:block">
