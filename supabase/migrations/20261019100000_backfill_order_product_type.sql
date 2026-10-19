@@ -1,11 +1,12 @@
--- Repair historical order types after product_type was introduced with a default.
--- The linked product's explicit product_type is authoritative for backfilling old orders.
+-- Repair legacy physical orders that inherited the old default 'pdf'.
+-- Only promote pdf -> physical when the linked product explicitly says physical;
+-- preserve an already-recorded physical snapshot if a product type changed later.
 UPDATE public.orders o
-SET product_type = p.product_type
+SET product_type = 'physical'
 FROM public.products p
 WHERE o.product_id = p.id
-  AND p.product_type IN ('pdf', 'physical')
-  AND o.product_type IS DISTINCT FROM p.product_type;
+  AND o.product_type = 'pdf'
+  AND p.product_type = 'physical';
 
 ALTER TABLE public.orders
   ALTER COLUMN product_type SET DEFAULT 'pdf',
