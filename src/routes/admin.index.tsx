@@ -79,7 +79,10 @@ function AdminDashboard() {
         queryClient.invalidateQueries({ queryKey: ["admin", "order-status-history"] }),
       ]);
       await queryClient.refetchQueries({ queryKey: ["admin", "orders"] });
-      closeReset();
+      setResetOpen(false);
+      setResetPassword("");
+      setConfirmText("");
+      setResetError("");
       toast.success("Dashboard reset successfully. All sales data was deleted.");
     } catch (error) {
       setResetError(friendlyError(error, error instanceof Error ? error.message : "Dashboard reset failed."));
