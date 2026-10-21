@@ -122,7 +122,7 @@ function ProductDetail() {
   const isAssignment = category?.slug === "assignment-guidance";
 
   const ratingData = reviewSummary.data ?? { average: 0, count: 0, distribution: [0, 0, 0, 0, 0] };
-  const schemaDescription = (p.description || p.whats_included || "").replace(/<[^>]*>/g, "").replace(/\\s+/g, " ").trim().slice(0, 300);
+  const schemaDescription = (p.description || p.whats_included || "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 300);
   const coverUrl = p.cover_image ? (typeof window === "undefined" ? undefined : supabase.storage.from("product-covers").getPublicUrl(p.cover_image).data.publicUrl) : undefined;
   const productSchema: Record<string, unknown> = {
     "@context": "https://schema.org", "@type": "Product", name: p.title, description: schemaDescription,
