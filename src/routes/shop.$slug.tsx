@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useSiteSettings } from "@/lib/settings";import { createFileRoute, Link } from "@tanstack/react-router";
+import { useSiteSettings } from "@/lib/settings";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Star } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
