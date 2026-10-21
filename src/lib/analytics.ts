@@ -23,7 +23,7 @@ export const salesStatsQuery = (range: AnalyticsRange) => queryOptions({
   queryFn: async (): Promise<SalesStats> => {
     const to = new Date(Date.now() + 60_000);
     const from = new Date(to.getTime() - range * 24 * 60 * 60 * 1000);
-    const rpc = supabase.rpc as unknown as (name: string, args: { p_from: string; p_to: string }) => Promise<{ data: unknown; error: { message: string } | null }>;
+    const rpc = supabase.rpc.bind(supabase) as unknown as (name: string, args: { p_from: string; p_to: string }) => Promise<{ data: unknown; error: { message: string } | null }>;
     const { data, error } = await rpc("admin_sales_stats", {
       p_from: from.toISOString(),
       p_to: to.toISOString(),
