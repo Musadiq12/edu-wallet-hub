@@ -1,4 +1,4 @@
--- Ratings and reviews: verified-purchaser-only mutations and approved-only public reads.
+-- Ratings and reviews. The SECURITY DEFINER helpers mirror this repo's has_role() authorization.
 CREATE TABLE IF NOT EXISTS public.reviews (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id uuid NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
@@ -11,8 +11,7 @@ CREATE TABLE IF NOT EXISTS public.reviews (
   updated_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (product_id, user_id)
 );
-CREATE INDEX IF NOT EXISTS reviews_product_status_idx
-  ON public.reviews (product_id, status, created_at DESC);
+CREATE INDEX IF NOT EXISTS reviews_product_status_idx ON public.reviews (product_id, status, created_at DESC);
 
 CREATE OR REPLACE FUNCTION public.has_verified_purchase(p_product_id uuid, p_user_id uuid)
 RETURNS boolean
@@ -36,10 +35,15 @@ $$;
 REVOKE ALL ON FUNCTION public.has_verified_purchase(uuid, uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.has_verified_purchase(uuid, uuid) TO anon, authenticated;
 
+-- RLS needs an owner-only read policy for a buyer to see their pending/rejected review.
+-- Keep public rows approved-only; policy OR semantics allow the owner to read their own row.
 ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "public read approved reviews" ON public.reviews;
 CREATE POLICY "public read approved reviews" ON public.reviews
   FOR SELECT TO anon, authenticated USING (status = 'approved');
+DROP POLICY IF EXISTS "users read own reviews" ON public.reviews;
+CREATE POLICY "users read own reviews" ON public.reviews
+  FOR SELECT TO authenticated USING (auth.uid() = user_id);
 DROP POLICY IF EXISTS "verified buyers can insert own review" ON public.reviews;
 CREATE POLICY "verified buyers can insert own review" ON public.reviews
   FOR INSERT TO authenticated WITH CHECK (
@@ -50,10 +54,8 @@ DROP POLICY IF EXISTS "users can update own pending review" ON public.reviews;
 CREATE POLICY "users can update own pending review" ON public.reviews
   FOR UPDATE TO authenticated
   USING (auth.uid() = user_id AND status = 'pending')
-  WITH CHECK (
-    auth.uid() = user_id AND status = 'pending'
-    AND public.has_verified_purchase(product_id, auth.uid())
-  );
+  WITH CHECK (auth.uid() = user_id AND status = 'pending'
+    AND public.has_verified_purchase(product_id, auth.uid()));
 DROP POLICY IF EXISTS "users can delete own pending review" ON public.reviews;
 CREATE POLICY "users can delete own pending review" ON public.reviews
   FOR DELETE TO authenticated USING (auth.uid() = user_id AND status = 'pending');
