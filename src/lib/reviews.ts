@@ -1,4 +1,4 @@
-import { queryOptions } from "@tanstack/react-query";
+import { queryOptions, type QueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { friendlyError } from "@/lib/admin";
 
@@ -108,17 +108,19 @@ export const canReviewQuery = (productId: string, userId: string | undefined) =>
     },
   });
 
-async function invalidateReviewQueries(productId: string, userId?: string) {
+async function invalidateReviewQueries(queryClient: QueryClient, productId: string, userId?: string) {
   return Promise.all([
-    reviewKey(productId),
-    summaryKey(productId),
-    myReviewKey(productId, userId),
+    queryClient.invalidateQueries({ queryKey: reviewKey(productId) }),
+    queryClient.invalidateQueries({ queryKey: summaryKey(productId) }),
+    queryClient.invalidateQueries({ queryKey: myReviewKey(productId, userId) }),
+    queryClient.invalidateQueries({ queryKey: ["admin", "reviews"] }),
   ]).then(() => undefined);
 }
 
 export async function submitReview(input: {
   productId: string;
   userId: string;
+  queryClient: QueryClient;
   rating: number;
   title: string;
   comment: string;
@@ -140,12 +142,12 @@ export async function submitReview(input: {
     status: "pending",
   });
   if (error) throw new Error(friendlyError(error, "Could not submit your review."));
-  await invalidateReviewQueries(input.productId, input.userId);
+  await invalidateReviewQueries(input.queryClient, input.productId, input.userId);
 }
 
 export async function updateMyReview(
   reviewId: string,
-  input: { productId: string; userId: string; rating: number; title: string; comment: string },
+  input: { productId: string; userId: string; queryClient: QueryClient; rating: number; title: string; comment: string },
 ) {
   const title = input.title.trim();
   const comment = input.comment.trim();
