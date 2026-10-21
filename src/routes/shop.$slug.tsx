@@ -364,13 +364,13 @@ function ProductDetail() {
                     <p className="mt-3 text-xs font-medium text-foreground">{review.display_name || "Student"}</p>
                   </article>)}
               </div>
-              {user && myReview.data ? <div className="mt-6 rounded-xl border border-border bg-surface p-4">
+              {user && myReview.data && !editingReview ? <div className="mt-6 rounded-xl border border-border bg-surface p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-medium">Your review</p></div>
                 <div className="mt-2 flex text-amber-500">{Array.from({ length: 5 }, (_, i) => <Star key={i} className="h-4 w-4" fill={i < myReview.data!.rating ? "currentColor" : "none"} />)}</div>
                 {myReview.data.title && <p className="mt-2 font-medium">{myReview.data.title}</p>}
                 <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">{myReview.data.comment}</p>
                 {myReview.data.status === "pending" && <Button className="mt-3" variant="outline" size="sm" onClick={() => { setReviewRating(myReview.data!.rating); setReviewTitle(myReview.data!.title); setReviewComment(myReview.data!.comment); setEditingReview(true); }}>Edit review</Button>}
-              </div> : user && canReview.data === true ? <div className="mt-6 rounded-xl border border-border p-5">
+              </div> : user && (editingReview || (!myReview.data && canReview.data === true)) ? <div className="mt-6 rounded-xl border border-border p-5">
                 <h3 className="font-semibold">{editingReview ? "Edit your review" : "Write a review"}</h3>
                 <div className="mt-4"><span className="text-sm font-medium">Rating (required)</span><div className="mt-2 flex gap-1" role="radiogroup" aria-label="Rating">
                   {Array.from({ length: 5 }, (_, i) => i + 1).map((star) => <button type="button" key={star} role="radio" aria-checked={reviewRating === star} aria-label={`${star} star${star === 1 ? "" : "s"}`} onClick={() => setReviewRating(star)} className="rounded p-1 text-amber-500 focus-visible:outline focus-visible:outline-2"><Star className="h-6 w-6" fill={star <= reviewRating ? "currentColor" : "none"} /></button>)}
