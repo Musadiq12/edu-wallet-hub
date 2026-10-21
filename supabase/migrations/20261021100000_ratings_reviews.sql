@@ -32,7 +32,7 @@ AS $$
     )
   END;
 $$;
-REVOKE ALL ON FUNCTION public.has_verified_purchase(uuid, uuid) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.has_verified_purchase(uuid, uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.has_verified_purchase(uuid, uuid) TO authenticated;
 
 -- Public visitors only read approved reviews; authenticated authors may also read their own status.
