@@ -58,6 +58,18 @@ function AdminLayout() {
   const { user, loading } = useSession();
   const { data: isAdmin, isLoading: roleLoading } = useIsAdmin(user?.id);
   const orders = useQuery({ ...adminOrdersQuery(), enabled: !!user && !!isAdmin });
+  const pendingReviews = useQuery({
+    queryKey: ["admin", "reviews", "pending-count"],
+    enabled: !!user && !!isAdmin,
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("reviews")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
   const hasPendingOrders = (orders.data ?? []).some(
     (order) => order.payment_status === "submitted" && order.order_status !== "cancelled",
   );
@@ -140,7 +152,16 @@ function AdminLayout() {
               <span className="grid h-full w-12 shrink-0 place-content-center">
                 <Icon className="h-4 w-4" />
               </span>
-              {(open || mobile) && <span className="text-sm font-medium">{item.label}</span>}
+              {(open || mobile) && (
+              <span className="flex min-w-0 flex-1 items-center justify-between gap-2 text-sm font-medium">
+                {item.label}
+                {item.label === "Reviews" && (pendingReviews.data ?? 0) > 0 && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                    {pendingReviews.data}
+                  </span>
+                )}
+              </span>
+            )}
             </Link>
           );
         }
