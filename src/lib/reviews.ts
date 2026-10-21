@@ -109,9 +109,11 @@ export const canReviewQuery = (productId: string, userId: string | undefined) =>
   });
 
 async function invalidateReviewQueries(productId: string, userId?: string) {
-  // Mutations remain independent of a global QueryClient singleton.
-  void productId;
-  void userId;
+  return Promise.all([
+    reviewKey(productId),
+    summaryKey(productId),
+    myReviewKey(productId, userId),
+  ]).then(() => undefined);
 }
 
 export async function submitReview(input: {
