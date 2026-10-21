@@ -1,4 +1,4 @@
--- Ratings and reviews. The SECURITY DEFINER helpers mirror this repo's has_role() authorization.
+-- Ratings and reviews, verified-purchaser-only mutations and approved-only public reads.
 CREATE TABLE IF NOT EXISTS public.reviews (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id uuid NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS public.reviews (
 );
 CREATE INDEX IF NOT EXISTS reviews_product_status_idx ON public.reviews (product_id, status, created_at DESC);
 
-CREATE OR REPLACE FUNCTION public.has_verified_purchase(p_product_id uuid, p_user_id uuid)
+-- Callers can only check their own purchase, not arbitrary customer purchase history.
+CREATE OR REPLACE FUNCTION public.has_verified_purchase(p_product_id uuid)
 RETURNS boolean
 LANGUAGE sql
 SECURITY DEFINER
@@ -22,37 +23,32 @@ STABLE
 AS $$
   SELECT CASE
     WHEN auth.uid() IS NULL THEN false
-    WHEN auth.uid() <> p_user_id THEN public.has_role(auth.uid(), 'admin'::public.app_role)
     ELSE EXISTS (
       SELECT 1 FROM public.orders o
-      WHERE o.user_id = p_user_id
+      WHERE o.user_id = auth.uid()
         AND o.product_id = p_product_id
         AND o.payment_status = 'verified'
         AND o.order_status IN ('payment_verified', 'processing', 'delivered')
     )
   END;
 $$;
-REVOKE ALL ON FUNCTION public.has_verified_purchase(uuid, uuid) FROM PUBLIC, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.has_verified_purchase(uuid, uuid) TO authenticated;
+REVOKE ALL ON FUNCTION public.has_verified_purchase(uuid) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.has_verified_purchase(uuid) TO authenticated;
 
--- Public visitors only read approved reviews; authenticated authors may also read their own status.
 ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "public read approved reviews" ON public.reviews;
-DROP POLICY IF EXISTS "users read own reviews" ON public.reviews;
 CREATE POLICY "public read approved reviews" ON public.reviews
   FOR SELECT TO anon, authenticated USING (status = 'approved' OR auth.uid() = user_id);
 DROP POLICY IF EXISTS "verified buyers can insert own review" ON public.reviews;
 CREATE POLICY "verified buyers can insert own review" ON public.reviews
   FOR INSERT TO authenticated WITH CHECK (
-    auth.uid() = user_id AND status = 'pending'
-    AND public.has_verified_purchase(product_id, auth.uid())
+    auth.uid() = user_id AND status = 'pending' AND public.has_verified_purchase(product_id)
   );
 DROP POLICY IF EXISTS "users can update own pending review" ON public.reviews;
 CREATE POLICY "users can update own pending review" ON public.reviews
   FOR UPDATE TO authenticated
   USING (auth.uid() = user_id AND status = 'pending')
-  WITH CHECK (auth.uid() = user_id AND status = 'pending'
-    AND public.has_verified_purchase(product_id, auth.uid()));
+  WITH CHECK (auth.uid() = user_id AND status = 'pending' AND public.has_verified_purchase(product_id));
 DROP POLICY IF EXISTS "users can delete own pending review" ON public.reviews;
 CREATE POLICY "users can delete own pending review" ON public.reviews
   FOR DELETE TO authenticated USING (auth.uid() = user_id AND status = 'pending');
