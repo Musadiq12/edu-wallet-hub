@@ -107,19 +107,19 @@ function AdminReviews() {
     {reviews.isLoading ? <div className="space-y-3">{Array.from({ length: 4 }, (_, i) => <Skeleton key={i} className="h-32 w-full" />)}</div> :
       reviews.isError ? <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-5 text-sm">Could not load reviews. {friendlyError(reviews.error)} <Button size="sm" variant="outline" className="ml-2" onClick={() => void reviews.refetch()}>Retry</Button></div> :
       visible.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No {filter === "all" ? "" : filter} reviews.</div> :
-      <div className="space-y-3">{visible.map((review) => <article key={review.id} className="rounded-xl border border-border bg-card p-4 sm:p-5">
+      <div className="space-y-3">{visible.map((review) => <article key={review.id} className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-border bg-card p-4 sm:p-5">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
           <div className="min-w-0">
             <p className="font-semibold">{review.product_title}</p>
             <p className="mt-1 text-sm text-muted-foreground">By {review.display_name} · {new Date(review.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex min-w-0 max-w-full flex-wrap items-center gap-1">
             <div className="flex text-amber-500" aria-label={`${review.rating} out of 5 stars`}>{Array.from({ length: 5 }, (_, i) => <Star key={i} className="h-4 w-4" fill={i < review.rating ? "currentColor" : "none"} />)}</div>
             <Badge variant={review.status === "approved" ? "default" : review.status === "rejected" ? "destructive" : "secondary"}>{review.status}</Badge>
           </div>
         </div>
-        {review.title && <h2 className="mt-3 font-medium">{review.title}</h2>}
-        <p className={`mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground ${expanded === review.id ? "" : "line-clamp-3"}`}>{review.comment}</p>
+        {review.title && <h2 className="mt-3 break-words font-medium [overflow-wrap:anywhere]">{review.title}</h2>}
+        <p className={`mt-2 min-w-0 max-w-full break-words [overflow-wrap:anywhere] whitespace-pre-wrap text-sm leading-6 text-muted-foreground ${expanded === review.id ? "" : "line-clamp-3"}`}>{review.comment}</p>
         {review.comment.length > 180 && <Button size="sm" variant="ghost" className="mt-1 px-0" onClick={() => setExpanded(expanded === review.id ? null : review.id)}>{expanded === review.id ? "Show less" : "Read more"}</Button>}
         <div className="mt-4 flex flex-wrap gap-2">
           {review.status === "pending" && <>
