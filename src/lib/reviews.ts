@@ -29,16 +29,25 @@ export const productReviewsQuery = (productId: string) =>
     queryFn: async (): Promise<Review[]> => {
       const { data, error } = await supabase
         .from("reviews")
-        .select(`${FIELDS},profiles(full_name)`)
+        .select(FIELDS)
         .eq("product_id", productId)
         .eq("status", "approved")
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
-      return (data ?? []).map((row) => {
-        const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-        return { ...row, display_name: profile?.full_name || "Student" } as unknown as Review;
-      });
+      const rows = data ?? [];
+      if (rows.length === 0) return [];
+      const userIds = [...new Set(rows.map((row) => row.user_id))];
+      const { data: profiles, error: profileError } = await supabase
+        .from("profiles")
+        .select("id,full_name")
+        .in("id", userIds);
+      if (profileError) throw profileError;
+      const names = new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name]));
+      return rows.map((row) => ({
+        ...row,
+        display_name: names.get(row.user_id) || "Student",
+      })) as Review[];
     },
   });
 
