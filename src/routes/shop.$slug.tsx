@@ -125,7 +125,10 @@ function ProductDetail() {
   const schemaDescription = (p.description || p.whats_included || "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 300);
   const coverUrl = p.cover_image ? (typeof window === "undefined" ? undefined : supabase.storage.from("product-covers").getPublicUrl(p.cover_image).data.publicUrl) : undefined;
   const productSchema: Record<string, unknown> = {
-    "@context": "https://schema.org", "@type": "Product", name: p.title, description: schemaDescription,
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: p.title,
+    description: schemaDescription,
     ...(coverUrl ? { image: coverUrl } : {}),
     offers: { "@type": "Offer", price: String(effectivePrice(p)), priceCurrency: "INR", availability: "https://schema.org/InStock" },
     ...(ratingData.count > 0 ? { aggregateRating: { "@type": "AggregateRating", ratingValue: String(ratingData.average), reviewCount: String(ratingData.count) } } : {}),
