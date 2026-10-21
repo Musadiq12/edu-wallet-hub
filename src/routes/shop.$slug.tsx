@@ -349,26 +349,26 @@ function ProductDetail() {
                   </div>
                 </div>
               )}
-              <div className="mt-5 space-y-3">
+              <div className="mt-5 min-w-0 space-y-3">
                 {reviews.isError ? <p className="text-sm text-muted-foreground">Reviews could not be loaded. Refresh the page to try again.</p> :
                   (reviews.data ?? []).length === 0 ? <EmptyState title="No reviews yet" description="Approved student reviews will appear here." /> :
-                  (reviews.data ?? []).map((review) => <article key={review.id} className="rounded-xl border border-border p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
+                  (reviews.data ?? []).map((review) => <article key={review.id} className="min-w-0 max-w-full overflow-hidden rounded-xl border border-border p-4">
+                    <div className="flex min-w-0 items-start justify-between gap-3">
+                      <div className="min-w-0">
                         <div className="flex text-amber-500" aria-label={`${review.rating} out of 5 stars`}>{Array.from({ length: 5 }, (_, i) => <Star key={i} className="h-4 w-4" fill={i < review.rating ? "currentColor" : "none"} />)}</div>
-                        {review.title && <h3 className="mt-2 font-semibold">{review.title}</h3>}
+                        {review.title && <h3 className="mt-2 break-words font-semibold [overflow-wrap:anywhere]">{review.title}</h3>}
                       </div>
                       <time className="shrink-0 text-xs text-muted-foreground" dateTime={review.created_at}>{new Date(review.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</time>
                     </div>
-                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{review.comment}</p>
+                    <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground [overflow-wrap:anywhere]">{review.comment}</p>
                     <p className="mt-3 text-xs font-medium text-foreground">{review.display_name || "Student"}</p>
                   </article>)}
               </div>
               {user && myReview.data ? <div className="mt-6 rounded-xl border border-border bg-surface p-4">
-                <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-medium">Your review</p><Badge variant={myReview.data.status === "approved" ? "default" : "secondary"}>{myReview.data.status === "pending" ? "Pending approval" : myReview.data.status === "approved" ? "Approved" : "Rejected"}</Badge></div>
+                <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-medium">Your review</p></div>
                 <div className="mt-2 flex text-amber-500">{Array.from({ length: 5 }, (_, i) => <Star key={i} className="h-4 w-4" fill={i < myReview.data!.rating ? "currentColor" : "none"} />)}</div>
                 {myReview.data.title && <p className="mt-2 font-medium">{myReview.data.title}</p>}
-                <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{myReview.data.comment}</p>
+                <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">{myReview.data.comment}</p>
                 {myReview.data.status === "pending" && <Button className="mt-3" variant="outline" size="sm" onClick={() => { setReviewRating(myReview.data!.rating); setReviewTitle(myReview.data!.title); setReviewComment(myReview.data!.comment); setEditingReview(true); }}>Edit review</Button>}
               </div> : user && canReview.data === true ? <div className="mt-6 rounded-xl border border-border p-5">
                 <h3 className="font-semibold">{editingReview ? "Edit your review" : "Write a review"}</h3>
@@ -378,7 +378,7 @@ function ProductDetail() {
                 <label className="mt-4 block text-sm font-medium">Title (optional)<input maxLength={100} value={reviewTitle} onChange={(e) => setReviewTitle(e.target.value)} className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm" placeholder="Summarize your experience" /></label>
                 <label className="mt-4 block text-sm font-medium">Comment (required)<Textarea rows={4} maxLength={1000} value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} className="mt-1" placeholder="What did you think of this resource?" /><span className="mt-1 block text-xs font-normal text-muted-foreground">{reviewComment.length}/1000</span></label>
                 <Button className="mt-4" disabled={reviewSaving || !reviewRating || !reviewComment.trim()} onClick={() => void handleSubmitReview()}>{reviewSaving ? "Submitting…" : editingReview ? "Save changes" : "Submit review"}</Button>
-                <p className="mt-3 text-xs text-muted-foreground">Your review will be visible after admin approval.</p>
+                <p className="mt-3 text-xs text-muted-foreground">Thank you for sharing your feedback.</p>
               </div> : user && canReview.data === false ? <p className="mt-6 text-sm text-muted-foreground">Reviews open after your purchase is verified.</p> : null}
             </section>
             <div className="mt-6 space-y-3 rounded-2xl border border-border bg-surface p-5 text-sm text-muted-foreground">
