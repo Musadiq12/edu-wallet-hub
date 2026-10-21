@@ -240,6 +240,7 @@ export interface FileRoutesById {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/free-resources': typeof AdminFreeResourcesRoute
   '/admin/messages': typeof AdminMessagesRoute
+  '/admin/reviews': typeof AdminReviewsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/checkout/$slug': typeof CheckoutSlugRoute
@@ -269,6 +270,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/free-resources'
     | '/admin/messages'
+    | '/admin/reviews'
     | '/admin/orders'
     | '/admin/settings'
     | '/checkout/$slug'
@@ -295,6 +297,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/free-resources'
     | '/admin/messages'
+    | '/admin/reviews'
     | '/admin/orders'
     | '/admin/settings'
     | '/checkout/$slug'
