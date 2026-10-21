@@ -14,19 +14,13 @@ export type Review = {
   display_name?: string | null;
 };
 
-export type ReviewSummary = {
-  average: number;
-  count: number;
-  distribution: number[];
-};
+export type ReviewSummary = { average: number; count: number; distribution: number[] };
 
-const REVIEW_FIELDS = "id,product_id,user_id,rating,title,comment,status,created_at,updated_at";
-const reviewKey = (productId: string) => ["reviews", productId] as const;
-const summaryKey = (productId: string) => ["review-summary", productId] as const;
-const myReviewKey = (productId: string, userId: string | undefined) =>
-  ["my-review", productId, userId] as const;
-const canReviewKey = (productId: string, userId: string | undefined) =>
-  ["can-review", productId, userId] as const;
+const FIELDS = "id,product_id,user_id,rating,title,comment,status,created_at,updated_at";
+const reviewKey = (id: string) => ["reviews", id] as const;
+const summaryKey = (id: string) => ["review-summary", id] as const;
+const myReviewKey = (productId: string, userId?: string) => ["my-review", productId, userId] as const;
+const canReviewKey = (productId: string, userId?: string) => ["can-review", productId, userId] as const;
 
 export const productReviewsQuery = (productId: string) =>
   queryOptions({
@@ -35,7 +29,7 @@ export const productReviewsQuery = (productId: string) =>
     queryFn: async (): Promise<Review[]> => {
       const { data, error } = await supabase
         .from("reviews")
-        .select(`${REVIEW_FIELDS},profiles(full_name)`)
+        .select(`${FIELDS},profiles(full_name)`)
         .eq("product_id", productId)
         .eq("status", "approved")
         .order("created_at", { ascending: false })
@@ -43,10 +37,7 @@ export const productReviewsQuery = (productId: string) =>
       if (error) throw error;
       return (data ?? []).map((row) => {
         const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-        return {
-          ...row,
-          display_name: profile?.full_name || "Student",
-        } as unknown as Review;
+        return { ...row, display_name: profile?.full_name || "Student" } as unknown as Review;
       });
     },
   });
@@ -56,22 +47,14 @@ export const reviewSummaryQuery = (productId: string) =>
     queryKey: summaryKey(productId),
     enabled: !!productId,
     queryFn: async (): Promise<ReviewSummary> => {
-      const { data, error } = await supabase
-        .from("reviews")
-        .select("rating")
-        .eq("product_id", productId)
-        .eq("status", "approved");
+      const { data, error } = await supabase.from("reviews").select("rating")
+        .eq("product_id", productId).eq("status", "approved");
       if (error) throw error;
-      const ratings = (data ?? []).map((item) => item.rating);
-      const distribution = [5, 4, 3, 2, 1].map(
-        (star) => ratings.filter((rating) => rating === star).length,
-      );
+      const ratings = (data ?? []).map(({ rating }) => rating);
       return {
-        average: ratings.length
-          ? Math.round((ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length) * 10) / 10
-          : 0,
+        average: ratings.length ? Math.round(ratings.reduce((sum, value) => sum + value, 0) / ratings.length * 10) / 10 : 0,
         count: ratings.length,
-        distribution,
+        distribution: [5, 4, 3, 2, 1].map((star) => ratings.filter((rating) => rating === star).length),
       };
     },
   });
@@ -82,12 +65,9 @@ export const myReviewQuery = (productId: string, userId: string | undefined) =>
     enabled: !!productId && !!userId,
     queryFn: async (): Promise<Review | null> => {
       if (!userId) return null;
-      const { data, error } = await supabase
-        .from("reviews")
-        .select(REVIEW_FIELDS)
-        .eq("product_id", productId)
-        .eq("user_id", userId)
-        .maybeSingle();
+      // Pending/rejected reads are separately granted to the record owner in RLS.
+      const { data, error } = await supabase.from("reviews").select(FIELDS)
+        .eq("product_id", productId).eq("user_id", userId).maybeSingle();
       if (error) throw error;
       return data as Review | null;
     },
@@ -100,8 +80,7 @@ export const canReviewQuery = (productId: string, userId: string | undefined) =>
     queryFn: async () => {
       if (!userId) return false;
       const { data, error } = await supabase.rpc("has_verified_purchase", {
-        p_product_id: productId,
-        p_user_id: userId,
+        p_product_id: productId, p_user_id: userId,
       });
       if (error) throw error;
       return data === true;
@@ -109,37 +88,24 @@ export const canReviewQuery = (productId: string, userId: string | undefined) =>
   });
 
 async function invalidateReviewQueries(queryClient: QueryClient, productId: string, userId?: string) {
-  return Promise.all([
+  await Promise.all([
     queryClient.invalidateQueries({ queryKey: reviewKey(productId) }),
     queryClient.invalidateQueries({ queryKey: summaryKey(productId) }),
     queryClient.invalidateQueries({ queryKey: myReviewKey(productId, userId) }),
     queryClient.invalidateQueries({ queryKey: ["admin", "reviews"] }),
-  ]).then(() => undefined);
+  ]);
 }
 
 export async function submitReview(input: {
-  productId: string;
-  userId: string;
-  queryClient: QueryClient;
-  rating: number;
-  title: string;
-  comment: string;
+  productId: string; userId: string; queryClient: QueryClient;
+  rating: number; title: string; comment: string;
 }) {
   const title = input.title.trim();
   const comment = input.comment.trim();
-  if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) {
-    throw new Error("Choose a rating from 1 to 5 stars.");
-  }
-  if (!comment || comment.length > 1000 || title.length > 100) {
-    throw new Error("Enter a comment of 1–1000 characters and a title under 100 characters.");
-  }
+  if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) throw new Error("Choose a rating from 1 to 5 stars.");
+  if (!comment || comment.length > 1000 || title.length > 100) throw new Error("Enter a comment of 1–1000 characters and a title under 100 characters.");
   const { error } = await supabase.from("reviews").insert({
-    product_id: input.productId,
-    user_id: input.userId,
-    rating: input.rating,
-    title,
-    comment,
-    status: "pending",
+    product_id: input.productId, user_id: input.userId, rating: input.rating, title, comment, status: "pending",
   });
   if (error) throw new Error(friendlyError(error, "Could not submit your review."));
   await invalidateReviewQueries(input.queryClient, input.productId, input.userId);
@@ -151,21 +117,12 @@ export async function updateMyReview(
 ) {
   const title = input.title.trim();
   const comment = input.comment.trim();
-  if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) {
-    throw new Error("Choose a rating from 1 to 5 stars.");
-  }
-  if (!comment || comment.length > 1000 || title.length > 100) {
-    throw new Error("Enter a comment of 1–1000 characters and a title under 100 characters.");
-  }
-  const { data, error } = await supabase
-    .from("reviews")
-    .update({ rating: input.rating, title, comment, updated_at: new Date().toISOString() })
-    .eq("id", reviewId)
-    .eq("user_id", input.userId)
-    .eq("status", "pending")
-    .select("id")
-    .maybeSingle();
+  if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) throw new Error("Choose a rating from 1 to 5 stars.");
+  if (!comment || comment.length > 1000 || title.length > 100) throw new Error("Enter a comment of 1–1000 characters and a title under 100 characters.");
+  const { data, error } = await supabase.from("reviews").update({
+    rating: input.rating, title, comment, updated_at: new Date().toISOString(),
+  }).eq("id", reviewId).eq("user_id", input.userId).eq("status", "pending").select("id").maybeSingle();
   if (error) throw new Error(friendlyError(error, "Could not update your review."));
   if (!data) throw new Error("Only a pending review can be edited.");
-  await invalidateReviewQueries(input.productId, input.userId);
+  await invalidateReviewQueries(input.queryClient, input.productId, input.userId);
 }
