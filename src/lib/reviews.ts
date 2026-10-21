@@ -42,8 +42,7 @@ export const productReviewsQuery = (productId: string) =>
         .from("profiles")
         .select("id,full_name")
         .in("id", userIds);
-      if (profileError) throw profileError;
-      const names = new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name]));
+      const names = new Map((profileError ? [] : profiles ?? []).map((profile) => [profile.id, profile.full_name]));
       return rows.map((row) => ({
         ...row,
         display_name: names.get(row.user_id) || "Student",
