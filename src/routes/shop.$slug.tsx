@@ -351,14 +351,14 @@ function ProductDetail() {
               )}
               <div className="mt-5 min-w-0 space-y-3">
                 {reviews.isError ? <p className="text-sm text-muted-foreground">Reviews could not be loaded. Refresh the page to try again.</p> :
-                  (reviews.data ?? []).length === 0 ? <EmptyState title="No reviews yet" description="Approved student reviews will appear here." /> :
-                  (reviews.data ?? []).map((review) => <article key={review.id} className="min-w-0 max-w-full overflow-hidden rounded-xl border border-border p-4">
-                    <div className="flex min-w-0 items-start justify-between gap-3">
+                  (reviews.data ?? []).length === 0 ? <EmptyState title="No reviews yet" className="border-0 bg-transparent py-8" /> :
+                  (reviews.data ?? []).map((review) => <article key={review.id} className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-border p-4">
+                    <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex text-amber-500" aria-label={`${review.rating} out of 5 stars`}>{Array.from({ length: 5 }, (_, i) => <Star key={i} className="h-4 w-4" fill={i < review.rating ? "currentColor" : "none"} />)}</div>
                         {review.title && <h3 className="mt-2 break-words font-semibold [overflow-wrap:anywhere]">{review.title}</h3>}
                       </div>
-                      <time className="shrink-0 text-xs text-muted-foreground" dateTime={review.created_at}>{new Date(review.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</time>
+                      <time className="max-w-full shrink-0 text-xs text-muted-foreground" dateTime={review.created_at}>{new Date(review.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</time>
                     </div>
                     <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground [overflow-wrap:anywhere]">{review.comment}</p>
                     <p className="mt-3 text-xs font-medium text-foreground">{review.display_name || "Student"}</p>
