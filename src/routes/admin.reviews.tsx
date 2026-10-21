@@ -29,14 +29,26 @@ const reviewsQuery = () => ({
   queryKey: ["admin", "reviews"] as const,
   queryFn: async (): Promise<AdminReview[]> => {
     const { data, error } = await supabase.from("reviews")
-      .select("id,product_id,user_id,rating,title,comment,status,created_at,products(title),profiles(full_name)")
+      .select("id,product_id,user_id,rating,title,comment,status,created_at")
       .order("created_at", { ascending: false });
     if (error) throw error;
-    return (data ?? []).map((row) => {
-      const product = Array.isArray(row.products) ? row.products[0] : row.products;
-      const profile = Array.isArray(row.profiles) ? row.profiles[0] : row.profiles;
-      return { ...row, product_title: product?.title || "Deleted product", display_name: profile?.full_name || "Student" } as unknown as AdminReview;
-    });
+    const rows = data ?? [];
+    if (rows.length === 0) return [];
+    const productIds = [...new Set(rows.map((row) => row.product_id))];
+    const userIds = [...new Set(rows.map((row) => row.user_id))];
+    const [{ data: products, error: productsError }, { data: profiles, error: profilesError }] = await Promise.all([
+      supabase.from("products").select("id,title").in("id", productIds),
+      supabase.from("profiles").select("id,full_name").in("id", userIds),
+    ]);
+    if (productsError) throw productsError;
+    if (profilesError) throw profilesError;
+    const productTitles = new Map((products ?? []).map((product) => [product.id, product.title]));
+    const displayNames = new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name]));
+    return rows.map((row) => ({
+      ...row,
+      product_title: productTitles.get(row.product_id) || "Deleted product",
+      display_name: displayNames.get(row.user_id) || "Student",
+    })) as AdminReview[];
   },
 });
 
