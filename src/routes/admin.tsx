@@ -14,6 +14,7 @@ import {
   Moon,
   Package,
   Settings,
+  Star,
   ShoppingCart,
   Sun,
   Users,
@@ -24,6 +25,7 @@ import { useIsAdmin, useSession, signOutCleanly } from "@/lib/auth";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 import { adminOrdersQuery } from "@/lib/admin";
+import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -43,6 +45,7 @@ const NAV = [
   { to: "/admin/products", label: "Products", icon: Package, exact: false },
   { to: "/admin/customers", label: "Customers", icon: Users, exact: false },
   { to: "/admin/messages", label: "Messages", icon: Bell, exact: false },
+  { to: "/admin/reviews", label: "Reviews", icon: Star, exact: false },
   { to: "/admin/free-resources", label: "Free Resources", icon: Gift, exact: false },
   { to: "/admin/settings", label: "Settings", icon: Settings, exact: false },
 ] as const;
