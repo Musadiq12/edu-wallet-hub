@@ -1,14 +1,13 @@
 import { useState } from "react";
-import { useSiteSettings } from "@/lib/settings";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useSiteSettings } from "@/lib/settings";import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-
+import { Star } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "@/lib/auth";
 import { canReviewQuery, myReviewQuery, productReviewsQuery, reviewSummaryQuery, submitReview, updateMyReview } from "@/lib/reviews";
 import { friendlyError } from "@/lib/admin";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Eye, FileText, ShieldCheck, ShoppingBag, Star } from "lucide-react";
+import { ArrowRight, Eye, FileText, ShieldCheck, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
