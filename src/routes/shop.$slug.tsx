@@ -1,15 +1,14 @@
 import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { useSiteSettings } from "@/lib/settings";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { Star } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "@/lib/auth";
 import { canReviewQuery, myReviewQuery, productReviewsQuery, reviewSummaryQuery, submitReview, updateMyReview } from "@/lib/reviews";
 import { friendlyError } from "@/lib/admin";
 import { supabase } from "@/integrations/supabase/client";
-import { ArrowRight, Eye, FileText, ShieldCheck, ShoppingBag } from "lucide-react";
+import { ArrowRight, Eye, FileText, ShieldCheck, ShoppingBag, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -124,7 +123,7 @@ function ProductDetail() {
 
   const ratingData = reviewSummary.data ?? { average: 0, count: 0, distribution: [0, 0, 0, 0, 0] };
   const schemaDescription = (p.description || p.whats_included || "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 300);
-  const coverUrl = p.cover_image ? supabase.storage.from("product-covers").getPublicUrl(p.cover_image).data.publicUrl : undefined;
+  const coverUrl = p.cover_image ? (typeof window === "undefined" ? undefined : supabase.storage.from("product-covers").getPublicUrl(p.cover_image).data.publicUrl) : undefined;
   const productSchema: Record<string, unknown> = {
     "@context": "https://schema.org", "@type": "Product", name: p.title, description: schemaDescription,
     ...(coverUrl ? { image: coverUrl } : {}),
