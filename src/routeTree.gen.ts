@@ -325,6 +325,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/free-resources'
     | '/admin/messages'
+    | '/admin/reviews'
     | '/admin/orders'
     | '/admin/settings'
     | '/checkout/$slug'
