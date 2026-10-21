@@ -28,7 +28,7 @@ export const salesStatsQuery = (range: AnalyticsRange) => queryOptions({
       p_from: from.toISOString(),
       p_to: to.toISOString(),
     });
-    if (error) throw new Error(friendlyError(error, "Could not load sales analytics."));
+    if (error) throw new Error(friendlyError(error, error.message || "Could not load sales analytics."));
     return data as unknown as SalesStats;
   },
 });
