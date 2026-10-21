@@ -21,8 +21,8 @@ SET search_path = public, pg_temp
 STABLE
 AS $$
   SELECT CASE
-    WHEN auth.uid() IS NOT NULL AND auth.uid() <> p_user_id
-      THEN public.has_role(auth.uid(), 'admin'::public.app_role)
+    WHEN auth.uid() IS NULL THEN false
+    WHEN auth.uid() <> p_user_id THEN public.has_role(auth.uid(), 'admin'::public.app_role)
     ELSE EXISTS (
       SELECT 1 FROM public.orders o
       WHERE o.user_id = p_user_id
@@ -33,17 +33,14 @@ AS $$
   END;
 $$;
 REVOKE ALL ON FUNCTION public.has_verified_purchase(uuid, uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.has_verified_purchase(uuid, uuid) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.has_verified_purchase(uuid, uuid) TO authenticated;
 
--- RLS needs an owner-only read policy for a buyer to see their pending/rejected review.
--- Keep public rows approved-only; policy OR semantics allow the owner to read their own row.
+-- Public visitors only read approved reviews; authenticated authors may also read their own status.
 ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "public read approved reviews" ON public.reviews;
-CREATE POLICY "public read approved reviews" ON public.reviews
-  FOR SELECT TO anon, authenticated USING (status = 'approved');
 DROP POLICY IF EXISTS "users read own reviews" ON public.reviews;
-CREATE POLICY "users read own reviews" ON public.reviews
-  FOR SELECT TO authenticated USING (auth.uid() = user_id);
+CREATE POLICY "public read approved reviews" ON public.reviews
+  FOR SELECT TO anon, authenticated USING (status = 'approved' OR auth.uid() = user_id);
 DROP POLICY IF EXISTS "verified buyers can insert own review" ON public.reviews;
 CREATE POLICY "verified buyers can insert own review" ON public.reviews
   FOR INSERT TO authenticated WITH CHECK (
