@@ -1665,7 +1665,7 @@ export type Database = {
         Returns: boolean
       }
       has_verified_purchase: {
-        Args: { p_product_id: string; p_user_id: string }
+        Args: { p_product_id: string }
         Returns: boolean
       }
       is_admin_staff: { Args: never; Returns: boolean }
