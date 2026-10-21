@@ -326,10 +326,10 @@ function ProductDetail() {
             </div>
 
 
-            <section className="mt-10 border-t border-border pt-8" aria-labelledby="reviews-heading">
+            <section className="mt-10 w-full min-w-0 max-w-full border-t border-border pt-8" aria-labelledby="reviews-heading">
               <h2 id="reviews-heading" className="font-serif text-2xl font-semibold">Reviews</h2>
               {ratingData.count === 0 ? <p className="mt-3 text-sm text-muted-foreground">No reviews yet</p> : (
-                <div className="mt-4 grid gap-5 rounded-xl border border-border p-5 sm:grid-cols-[auto_1fr]">
+                <div className="mt-4 grid min-w-0 max-w-full gap-5 rounded-xl border border-border p-5 sm:grid-cols-[auto_minmax(0,1fr)]">
                   <div>
                     <p className="text-4xl font-semibold tabular-nums">{ratingData.average.toFixed(1)}</p>
                     <div className="mt-1 flex text-amber-500" aria-label={`${ratingData.average} out of 5 stars`}>
@@ -337,7 +337,7 @@ function ProductDetail() {
                     </div>
                     <p className="mt-1 text-xs text-muted-foreground">Based on {ratingData.count} reviews</p>
                   </div>
-                  <div className="space-y-2">
+                  <div className="min-w-0 space-y-2">
                     {ratingData.distribution.map((count, i) => {
                       const star = 5 - i;
                       return <div key={star} className="flex items-center gap-3 text-xs">
@@ -349,10 +349,10 @@ function ProductDetail() {
                   </div>
                 </div>
               )}
-              <div className="mt-5 min-w-0 space-y-3">
+              <div className="mt-5 w-full min-w-0 max-w-full space-y-3">
                 {reviews.isError ? <p className="text-sm text-muted-foreground">Reviews could not be loaded. Refresh the page to try again.</p> :
                   (reviews.data ?? []).length === 0 ? <EmptyState title="No reviews yet" className="border-0 bg-transparent py-8" /> :
-                  (reviews.data ?? []).map((review) => <article key={review.id} className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-border p-4">
+                  (reviews.data ?? []).map((review) => <article key={review.id} className="block w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-border p-4">
                     <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <div className="flex text-amber-500" aria-label={`${review.rating} out of 5 stars`}>{Array.from({ length: 5 }, (_, i) => <Star key={i} className="h-4 w-4" fill={i < review.rating ? "currentColor" : "none"} />)}</div>
@@ -360,7 +360,7 @@ function ProductDetail() {
                       </div>
                       <time className="max-w-full shrink-0 text-xs text-muted-foreground" dateTime={review.created_at}>{new Date(review.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</time>
                     </div>
-                    <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground [overflow-wrap:anywhere]">{review.comment}</p>
+                    <p className="mt-2 block w-full min-w-0 max-w-full whitespace-pre-wrap break-all text-sm leading-6 text-muted-foreground [overflow-wrap:anywhere]">{review.comment}</p>
                     <p className="mt-3 text-xs font-medium text-foreground">{review.display_name || "Student"}</p>
                   </article>)}
               </div>
@@ -368,7 +368,7 @@ function ProductDetail() {
                 <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-medium">Your review</p></div>
                 <div className="mt-2 flex text-amber-500">{Array.from({ length: 5 }, (_, i) => <Star key={i} className="h-4 w-4" fill={i < myReview.data!.rating ? "currentColor" : "none"} />)}</div>
                 {myReview.data.title && <p className="mt-2 font-medium">{myReview.data.title}</p>}
-                <p className="mt-1 whitespace-pre-wrap break-words text-sm text-muted-foreground [overflow-wrap:anywhere]">{myReview.data.comment}</p>
+                <p className="mt-1 block w-full min-w-0 max-w-full whitespace-pre-wrap break-all text-sm text-muted-foreground [overflow-wrap:anywhere]">{myReview.data.comment}</p>
                 {myReview.data.status === "pending" && <Button className="mt-3" variant="outline" size="sm" onClick={() => { setReviewRating(myReview.data!.rating); setReviewTitle(myReview.data!.title); setReviewComment(myReview.data!.comment); setEditingReview(true); }}>Edit review</Button>}
               </div> : user && (editingReview || (!myReview.data && canReview.data === true)) ? <div className="mt-6 rounded-xl border border-border p-5">
                 <h3 className="font-semibold">{editingReview ? "Edit your review" : "Write a review"}</h3>
