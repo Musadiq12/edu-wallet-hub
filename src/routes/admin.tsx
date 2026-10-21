@@ -3,6 +3,7 @@ import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-rout
 import { useQuery } from "@tanstack/react-query";
 import {
   Bell,
+  BarChart3,
   BookOpen,
   ChevronDown,
   ChevronsRight,
@@ -40,6 +41,7 @@ export const Route = createFileRoute("/admin")({
 
 const NAV = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { to: "/admin/analytics", label: "Analytics", icon: BarChart3, exact: false },
   { to: "/admin/orders", label: "Sales", icon: ShoppingCart, exact: false },
   { to: "/", label: "View Site", icon: ExternalLink, exact: false, external: true },
   { to: "/admin/products", label: "Products", icon: Package, exact: false },
