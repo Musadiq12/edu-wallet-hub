@@ -41,9 +41,9 @@ const reviewsQuery = () => ({
       supabase.from("profiles").select("id,full_name").in("id", userIds),
     ]);
     if (productsError) throw productsError;
-    if (profilesError) throw profilesError;
+    if (productsError) throw productsError;
     const productTitles = new Map((products ?? []).map((product) => [product.id, product.title]));
-    const displayNames = new Map((profiles ?? []).map((profile) => [profile.id, profile.full_name]));
+    const displayNames = new Map((profilesError ? [] : profiles ?? []).map((profile) => [profile.id, profile.full_name]));
     return rows.map((row) => ({
       ...row,
       product_title: productTitles.get(row.product_id) || "Deleted product",
