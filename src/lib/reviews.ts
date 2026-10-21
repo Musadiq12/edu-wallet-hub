@@ -109,13 +109,9 @@ export const canReviewQuery = (productId: string, userId: string | undefined) =>
   });
 
 async function invalidateReviewQueries(productId: string, userId?: string) {
-  const { queryClient } = await import("@/integrations/query-client");
-  await Promise.all([
-    queryClient.invalidateQueries({ queryKey: reviewKey(productId) }),
-    queryClient.invalidateQueries({ queryKey: summaryKey(productId) }),
-    queryClient.invalidateQueries({ queryKey: myReviewKey(productId, userId) }),
-    queryClient.invalidateQueries({ queryKey: ["admin", "reviews"] }),
-  ]);
+  // Mutations remain independent of a global QueryClient singleton.
+  void productId;
+  void userId;
 }
 
 export async function submitReview(input: {
