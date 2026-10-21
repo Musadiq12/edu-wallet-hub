@@ -88,7 +88,7 @@ export const canReviewQuery = (productId: string, userId: string | undefined) =>
     queryFn: async () => {
       if (!userId) return false;
       const { data, error } = await supabase.rpc("has_verified_purchase", {
-        p_product_id: productId, p_user_id: userId,
+        p_product_id: productId,
       });
       if (error) throw error;
       return data === true;
