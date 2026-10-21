@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { useSiteSettings } from "@/lib/settings";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Star } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { useSession } from "@/lib/auth";
+import { canReviewQuery, myReviewQuery, productReviewsQuery, reviewSummaryQuery, submitReview, updateMyReview } from "@/lib/reviews";
+import { friendlyError } from "@/lib/admin";
+import { supabase } from "@/integrations/supabase/client";
 import { ArrowRight, Eye, FileText, ShieldCheck, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -60,9 +66,20 @@ export const Route = createFileRoute("/shop/$slug")({
 
 function ProductDetail() {
   const s = useSiteSettings();
+  const queryClient = useQueryClient();
+  const { user } = useSession();
   const { slug } = Route.useParams();
   const product = useQuery(productBySlugQuery(slug));
   const categories = useQuery(categoriesQuery());
+  const reviews = useQuery(productReviewsQuery(product.data?.id ?? ""));
+  const reviewSummary = useQuery(reviewSummaryQuery(product.data?.id ?? ""));
+  const myReview = useQuery(myReviewQuery(product.data?.id ?? "", user?.id));
+  const canReview = useQuery(canReviewQuery(product.data?.id ?? "", user?.id));
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewTitle, setReviewTitle] = useState("");
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewSaving, setReviewSaving] = useState(false);
+  const [editingReview, setEditingReview] = useState(false);
 
   const p = product.data;
   const preview = useQuery({
@@ -104,8 +121,45 @@ function ProductDetail() {
   const category = categories.data?.find((c) => c.id === p.category_id);
   const isAssignment = category?.slug === "assignment-guidance";
 
+  const ratingData = reviewSummary.data ?? { average: 0, count: 0, distribution: [0, 0, 0, 0, 0] };
+  const schemaDescription = (p.description || p.whats_included || "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 300);
+  const coverUrl = p.cover_image ? (typeof window === "undefined" ? undefined : supabase.storage.from("product-covers").getPublicUrl(p.cover_image).data.publicUrl) : undefined;
+  const productSchema: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: p.title,
+    description: schemaDescription,
+    ...(coverUrl ? { image: coverUrl } : {}),
+    offers: { "@type": "Offer", price: String(effectivePrice(p)), priceCurrency: "INR", availability: "https://schema.org/InStock" },
+    ...(ratingData.count > 0 ? { aggregateRating: { "@type": "AggregateRating", ratingValue: String(ratingData.average), reviewCount: String(ratingData.count) } } : {}),
+  };
+  const handleSubmitReview = async () => {
+    if (!user) return;
+    setReviewSaving(true);
+    try {
+      const payload = { productId: p.id, userId: user.id, queryClient, rating: reviewRating, title: reviewTitle, comment: reviewComment };
+      if (editingReview && myReview.data?.status === "pending") {
+        await updateMyReview(myReview.data.id, payload);
+        toast.success("Review updated.");
+      } else {
+        await submitReview(payload);
+        toast.success("Thanks! Your review will appear after approval.");
+      }
+      setEditingReview(false); setReviewTitle(""); setReviewComment(""); setReviewRating(0);
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["reviews", p.id] }),
+        queryClient.invalidateQueries({ queryKey: ["review-summary", p.id] }),
+        queryClient.invalidateQueries({ queryKey: ["my-review", p.id, user.id] }),
+        queryClient.invalidateQueries({ queryKey: ["can-review", p.id, user.id] }),
+      ]);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : friendlyError(error, "Could not submit the review."));
+    } finally { setReviewSaving(false); }
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema).replace(/</g, "\\u003c") }} />
       <div className="page-container py-8 sm:py-12">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <Link to="/shop" className="hover:text-foreground">
@@ -271,6 +325,62 @@ function ProductDetail() {
               </div>
             </div>
 
+
+            <section className="mt-10 border-t border-border pt-8" aria-labelledby="reviews-heading">
+              <h2 id="reviews-heading" className="font-serif text-2xl font-semibold">Reviews</h2>
+              {ratingData.count === 0 ? <p className="mt-3 text-sm text-muted-foreground">No reviews yet</p> : (
+                <div className="mt-4 grid gap-5 rounded-xl border border-border p-5 sm:grid-cols-[auto_1fr]">
+                  <div>
+                    <p className="text-4xl font-semibold tabular-nums">{ratingData.average.toFixed(1)}</p>
+                    <div className="mt-1 flex text-amber-500" aria-label={`${ratingData.average} out of 5 stars`}>
+                      {Array.from({ length: 5 }, (_, i) => <Star key={i} className="h-4 w-4" fill={i + 1 <= ratingData.average ? "currentColor" : "none"} />)}
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">Based on {ratingData.count} reviews</p>
+                  </div>
+                  <div className="space-y-2">
+                    {ratingData.distribution.map((count, i) => {
+                      const star = 5 - i;
+                      return <div key={star} className="flex items-center gap-3 text-xs">
+                        <span className="w-6 shrink-0">{star}★</span>
+                        <div className="h-2 flex-1 overflow-hidden rounded bg-muted"><div className="h-full rounded bg-amber-500" style={{ width: `${ratingData.count ? count / ratingData.count * 100 : 0}%` }} /></div>
+                        <span className="w-5 text-right tabular-nums">{count}</span>
+                      </div>;
+                    })}
+                  </div>
+                </div>
+              )}
+              <div className="mt-5 space-y-3">
+                {reviews.isError ? <p className="text-sm text-muted-foreground">Reviews could not be loaded. Refresh the page to try again.</p> :
+                  (reviews.data ?? []).length === 0 ? <EmptyState title="No reviews yet" description="Approved student reviews will appear here." /> :
+                  (reviews.data ?? []).map((review) => <article key={review.id} className="rounded-xl border border-border p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <div className="flex text-amber-500" aria-label={`${review.rating} out of 5 stars`}>{Array.from({ length: 5 }, (_, i) => <Star key={i} className="h-4 w-4" fill={i < review.rating ? "currentColor" : "none"} />)}</div>
+                        {review.title && <h3 className="mt-2 font-semibold">{review.title}</h3>}
+                      </div>
+                      <time className="shrink-0 text-xs text-muted-foreground" dateTime={review.created_at}>{new Date(review.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</time>
+                    </div>
+                    <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{review.comment}</p>
+                    <p className="mt-3 text-xs font-medium text-foreground">{review.display_name || "Student"}</p>
+                  </article>)}
+              </div>
+              {user && myReview.data ? <div className="mt-6 rounded-xl border border-border bg-surface p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2"><p className="font-medium">Your review</p><Badge variant={myReview.data.status === "approved" ? "default" : "secondary"}>{myReview.data.status === "pending" ? "Pending approval" : myReview.data.status === "approved" ? "Approved" : "Rejected"}</Badge></div>
+                <div className="mt-2 flex text-amber-500">{Array.from({ length: 5 }, (_, i) => <Star key={i} className="h-4 w-4" fill={i < myReview.data!.rating ? "currentColor" : "none"} />)}</div>
+                {myReview.data.title && <p className="mt-2 font-medium">{myReview.data.title}</p>}
+                <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{myReview.data.comment}</p>
+                {myReview.data.status === "pending" && <Button className="mt-3" variant="outline" size="sm" onClick={() => { setReviewRating(myReview.data!.rating); setReviewTitle(myReview.data!.title); setReviewComment(myReview.data!.comment); setEditingReview(true); }}>Edit review</Button>}
+              </div> : user && canReview.data === true ? <div className="mt-6 rounded-xl border border-border p-5">
+                <h3 className="font-semibold">{editingReview ? "Edit your review" : "Write a review"}</h3>
+                <div className="mt-4"><span className="text-sm font-medium">Rating (required)</span><div className="mt-2 flex gap-1" role="radiogroup" aria-label="Rating">
+                  {Array.from({ length: 5 }, (_, i) => i + 1).map((star) => <button type="button" key={star} role="radio" aria-checked={reviewRating === star} aria-label={`${star} star${star === 1 ? "" : "s"}`} onClick={() => setReviewRating(star)} className="rounded p-1 text-amber-500 focus-visible:outline focus-visible:outline-2"><Star className="h-6 w-6" fill={star <= reviewRating ? "currentColor" : "none"} /></button>)}
+                </div></div>
+                <label className="mt-4 block text-sm font-medium">Title (optional)<input maxLength={100} value={reviewTitle} onChange={(e) => setReviewTitle(e.target.value)} className="mt-1 h-10 w-full rounded-md border border-input bg-background px-3 text-sm" placeholder="Summarize your experience" /></label>
+                <label className="mt-4 block text-sm font-medium">Comment (required)<Textarea rows={4} maxLength={1000} value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} className="mt-1" placeholder="What did you think of this resource?" /><span className="mt-1 block text-xs font-normal text-muted-foreground">{reviewComment.length}/1000</span></label>
+                <Button className="mt-4" disabled={reviewSaving || !reviewRating || !reviewComment.trim()} onClick={() => void handleSubmitReview()}>{reviewSaving ? "Submitting…" : editingReview ? "Save changes" : "Submit review"}</Button>
+                <p className="mt-3 text-xs text-muted-foreground">Your review will be visible after admin approval.</p>
+              </div> : user && canReview.data === false ? <p className="mt-6 text-sm text-muted-foreground">Reviews open after your purchase is verified.</p> : null}
+            </section>
             <div className="mt-6 space-y-3 rounded-2xl border border-border bg-surface p-5 text-sm text-muted-foreground">
               <p className="flex gap-2">
                 <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />

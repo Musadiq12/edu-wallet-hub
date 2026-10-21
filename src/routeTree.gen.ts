@@ -26,6 +26,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminFreeResourcesRouteImport } from './routes/admin.free-resources'
 import { Route as AdminMessagesRouteImport } from './routes/admin.messages'
+import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as CheckoutSlugRouteImport } from './routes/checkout.$slug'
@@ -120,6 +121,11 @@ const AdminMessagesRoute = AdminMessagesRouteImport.update({
   path: '/messages',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminReviewsRoute = AdminReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminOrdersRoute = AdminOrdersRouteImport.update({
   id: '/orders',
   path: '/orders',
@@ -178,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/free-resources': typeof AdminFreeResourcesRoute
   '/admin/messages': typeof AdminMessagesRoute
+  '/admin/reviews': typeof AdminReviewsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/checkout/$slug': typeof CheckoutSlugRoute
@@ -204,6 +211,7 @@ export interface FileRoutesByTo {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/free-resources': typeof AdminFreeResourcesRoute
   '/admin/messages': typeof AdminMessagesRoute
+  '/admin/reviews': typeof AdminReviewsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/checkout/$slug': typeof CheckoutSlugRoute
@@ -232,6 +240,7 @@ export interface FileRoutesById {
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/free-resources': typeof AdminFreeResourcesRoute
   '/admin/messages': typeof AdminMessagesRoute
+  '/admin/reviews': typeof AdminReviewsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/checkout/$slug': typeof CheckoutSlugRoute
@@ -261,6 +270,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/free-resources'
     | '/admin/messages'
+    | '/admin/reviews'
     | '/admin/orders'
     | '/admin/settings'
     | '/checkout/$slug'
@@ -287,6 +297,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/free-resources'
     | '/admin/messages'
+    | '/admin/reviews'
     | '/admin/orders'
     | '/admin/settings'
     | '/checkout/$slug'
@@ -314,6 +325,7 @@ export interface FileRouteTypes {
     | '/admin/customers'
     | '/admin/free-resources'
     | '/admin/messages'
+    | '/admin/reviews'
     | '/admin/orders'
     | '/admin/settings'
     | '/checkout/$slug'
@@ -458,6 +470,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminFreeResourcesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/reviews': {
+      id: '/admin/reviews'
+      path: '/reviews'
+      fullPath: '/admin/reviews'
+      preLoaderRoute: typeof AdminReviewsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/messages': {
       id: '/admin/messages'
       path: '/messages'
@@ -528,6 +547,7 @@ interface AdminRouteChildren {
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminFreeResourcesRoute: typeof AdminFreeResourcesRoute
   AdminMessagesRoute: typeof AdminMessagesRoute
+  AdminReviewsRoute: typeof AdminReviewsRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -540,6 +560,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCustomersRoute: AdminCustomersRoute,
   AdminFreeResourcesRoute: AdminFreeResourcesRoute,
   AdminMessagesRoute: AdminMessagesRoute,
+  AdminReviewsRoute: AdminReviewsRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminIndexRoute: AdminIndexRoute,
