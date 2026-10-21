@@ -41,7 +41,6 @@ const reviewsQuery = () => ({
       supabase.from("profiles").select("id,full_name").in("id", userIds),
     ]);
     if (productsError) throw productsError;
-    if (productsError) throw productsError;
     const productTitles = new Map((products ?? []).map((product) => [product.id, product.title]));
     const displayNames = new Map((profilesError ? [] : profiles ?? []).map((profile) => [profile.id, profile.full_name]));
     return rows.map((row) => ({
