@@ -10,6 +10,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { salesStatsQuery, type AnalyticsRange } from "@/lib/analytics";
 import { friendlyError } from "@/lib/admin";
 import { formatPrice } from "@/lib/format";
+import Dashboard from "@/components/ui/dashboard-4";
 
 export const Route = createFileRoute("/admin/analytics")({
   head: () => ({ meta: [{ title: "Sales Analytics — Edu Wallet" }, { name: "robots", content: "noindex, nofollow" }] }),
@@ -44,6 +45,7 @@ function SalesAnalytics() {
 
   return <div className="min-w-0 space-y-6">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><h1 className="text-2xl font-semibold tracking-tight">Sales Analytics</h1><p className="mt-1 text-sm text-muted-foreground">Aggregated sales performance for the selected period.</p></div><div className="flex gap-2" aria-label="Analytics date range">{ranges.map((days) => <Button key={days} size="sm" variant={range === days ? "default" : "outline"} onClick={() => setRange(days)}>{days}D</Button>)}</div></div>
+    {!stats.isError && <Dashboard />}
     {stats.isError ? <div className="rounded-xl border border-destructive/30 p-5"><p className="text-sm">{stats.error instanceof Error ? stats.error.message : friendlyError(stats.error, "Could not load sales analytics.")}</p><Button className="mt-3" variant="outline" onClick={() => void stats.refetch()}>Retry</Button></div> : <>
       <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-5">{stats.isLoading ? ranges.slice(0, 3).map((n) => <Skeleton key={n} className="h-24" />) : kpis.map((kpi) => <Metric key={kpi.label} {...kpi} />)}</div>
       <div className="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
