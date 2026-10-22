@@ -93,22 +93,27 @@ export const relatedProductsQuery = (post: BlogPost | undefined) =>
     enabled: !!post,
     queryFn: async (): Promise<Product[]> => {
       if (!post) return [];
-      const terms = [post.category, ...post.tags].map((term) => term.trim()).filter(Boolean);
+      const terms = [post.category, ...post.tags].map((term) => term.trim().replace(/[%,_]/g, "")).filter(Boolean);
+      let matches: Product[] = [];
       if (terms.length) {
-        const clauses = terms.flatMap((term) => {
-          const safe = term.replace(/[%,_]/g, "");
-          return safe ? [`course_label.ilike.%${safe}%`, `keywords.ilike.%${safe}%`] : [];
-        });
-        if (clauses.length) {
-          const { data, error } = await supabase.from("products")
-            .select("id,product_type,title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,created_at")
-            .eq("is_active", true).eq("is_archived", false).eq("is_demo", false)
-            .or(clauses.join(",")).order("created_at", { ascending: false }).limit(4);
-          if (error) throw error;
-          if (data?.length) return data as unknown as Product[];
-        }
+        const clauses = terms.flatMap((term) => [
+          `course_label.ilike.%${term}%`,
+          `keywords.ilike.%${term}%`,
+        ]);
+        const { data, error } = await supabase.from("products")
+          .select("id,product_type,title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,created_at")
+          .eq("is_active", true).eq("is_archived", false).eq("is_demo", false)
+          .or(clauses.join(",")).order("created_at", { ascending: false }).limit(4);
+        if (error) throw error;
+        matches = (data ?? []) as unknown as Product[];
       }
-      return (await productsQuery({ featured: true, limit: 4 }).queryFn()) as Product[];
+      if (matches.length) return matches;
+      const { data, error } = await supabase.from("products")
+        .select("id,product_type,title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,created_at")
+        .eq("is_active", true).eq("is_archived", false).eq("is_demo", false).eq("is_featured", true)
+        .order("created_at", { ascending: false }).limit(4);
+      if (error) throw error;
+      return (data ?? []) as unknown as Product[];
     },
   });
 
