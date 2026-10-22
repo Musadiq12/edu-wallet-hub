@@ -88,8 +88,6 @@ function ProductDetail() {
     queryFn: () => signedUrl("product-previews", p!.preview_file),
   });
 
-  const [freeResourceOpening, setFreeResourceOpening] = useState(false);
-
   if (product.isLoading) {
     return (
       <div className="page-container section-y">
@@ -262,49 +260,15 @@ function ProductDetail() {
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 {p.is_free ? (
-                  p.pdf_file ? (
-                    <Button
-                      size="lg"
-                      disabled={freeResourceOpening}
-                      onClick={async () => {
-                        setFreeResourceOpening(true);
-                        try {
-                          const workerUrl = String(
-                            import.meta.env["VITE_R2_WORKER_URL"] ||
-                              "https://edu-wallet-r2.designeroutletmedia.workers.dev",
-                          ).replace(/\/$/, "");
-
-                          const response = await fetch(`${workerUrl}/free-resource-link`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ key: p.pdf_file }),
-                          });
-
-                          const data = await response.json().catch(() => ({}));
-                          if (!response.ok || typeof data?.url !== "string") {
-                            throw new Error(
-                              typeof data?.error === "string"
-                                ? data.error
-                                : `Could not open the free resource (HTTP ${response.status}).`,
-                            );
-                          }
-
-                          window.location.assign(data.url);
-                        } catch (error) {
-                          console.error("[Free Resource] Open failed:", error);
-                          toast.error(
-                            error instanceof Error ? error.message : "Could not open the free resource.",
-                          );
-                        } finally {
-                          setFreeResourceOpening(false);
-                        }
-                      }}
-                    >
-                      {freeResourceOpening ? "Opening…" : "Download Resource"}
+                  p.pdf_file && /^https:\/\/(drive\.google\.com|docs\.google\.com)\//i.test(p.pdf_file) ? (
+                    <Button size="lg" asChild>
+                      <a href={p.pdf_file} target="_blank" rel="noopener noreferrer">
+                        Open Free Resource
+                      </a>
                     </Button>
                   ) : (
                     <Button size="lg" disabled>
-                      File coming soon
+                      Google Drive link not added
                     </Button>
                   )
                 ) : (
