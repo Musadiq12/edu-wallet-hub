@@ -1,6 +1,5 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { productsQuery, type Product } from "@/lib/catalog";
 import { friendlyError } from "@/lib/admin";
 
 export type BlogPost = {
