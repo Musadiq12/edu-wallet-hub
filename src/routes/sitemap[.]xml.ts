@@ -6,7 +6,7 @@ const BASE = (
   import.meta.env["VITE_SITE_URL"] ??
   "https://eduwallet.in"
 ).replace(/\/+$/, "");
-const STATIC = ["/", "/shop", "/free-resources", "/about", "/contact"];
+const STATIC = ["/", "/shop", "/free-resources", "/about", "/contact", "/blog"];
 
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
@@ -25,7 +25,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           .eq("is_demo", false)
           .range(0, 4999);
         if (error) return new Response("Sitemap unavailable", { status: 500 });
-        const urls = [
+        const { data: posts, error: blogError } = await sb.from("blog_posts").select("slug,updated_at").eq("status", "published").range(0, 4999);\n        if (blogError) return new Response("Sitemap unavailable", { status: 500 });\n        const urls = [
           ...STATIC.map((p) => `<url><loc>${BASE}${p}</loc></url>`),
           ...(data ?? []).map(
             (r) =>
