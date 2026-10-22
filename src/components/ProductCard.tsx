@@ -77,11 +77,19 @@ export function ProductCard({ product, compact = false }: { product: Product; co
         </div>
 
         <div className="mt-auto flex gap-2 pt-4">
-          <Button variant={compact ? "default" : "outline"} size="sm" className="flex-1" asChild>
-            <Link to="/shop/$slug" params={{ slug: product.slug }}>
-              View Details
-            </Link>
-          </Button>
+          {product.is_free && product.pdf_file && /^https:\/\/(drive\.google\.com|docs\.google\.com)\//i.test(product.pdf_file) ? (
+            <Button variant={compact ? "default" : "outline"} size="sm" className="flex-1" asChild>
+              <a href={product.pdf_file} target="_blank" rel="noopener noreferrer">
+                Open Resource
+              </a>
+            </Button>
+          ) : (
+            <Button variant={compact ? "default" : "outline"} size="sm" className="flex-1" asChild>
+              <Link to="/shop/$slug" params={{ slug: product.slug }}>
+                View Details
+              </Link>
+            </Button>
+          )}
           {!product.is_free && !compact && (
             <Button size="sm" className="flex-1" asChild>
               <Link to="/checkout/$slug" params={{ slug: product.slug }}>

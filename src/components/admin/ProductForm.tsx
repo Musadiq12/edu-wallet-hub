@@ -36,6 +36,7 @@ type FormState = {
   page_count: string;
   format: string;
   is_free: boolean;
+  google_drive_url: string;
   is_featured: boolean;
   is_active: boolean;
 };
@@ -55,6 +56,7 @@ const emptyState: FormState = {
   page_count: "",
   format: "PDF",
   is_free: false,
+  google_drive_url: "",
   is_featured: false,
   is_active: false,
 };
@@ -81,6 +83,10 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
           page_count: product.page_count != null ? String(product.page_count) : "",
           format: product.format ?? ((product.product_type ?? "pdf") === "physical" ? "Physical copy" : "PDF"),
           is_free: product.is_free,
+          google_drive_url:
+            product.is_free && /^https:\/\/(drive\.google\.com|docs\.google\.com)\//i.test(product.pdf_file ?? "")
+              ? product.pdf_file!
+              : "",
           is_featured: product.is_featured,
           is_active: product.is_active,
         }
@@ -132,6 +138,23 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
     const pricingProblem = validateProductPricing(priceNum, discNum, form.is_free);
     if (pricingProblem) return pricingProblem;
     if (form.page_count && Number(form.page_count) < 0) return "Page count cannot be negative.";
+    if (form.is_free && form.product_type !== "pdf") return "Free resources must use the Digital PDF product type.";
+    if (form.is_free && !form.google_drive_url.trim()) return "Add a Google Drive link for this free resource.";
+    if (form.is_free) {
+      try {
+        const url = new URL(form.google_drive_url.trim());
+        const host = url.hostname.toLowerCase();
+        const allowedHosts = ["drive.google.com", "docs.google.com"];
+        if (
+          url.protocol !== "https:" ||
+          !allowedHosts.some((allowed) => host === allowed || host.endsWith(`.${allowed}`))
+        ) {
+          return "Enter a valid Google Drive or Google Docs HTTPS link.";
+        }
+      } catch {
+        return "Enter a valid Google Drive link.";
+      }
+    }
     return null;
   };
 
@@ -157,7 +180,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         uploaded.push({ bucket: BUCKETS.cover, path });
         next.cover_image = path;
       }
-      if (pdf && form.product_type === "pdf") {
+      if (pdf && form.product_type === "pdf" && !form.is_free) {
         setStatus("Uploading product PDF…");
         const { path } = await uploadFile(BUCKETS.file, pdf.file, "files");
         uploaded.push({ bucket: BUCKETS.file, path });
@@ -189,7 +212,9 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         is_featured: form.is_featured,
         is_active: willPublish,
         cover_image: next.cover_image,
-        pdf_file: form.product_type === "pdf" ? next.pdf_file : null,
+        pdf_file: form.product_type === "pdf"
+          ? (form.is_free ? form.google_drive_url.trim() : next.pdf_file) || null
+          : null,
         preview_file: form.product_type === "pdf" ? next.preview_file : null,
       };
 
@@ -201,10 +226,10 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
 
       if (product) {
         if (cover && paths.cover_image && paths.cover_image !== next.cover_image) await removeFile(BUCKETS.cover, paths.cover_image);
-        if (pdf && paths.pdf_file && paths.pdf_file !== next.pdf_file) await removeFile(BUCKETS.file, paths.pdf_file);
+        if (pdf && !form.is_free && paths.pdf_file && paths.pdf_file !== next.pdf_file) await removeFile(BUCKETS.file, paths.pdf_file);
         if (preview && paths.preview_file && paths.preview_file !== next.preview_file) await removeFile(BUCKETS.preview, paths.preview_file);
         if (form.product_type === "physical") {
-          if (paths.pdf_file) await removeFile(BUCKETS.file, paths.pdf_file);
+          if (!product.is_free && paths.pdf_file) await removeFile(BUCKETS.file, paths.pdf_file);
           if (paths.preview_file) await removeFile(BUCKETS.preview, paths.preview_file);
         }
       }
@@ -366,21 +391,49 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         />
       </section>
 
-      {form.product_type === "pdf" && <section className="space-y-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">PDF files</h2>
-        <AdminFileField
-          id="pdf" label="Product PDF (private)" kind="pdf" accept="application/pdf"
-          maxBytes={LIMITS.fileBytes} help="Stored privately. Delivered manually after payment verification. Up to 50 MB."
-          existingPath={paths.pdf_file} picked={pdf} busy={busy} status={status ?? ""}
-          onPick={setPdf} onRemoveExisting={() => setPaths((p) => ({ ...p, pdf_file: null }))}
-        />
-        <AdminFileField
-          id="preview" label="Preview / sample PDF (optional)" kind="pdf" accept="application/pdf"
-          maxBytes={LIMITS.previewBytes} help="Shown to students as a free sample. Up to 20 MB."
-          existingPath={paths.preview_file} picked={preview} busy={busy} status={status ?? ""}
-          onPick={setPreview} onRemoveExisting={() => setPaths((p) => ({ ...p, preview_file: null }))}
-        />
-      </section>}
+      {form.is_free ? (
+        <section className="space-y-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Free resource link</h2>
+          <div className="space-y-1.5">
+            <Label htmlFor="google_drive_url">Google Drive URL</Label>
+            <Input
+              id="google_drive_url"
+              type="url"
+              inputMode="url"
+              className="h-11"
+              value={form.google_drive_url}
+              onChange={(e) => set("google_drive_url", e.target.value)}
+              placeholder="https://drive.google.com/file/d/.../view"
+              autoComplete="url"
+            />
+            <p className="text-xs text-muted-foreground">
+              Paste a Google Drive or Google Docs link. Configure sharing so students with the link can open it. The resource file itself is not uploaded to Cloudflare R2.
+            </p>
+          </div>
+          {form.product_type === "pdf" && <AdminFileField
+            id="preview" label="Preview / sample PDF (optional)" kind="pdf" accept="application/pdf"
+            maxBytes={LIMITS.previewBytes} help="Optional sample preview. Up to 20 MB."
+            existingPath={paths.preview_file} picked={preview} busy={busy} status={status ?? ""}
+            onPick={setPreview} onRemoveExisting={() => setPaths((p) => ({ ...p, preview_file: null }))}
+          />}
+        </section>
+      ) : form.product_type === "pdf" ? (
+        <section className="space-y-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">PDF files</h2>
+          <AdminFileField
+            id="pdf" label="Product PDF (private)" kind="pdf" accept="application/pdf"
+            maxBytes={LIMITS.fileBytes} help="Stored privately. Delivered manually after payment verification. Up to 50 MB."
+            existingPath={paths.pdf_file} picked={pdf} busy={busy} status={status ?? ""}
+            onPick={setPdf} onRemoveExisting={() => setPaths((p) => ({ ...p, pdf_file: null }))}
+          />
+          <AdminFileField
+            id="preview" label="Preview / sample PDF (optional)" kind="pdf" accept="application/pdf"
+            maxBytes={LIMITS.previewBytes} help="Shown to students as a free sample. Up to 20 MB."
+            existingPath={paths.preview_file} picked={preview} busy={busy} status={status ?? ""}
+            onPick={setPreview} onRemoveExisting={() => setPaths((p) => ({ ...p, preview_file: null }))}
+          />
+        </section>
+      ) : null}
 
       {form.product_type === "physical" && <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm"><p className="font-medium">Physical product selected</p><p className="mt-1 text-muted-foreground">No product PDF will be uploaded or required. Customers will provide a delivery address during checkout.</p></div>}
 
@@ -400,7 +453,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         <div className="space-y-3 rounded-lg border border-border bg-surface p-4">
           {[
             { key: "is_featured" as const, label: "Featured product", hint: "Shown in the featured section on the homepage." },
-            { key: "is_free" as const, label: "Free product", hint: "Listed under Free Resources; price is ignored." },
+            { key: "is_free" as const, label: "Free product", hint: "Listed under Free Resources; add a Google Drive link instead of uploading the resource file." },
             { key: "is_active" as const, label: "Published", hint: "Visible on the public Shop page." },
           ].map((row) => (
             <div key={row.key} className="flex items-start justify-between gap-4">

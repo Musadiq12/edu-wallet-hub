@@ -62,7 +62,7 @@ function AdminFreeResources() {
               <div className="min-w-0">
                 <p className="truncate font-medium">{p.title}</p>
                 <p className="truncate text-xs text-muted-foreground">
-                  {p.subject_label ?? "—"} · {p.preview_file ? "Sample file attached" : "No sample file"}
+                  {p.subject_label ?? "—"} · {p.pdf_file && /^https:\/\/(drive\.google\.com|docs\.google\.com)\//i.test(p.pdf_file) ? "Google Drive link added" : "No Google Drive link"}
                 </p>
               </div>
               <div className="flex items-center gap-2">
