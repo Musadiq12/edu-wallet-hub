@@ -41,7 +41,7 @@ export const publishedPostsQuery = (opts: { search?: string; category?: string }
       let q = supabase.from("blog_posts").select(POST_FIELDS).eq("status", "published")
         .order("published_at", { ascending: false }).limit(100);
       const search = (opts.search ?? "").trim().replace(/[%_,]/g, "");
-      if (search) q = q.or(`title.ilike.%${search}%,excerpt.ilike.%${search}%,content.ilike.%${search}%`);
+      if (search) q = q.or(`title.ilike.%${search}%,excerpt.ilike.%${search}%`);
       if (opts.category) q = q.eq("category", opts.category);
       const { data, error } = await q;
       if (error) throw error;
