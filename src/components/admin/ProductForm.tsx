@@ -143,9 +143,11 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
     if (form.is_free) {
       try {
         const url = new URL(form.google_drive_url.trim());
+        const host = url.hostname.toLowerCase();
+        const allowedHosts = ["drive.google.com", "docs.google.com"];
         if (
           url.protocol !== "https:" ||
-          !["drive.google.com", "docs.google.com"].includes(url.hostname.toLowerCase())
+          !allowedHosts.some((allowed) => host === allowed || host.endsWith(`.${allowed}`))
         ) {
           return "Enter a valid Google Drive or Google Docs HTTPS link.";
         }
