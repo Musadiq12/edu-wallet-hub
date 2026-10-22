@@ -227,6 +227,57 @@ export type Database = {
           },
         ]
       }
+      blog_posts: {
+        Row: {
+          category: string
+          content: string
+          cover_image: string
+          created_at: string
+          excerpt: string
+          id: string
+          meta_description: string
+          meta_title: string
+          published_at: string | null
+          slug: string
+          status: string
+          tags: string[]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          content?: string
+          cover_image?: string
+          created_at?: string
+          excerpt?: string
+          id?: string
+          meta_description?: string
+          meta_title?: string
+          published_at?: string | null
+          slug: string
+          status?: string
+          tags?: string[]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: string
+          cover_image?: string
+          created_at?: string
+          excerpt?: string
+          id?: string
+          meta_description?: string
+          meta_title?: string
+          published_at?: string | null
+          slug?: string
+          status?: string
+          tags?: string[]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -1648,6 +1699,10 @@ export type Database = {
       admin_reset_guard: {
         Args: { p_actor_id: string; p_ip_address: unknown }
         Returns: boolean
+      }
+      admin_sales_stats: {
+        Args: { p_from: string; p_to: string }
+        Returns: Json
       }
       admin_upsert_product: {
         Args: { _payload: Json; _product_id: string }
