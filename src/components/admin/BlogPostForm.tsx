@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { BUCKETS, LIMITS, uploadFile, removeFile, friendlyError } from "@/lib/admin";
+import { LIMITS, uploadFile, removeFile, friendlyError } from "@/lib/admin";
 import { coverImageUrl, savePost, uniqueSlugCheck, type BlogPost, type BlogPostInput } from "@/lib/blog";
 import { supabase } from "@/integrations/supabase/client";
 
