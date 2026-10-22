@@ -13,7 +13,8 @@ export const Route = createFileRoute("/blog/$slug")({
   loader: async ({ context, params }) => {
     try {
       const post = await context.queryClient.ensureQueryData(postBySlugQuery(params.slug));
-      const cover = post?.cover_image ? coverImageUrl(post.cover_image) : "";
+      if (!post) throw new Error("Article not found");
+      const cover = post.cover_image ? coverImageUrl(post.cover_image) : "";
       return { post, cover };
     } catch { return { post: null, cover: "" }; }
   },
