@@ -13,8 +13,8 @@ export const Route = createFileRoute("/sitemap.xml")({
     handlers: {
       GET: async () => {
         const sb = createClient(
-          process.env['SUPABASE_URL'] ?? import.meta.env['VITE_SUPABASE_URL'],
-          process.env['SUPABASE_PUBLISHABLE_KEY'] ?? import.meta.env['VITE_SUPABASE_PUBLISHABLE_KEY'],
+          process.env["SUPABASE_URL"] ?? import.meta.env["VITE_SUPABASE_URL"],
+          process.env["SUPABASE_PUBLISHABLE_KEY"] ?? import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"],
           { auth: { persistSession: false } },
         );
         const { data, error } = await sb
@@ -25,11 +25,19 @@ export const Route = createFileRoute("/sitemap.xml")({
           .eq("is_demo", false)
           .range(0, 4999);
         if (error) return new Response("Sitemap unavailable", { status: 500 });
-        const { data: posts, error: blogError } = await sb.from("blog_posts").select("slug,updated_at").eq("status", "published").range(0, 4999);\n        if (blogError) return new Response("Sitemap unavailable", { status: 500 });\n        const urls = [
+        const { data: posts, error: blogError } = await sb
+          .from("blog_posts")
+          .select("slug,updated_at")
+          .eq("status", "published")
+          .range(0, 4999);
+        if (blogError) return new Response("Sitemap unavailable", { status: 500 });
+        const urls = [
           ...STATIC.map((p) => `<url><loc>${BASE}${p}</loc></url>`),
-          ...(data ?? []).map(
-            (r) =>
-              `<url><loc>${BASE}/shop/${encodeURIComponent(r.slug)}</loc>${r.updated_at ? `<lastmod>${new Date(r.updated_at).toISOString()}</lastmod>` : ""}</url>`,
+          ...(data ?? []).map((r) =>
+            `<url><loc>${BASE}/shop/${encodeURIComponent(r.slug)}</loc>${r.updated_at ? `<lastmod>${new Date(r.updated_at).toISOString()}</lastmod>` : ""}</url>`,
+          ),
+          ...(posts ?? []).map((r) =>
+            `<url><loc>${BASE}/blog/${encodeURIComponent(r.slug)}</loc>${r.updated_at ? `<lastmod>${new Date(r.updated_at).toISOString()}</lastmod>` : ""}</url>`,
           ),
         ];
         const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join("")}</urlset>`;
