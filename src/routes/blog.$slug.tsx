@@ -23,7 +23,7 @@ export const Route = createFileRoute("/blog/$slug")({
     const title = post ? (post.meta_title || post.title) : "Article not found | EduWallet";
     const description = post ? (post.meta_description || post.excerpt) : "Browse exam preparation articles and study guides from EduWallet.";
     const cover = loaderData?.cover ?? "";
-    const image = cover ? new URL(cover, "https://eduwallet.in").toString() : "";
+    const image = cover ? new URL(cover, import.meta.env["VITE_SITE_URL"] || "https://eduwallet.in").toString() : "";
     const meta: Array<Record<string, string>> = [
       { title },
       { name: "description", content: description },
