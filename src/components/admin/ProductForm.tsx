@@ -229,7 +229,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         if (pdf && !form.is_free && paths.pdf_file && paths.pdf_file !== next.pdf_file) await removeFile(BUCKETS.file, paths.pdf_file);
         if (preview && paths.preview_file && paths.preview_file !== next.preview_file) await removeFile(BUCKETS.preview, paths.preview_file);
         if (form.product_type === "physical") {
-          if (paths.pdf_file) await removeFile(BUCKETS.file, paths.pdf_file);
+          if (!product.is_free && paths.pdf_file) await removeFile(BUCKETS.file, paths.pdf_file);
           if (paths.preview_file) await removeFile(BUCKETS.preview, paths.preview_file);
         }
       }
