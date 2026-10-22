@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { adminPostsQuery, deletePost, savePost, coverImageUrl, type BlogPostListItem } from "@/lib/blog";
+import { adminPostsQuery, deletePost, coverImageUrl, type BlogPostListItem } from "@/lib/blog";
 import { friendlyError } from "@/lib/admin";
 import { supabase } from "@/integrations/supabase/client";
 
