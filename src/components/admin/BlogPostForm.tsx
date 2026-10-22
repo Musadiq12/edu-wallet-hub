@@ -11,7 +11,6 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { LIMITS, uploadFile, removeFile, friendlyError } from "@/lib/admin";
 import { coverImageUrl, savePost, uniqueSlugCheck, type BlogPost, type BlogPostInput } from "@/lib/blog";
-import { supabase } from "@/integrations/supabase/client";
 
 type FormState = {
   title: string; slug: string; excerpt: string; content: string; category: string;
