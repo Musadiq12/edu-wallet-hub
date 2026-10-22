@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, Search } from "lucide-react";
@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/EmptyState";
-import { coverImageUrl, postCategoriesQuery, publishedPostsQuery, postUrl, readingTimeMinutes, type BlogPostListItem } from "@/lib/blog";
+import { coverImageUrl, postCategoriesQuery, publishedPostsQuery, postUrl, type BlogPostListItem } from "@/lib/blog";
 import { siteConfig } from "@/config/site";
 
 export const Route = createFileRoute("/blog/")({
@@ -30,11 +30,13 @@ function ArticleCard({ post }: { post: BlogPostListItem }) {
   return (
     <article className="overflow-hidden rounded-xl border border-border bg-card transition-shadow hover:shadow-md">
       <Link to={postUrl(post.slug)} className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-        {cover ? <img src={cover} alt="" loading="lazy" className="aspect-[16/9] w-full object-cover" /> : <div className="flex aspect-[16/9] items-center justify-center bg-muted text-sm text-muted-foreground">EduWallet Blog</div>}
+        <div className="relative flex aspect-[16/9] w-full items-center justify-center overflow-hidden bg-muted">
+          {cover ? <img src={cover} alt={`Cover of ${post.title}`} loading="lazy" decoding="async" className="absolute inset-0 h-full w-full object-cover" /> : <BookOpen className="h-8 w-8 text-muted-foreground/60" aria-hidden="true" />}
+        </div>
         <div className="p-5">
           <div className="flex flex-wrap items-center gap-2">
             {post.category && <Badge variant="secondary">{post.category}</Badge>}
-            <span className="text-xs text-muted-foreground">{readingTimeMinutes((post as BlogPostListItem & { content?: string }).content ?? post.excerpt)} min read</span>
+            <span className="text-xs text-muted-foreground">Article</span>
           </div>
           <h2 className="mt-3 line-clamp-2 text-lg font-semibold tracking-tight">{post.title}</h2>
           <p className="mt-2 line-clamp-2 text-sm leading-6 text-muted-foreground">{post.excerpt}</p>
@@ -50,7 +52,7 @@ function BlogIndex() {
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
   // ponytail: small local debounce keeps dependencies unchanged; a query only runs after typing pauses.
-  useMemo(() => {
+  useEffect(() => {
     const timer = setTimeout(() => setSearch(rawSearch.trim()), 300);
     return () => clearTimeout(timer);
   }, [rawSearch]);
