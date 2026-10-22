@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as BlogIndexRouteImport } from './routes/blog.index'
+import { Route as BlogSlugRouteImport } from './routes/blog.$slug'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
@@ -35,10 +37,23 @@ import { Route as ShopSlugRouteImport } from './routes/shop.$slug'
 import { Route as AdminProductsIndexRouteImport } from './routes/admin.products.index'
 import { Route as AdminProductsIdRouteImport } from './routes/admin.products.$id'
 import { Route as AdminProductsNewRouteImport } from './routes/admin.products.new'
+import { Route as AdminBlogIndexRouteImport } from './routes/admin.blog.index'
+import { Route as AdminBlogNewRouteImport } from './routes/admin.blog.new'
+import { Route as AdminBlogIdRouteImport } from './routes/admin.blog.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogSlugRoute = BlogSlugRouteImport.update({
+  id: '/blog/$slug',
+  path: '/blog/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -151,6 +166,21 @@ const ShopSlugRoute = ShopSlugRouteImport.update({
   path: '/shop/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminBlogIndexRoute = AdminBlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBlogNewRoute = AdminBlogNewRouteImport.update({
+  id: '/blog/new',
+  path: '/blog/new',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBlogIdRoute = AdminBlogIdRouteImport.update({
+  id: '/blog/$id',
+  path: '/blog/$id',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminProductsIndexRoute = AdminProductsIndexRouteImport.update({
   id: '/products/',
   path: '/products/',
@@ -171,6 +201,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/blog/': typeof BlogIndexRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/free-resources': typeof FreeResourcesRoute
@@ -181,6 +213,9 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/admin/blog/': typeof AdminBlogIndexRoute
+  '/admin/blog/new': typeof AdminBlogNewRoute
+  '/admin/blog/$id': typeof AdminBlogIdRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/free-resources': typeof AdminFreeResourcesRoute
   '/admin/messages': typeof AdminMessagesRoute
@@ -198,6 +233,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/blog': typeof BlogIndexRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/free-resources': typeof FreeResourcesRoute
@@ -208,6 +245,10 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/admin': typeof AdminIndexRoute
+  '/admin/blog': typeof AdminBlogIndexRoute
+  '/admin/blog/new': typeof AdminBlogNewRoute
+  '/admin/blog/$id': typeof AdminBlogIdRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/free-resources': typeof AdminFreeResourcesRoute
   '/admin/messages': typeof AdminMessagesRoute
@@ -216,7 +257,6 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/checkout/$slug': typeof CheckoutSlugRoute
   '/shop/$slug': typeof ShopSlugRoute
-  '/admin': typeof AdminIndexRoute
   '/shop': typeof ShopIndexRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/products/new': typeof AdminProductsNewRoute
@@ -227,6 +267,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/blog/': typeof BlogIndexRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/free-resources': typeof FreeResourcesRoute
@@ -237,6 +279,9 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/admin/blog/': typeof AdminBlogIndexRoute
+  '/admin/blog/new': typeof AdminBlogNewRoute
+  '/admin/blog/$id': typeof AdminBlogIdRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/free-resources': typeof AdminFreeResourcesRoute
   '/admin/messages': typeof AdminMessagesRoute
