@@ -14,14 +14,17 @@ export const Route = createFileRoute("/blog/")({
     try { return await context.queryClient.ensureQueryData(publishedPostsQuery({})); }
     catch { return []; }
   },
-  head: () => ({
-    meta: [
-      { title: "Blog — Exam Tips, Strategies & Study Guides | EduWallet" },
-      { name: "description", content: siteConfig.shortDescription },
-      { property: "og:title", content: "Blog — Exam Tips, Strategies & Study Guides | EduWallet" },
-      { property: "og:description", content: siteConfig.shortDescription },
-    ],
-  }),
+  head: () => {
+    const title = "Blog — Exam Tips, Strategies & Study Guides | EduWallet";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: siteConfig.shortDescription },
+        { property: "og:title", content: title },
+        { property: "og:description", content: siteConfig.shortDescription },
+      ],
+    };
+  },
   component: BlogIndex,
 });
 
