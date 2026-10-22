@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Search } from "lucide-react";
+import { ArrowRight, BookOpen, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,6 +10,10 @@ import { coverImageUrl, postCategoriesQuery, publishedPostsQuery, postUrl, type 
 import { siteConfig } from "@/config/site";
 
 export const Route = createFileRoute("/blog/")({
+  loader: async ({ context }) => {
+    try { return await context.queryClient.ensureQueryData(publishedPostsQuery({})); }
+    catch { return []; }
+  },
   head: () => ({
     meta: [
       { title: "Blog — Exam Tips, Strategies & Study Guides | EduWallet" },
@@ -56,7 +60,8 @@ function BlogIndex() {
     const timer = setTimeout(() => setSearch(rawSearch.trim()), 300);
     return () => clearTimeout(timer);
   }, [rawSearch]);
-  const query = useQuery(publishedPostsQuery({ search, category }));
+  const initialPosts = Route.useLoaderData();
+  const query = useQuery({ ...publishedPostsQuery({ search, category }), initialData: search || category ? undefined : initialPosts });
   const categories = useQuery(postCategoriesQuery());
 
   return (
