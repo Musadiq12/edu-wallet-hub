@@ -6,7 +6,7 @@ const BASE = (
   import.meta.env["VITE_SITE_URL"] ??
   "https://eduwallet.in"
 ).replace(/\/+$/, "");
-const STATIC = ["/", "/shop", "/free-resources", "/about", "/contact"];
+const STATIC = ["/", "/shop", "/free-resources", "/about", "/contact", "/blog"];
 
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
@@ -25,11 +25,21 @@ export const Route = createFileRoute("/sitemap.xml")({
           .eq("is_demo", false)
           .range(0, 4999);
         if (error) return new Response("Sitemap unavailable", { status: 500 });
+        const { data: posts, error: postsError } = await sb
+          .from("blog_posts")
+          .select("slug,updated_at")
+          .eq("status", "published")
+          .range(0, 4999);
+        if (postsError) return new Response("Sitemap unavailable", { status: 500 });
         const urls = [
           ...STATIC.map((p) => `<url><loc>${BASE}${p}</loc></url>`),
           ...(data ?? []).map(
             (r) =>
               `<url><loc>${BASE}/shop/${encodeURIComponent(r.slug)}</loc>${r.updated_at ? `<lastmod>${new Date(r.updated_at).toISOString()}</lastmod>` : ""}</url>`,
+          ),
+          ...(posts ?? []).map(
+            (r) =>
+              `<url><loc>${BASE}/blog/${encodeURIComponent(r.slug)}</loc>${r.updated_at ? `<lastmod>${new Date(r.updated_at).toISOString()}</lastmod>` : ""}</url>`,
           ),
         ];
         const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join("")}</urlset>`;
