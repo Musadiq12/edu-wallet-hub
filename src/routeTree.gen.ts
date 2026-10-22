@@ -201,6 +201,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/blog/': typeof BlogIndexRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/free-resources': typeof FreeResourcesRoute
@@ -211,6 +213,9 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/admin/blog/': typeof AdminBlogIndexRoute
+  '/admin/blog/new': typeof AdminBlogNewRoute
+  '/admin/blog/$id': typeof AdminBlogIdRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/free-resources': typeof AdminFreeResourcesRoute
   '/admin/messages': typeof AdminMessagesRoute
@@ -221,12 +226,6 @@ export interface FileRoutesByFullPath {
   '/shop/$slug': typeof ShopSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/shop/': typeof ShopIndexRoute
-  '/admin/blog/$id': typeof AdminBlogIdRoute
-  '/admin/blog/new': typeof AdminBlogNewRoute
-  '/admin/blog/': typeof AdminBlogIndexRoute
-  '/admin/blog/$id': typeof AdminBlogIdRoute
-  '/admin/blog/new': typeof AdminBlogNewRoute
-  '/admin/blog/': typeof AdminBlogIndexRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/products/new': typeof AdminProductsNewRoute
   '/admin/products/': typeof AdminProductsIndexRoute
@@ -234,11 +233,8 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/blog/': typeof BlogIndexRoute
+  '/blog': typeof BlogIndexRoute
   '/blog/$slug': typeof BlogSlugRoute
-  '/admin/blog/': typeof AdminBlogIndexRoute
-  '/admin/blog/new': typeof AdminBlogNewRoute
-  '/admin/blog/$id': typeof AdminBlogIdRoute
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/free-resources': typeof FreeResourcesRoute
@@ -249,6 +245,10 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/admin': typeof AdminIndexRoute
+  '/admin/blog': typeof AdminBlogIndexRoute
+  '/admin/blog/new': typeof AdminBlogNewRoute
+  '/admin/blog/$id': typeof AdminBlogIdRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/free-resources': typeof AdminFreeResourcesRoute
   '/admin/messages': typeof AdminMessagesRoute
@@ -257,7 +257,6 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/checkout/$slug': typeof CheckoutSlugRoute
   '/shop/$slug': typeof ShopSlugRoute
-  '/admin': typeof AdminIndexRoute
   '/shop': typeof ShopIndexRoute
   '/admin/products/$id': typeof AdminProductsIdRoute
   '/admin/products/new': typeof AdminProductsNewRoute
@@ -268,6 +267,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
+  '/blog/': typeof BlogIndexRoute
+  '/blog/$slug': typeof BlogSlugRoute
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/free-resources': typeof FreeResourcesRoute
@@ -278,6 +279,9 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/admin/blog/': typeof AdminBlogIndexRoute
+  '/admin/blog/new': typeof AdminBlogNewRoute
+  '/admin/blog/$id': typeof AdminBlogIdRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/free-resources': typeof AdminFreeResourcesRoute
   '/admin/messages': typeof AdminMessagesRoute
