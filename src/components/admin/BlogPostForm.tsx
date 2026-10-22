@@ -33,6 +33,7 @@ export function BlogPostForm({ post }: { post?: BlogPost }) {
   const [uploading, setUploading] = useState(false);
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState("");
   const [coverRemoved, setCoverRemoved] = useState(false);
   const [coverPath, setCoverPath] = useState(post?.cover_image ?? "");
   const [previousCover] = useState(post?.cover_image ?? "");
@@ -43,8 +44,16 @@ export function BlogPostForm({ post }: { post?: BlogPost }) {
     staleTime: 0,
   });
   useEffect(() => { setSlugAvailable(slugCheck.data ?? null); }, [slugCheck.data]);
-  const cover = coverRemoved ? "" : coverFile ? URL.createObjectURL(coverFile) : coverImageUrl(coverPath);
-  useEffect(() => () => { if (coverFile) URL.revokeObjectURL(cover); }, [coverFile, cover]);
+  useEffect(() => {
+    if (!coverFile) {
+      setCoverPreview("");
+      return;
+    }
+    const previewUrl = URL.createObjectURL(coverFile);
+    setCoverPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [coverFile]);
+  const cover = coverRemoved ? "" : coverPreview || coverImageUrl(coverPath);
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm(current => ({...current,[key]:value}));
   const statusLabel = useMemo(() => post?.status === "published" ? "published" : "draft", [post?.status]);
 
