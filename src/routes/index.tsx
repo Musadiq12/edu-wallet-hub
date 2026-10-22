@@ -5,6 +5,7 @@ import { StorefrontHero } from "@/components/StorefrontHero";
 import { ProductCarousel } from "@/components/ProductCarousel";
 import { EmptyState } from "@/components/EmptyState";
 import { productsQuery, type Product } from "@/lib/catalog";
+import { latestPostsQuery, postUrl } from "@/lib/blog";
 import { siteConfig } from "@/config/site";
 
 export const Route = createFileRoute("/")({
@@ -51,6 +52,7 @@ function filterProducts(products: Product[], term: string) {
 function Home() {
   const products = useQuery(productsQuery({ free: false, limit: 32 }));
   const freeProducts = useQuery(productsQuery({ free: true, limit: 12 }));
+  const latestPosts = useQuery(latestPostsQuery());
   const allProducts = products.data ?? [];
 
   const featured = allProducts.filter((product) => product.is_featured);
@@ -183,6 +185,33 @@ function Home() {
           </div>
         </div>
       </section>
+
+      {(latestPosts.data ?? []).length > 0 && (
+        <section className="section-y">
+          <div className="page-container">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-primary">Learn & prepare</p>
+                <h2 className="mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">Latest articles</h2>
+              </div>
+              <Link to="/blog" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
+                View all articles <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </div>
+            <div className="mt-5 grid gap-3 md:grid-cols-3">
+              {latestPosts.data!.map((post) => (
+                <Link key={post.id} to={postUrl(post.slug)} className="rounded-xl border border-border bg-card p-4 transition-colors hover:border-primary/30 hover:bg-muted/30">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-primary">{post.category || "Exam preparation"}</span>
+                    <time className="shrink-0 text-xs text-muted-foreground">{post.published_at ? new Intl.DateTimeFormat("en-IN", {day:"numeric",month:"short",year:"numeric"}).format(new Date(post.published_at)) : ""}</time>
+                  </div>
+                  <h3 className="mt-2 line-clamp-2 font-semibold">{post.title}</h3>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="border-t border-border bg-muted/30 py-10">
         <div className="page-container grid gap-6 text-sm sm:grid-cols-3">
