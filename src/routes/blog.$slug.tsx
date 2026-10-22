@@ -11,16 +11,31 @@ import { coverImageUrl, postBySlugQuery, relatedProductsQuery, readingTimeMinute
 import { siteConfig } from "@/config/site";
 
 export const Route = createFileRoute("/blog/$slug")({
-  head: ({ params }) => ({
-    meta: [
-      { title: "Exam Preparation Article | EduWallet" },
-      { name: "description", content: siteConfig.shortDescription },
+  loader: async ({ context, params }) => {
+    try {
+      const post = await context.queryClient.ensureQueryData(postBySlugQuery(params.slug));
+      const cover = post?.cover_image ? coverImageUrl(post.cover_image) : "";
+      return { post, cover };
+    } catch { return { post: null, cover: "" }; }
+  },
+  head: ({ params, loaderData }) => {
+    const post = loaderData?.post;
+    const title = post ? (post.meta_title || post.title) : "Article not found | EduWallet";
+    const description = post ? (post.meta_description || post.excerpt) : "Browse exam preparation articles and study guides from EduWallet.";
+    const cover = loaderData?.cover ?? "";
+    const image = cover ? new URL(cover, "https://eduwallet.in").toString() : "";
+    const meta: Array<Record<string, string>> = [
+      { title },
+      { name: "description", content: description },
       { property: "og:type", content: "article" },
-      { property: "og:title", content: "Exam Preparation Article | EduWallet" },
-      { property: "og:description", content: siteConfig.shortDescription },
-    ],
-    links: [{ rel: "canonical", href: `/blog/${encodeURIComponent(params.slug)}` }],
-  }),
+      { property: "og:title", content: title },
+      { property: "og:description", content: description },
+      { name: "twitter:card", content: image ? "summary_large_image" : "summary" },
+    ];
+    if (image) { meta.push({ property: "og:image", content: image }); meta.push({ name: "twitter:image", content: image }); }
+    if (!post) meta.push({ name: "robots", content: "noindex, nofollow" });
+    return { meta, links: [{ rel: "canonical", href: `/blog/${encodeURIComponent(params.slug)}` }] };
+  },
   component: BlogArticle,
 });
 
@@ -30,32 +45,12 @@ function fmtDate(value: string | null) {
 
 function BlogArticle() {
   const { slug } = Route.useParams();
-  const query = useQuery(postBySlugQuery(slug));
+  const loaderData = Route.useLoaderData();
+  const query = useQuery({ ...postBySlugQuery(slug), initialData: loaderData.post });
   const related = useQuery(relatedProductsQuery(query.data ?? undefined));
   const post = query.data;
   const cover = post ? coverImageUrl(post.cover_image) : "";
   const base = typeof window === "undefined" ? "https://eduwallet.in" : window.location.origin;
-  useEffect(() => {
-    if (!post) return;
-    const title = post.meta_title || post.title;
-    const description = post.meta_description || post.excerpt;
-    document.title = title;
-    const setMeta = (selector: string, attr: "name" | "property", key: string, value: string) => {
-      let el = document.head.querySelector<HTMLMetaElement>(selector);
-      if (!el) {
-        el = document.createElement("meta");
-        el.setAttribute(attr, key);
-        document.head.appendChild(el);
-      }
-      el.content = value;
-    };
-    setMeta('meta[name="description"]', "name", "description", description);
-    setMeta('meta[property="og:type"]', "property", "og:type", "article");
-    setMeta('meta[property="og:title"]', "property", "og:title", title);
-    setMeta('meta[property="og:description"]', "property", "og:description", description);
-    if (cover) setMeta('meta[property="og:image"]', "property", "og:image", new URL(cover, window.location.origin).toString());
-  }, [post, cover]);
-
   const jsonLd = post ? {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -73,7 +68,7 @@ function BlogArticle() {
   if (!post) return <main className="page-container py-12"><EmptyState title="Article not found" description="This article may have been unpublished or moved." action={<Link to="/blog" className="text-sm font-semibold text-primary hover:underline">Browse all articles</Link>} /></main>;
 
   return (
-    <main className="page-container max-w-5xl py-10 sm:py-14">\n      {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>}
+    <main className="page-container max-w-5xl py-10 sm:py-14">\n      {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</script>}
       <article className="mx-auto max-w-3xl">
         {cover && <img src={cover} alt={post.title} className="mb-8 aspect-[16/9] w-full rounded-2xl object-cover" />}
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
