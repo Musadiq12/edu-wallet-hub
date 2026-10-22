@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   BarChart3, BookOpen, FileText, Gift, Globe2, HelpCircle, Layers3,
   Menu, RotateCcw, Search, Shield, Target, UserPlus, Users, X,
@@ -66,6 +66,8 @@ export function SiteHeader() {
   const [term, setTerm] = useState("");
   const scrolled = useScroll(10);
   const navigate = useNavigate();
+  const location = useLocation();
+  const isBlogActive = location.pathname === "/blog" || location.pathname.startsWith("/blog/");
   const { user } = useSession();
   const { brandName } = useSiteSettings();
   const { data: isAdmin } = useIsAdmin(user?.id);
@@ -107,6 +109,7 @@ export function SiteHeader() {
               </NavigationMenuItem>
               <NavigationMenuLink asChild><Link to="/shop" className="rounded-md px-4 py-2 text-sm font-medium hover:bg-accent">Shop</Link></NavigationMenuLink>
               <NavigationMenuLink asChild><Link to="/free-resources" className="rounded-md px-4 py-2 text-sm font-medium hover:bg-accent">Free Resources</Link></NavigationMenuLink>
+              <NavigationMenuLink asChild><Link to="/blog" aria-current={isBlogActive ? "page" : undefined} className={cn("rounded-md px-4 py-2 text-sm font-medium hover:bg-accent", isBlogActive && "bg-accent text-accent-foreground")}>Blog</Link></NavigationMenuLink>
             </NavigationMenuList>
           </NavigationMenu>
         </div>
@@ -161,11 +164,12 @@ export function SiteHeader() {
               )}
             </div>
             <MobileSection title="Resources" items={productLinks} onNavigate={() => setOpen(false)} />
-            <MobileSection title="Company" items={[...companyLinks, ...companyLinks2]} onNavigate={() => setOpen(false)} />
             <div className="grid gap-2 border-t border-border pt-3">
               <Button asChild className="w-full"><Link to="/shop" onClick={() => setOpen(false)}>Shop</Link></Button>
               <Button variant="outline" asChild className="w-full"><Link to="/free-resources" onClick={() => setOpen(false)}>Free Resources</Link></Button>
+              <Button variant={isBlogActive ? "secondary" : "outline"} asChild className={cn("w-full justify-start", isBlogActive && "bg-accent text-accent-foreground")}><Link to="/blog" aria-current={isBlogActive ? "page" : undefined} onClick={() => setOpen(false)}><BookOpen className="mr-2 size-4" />Blog</Link></Button>
             </div>
+            <MobileSection title="Company" items={[...companyLinks, ...companyLinks2]} onNavigate={() => setOpen(false)} />
           </div>
         </div>
       )}
