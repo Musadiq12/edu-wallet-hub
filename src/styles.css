@@ -318,3 +318,20 @@
     animation: none;
   }
 }
+
+/* Blog article typography; ReactMarkdown never enables raw HTML. */
+.prose-blog { overflow-wrap: anywhere; color: hsl(var(--foreground)); line-height: 1.8; }
+.prose-blog h1, .prose-blog h2, .prose-blog h3 { margin: 1.75rem 0 .75rem; font-weight: 700; line-height: 1.25; }
+.prose-blog h1 { font-size: 1.8rem; }
+.prose-blog h2 { font-size: 1.5rem; }
+.prose-blog h3 { font-size: 1.2rem; }
+.prose-blog p { margin: 1rem 0; }
+.prose-blog ul, .prose-blog ol { margin: 1rem 0; padding-left: 1.5rem; }
+.prose-blog ul { list-style: disc; }
+.prose-blog ol { list-style: decimal; }
+.prose-blog li { margin: .35rem 0; }
+.prose-blog blockquote { margin: 1rem 0; border-left: 3px solid hsl(var(--primary)); padding-left: 1rem; color: hsl(var(--muted-foreground)); }
+.prose-blog a { color: hsl(var(--primary)); text-decoration: underline; text-underline-offset: 3px; }
+.prose-blog code { border-radius: .25rem; background: hsl(var(--muted)); padding: .15rem .3rem; font-family: ui-monospace, monospace; font-size: .9em; }
+.prose-blog pre { overflow-x: auto; border-radius: .5rem; background: hsl(var(--muted)); padding: 1rem; }
+.prose-blog pre code { background: transparent; padding: 0; }

@@ -6,6 +6,7 @@ import { ProductCarousel } from "@/components/ProductCarousel";
 import { EmptyState } from "@/components/EmptyState";
 import { productsQuery, type Product } from "@/lib/catalog";
 import { siteConfig } from "@/config/site";
+import { publishedPostsQuery, postUrl } from "@/lib/blog";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -51,6 +52,7 @@ function filterProducts(products: Product[], term: string) {
 function Home() {
   const products = useQuery(productsQuery({ free: false, limit: 32 }));
   const freeProducts = useQuery(productsQuery({ free: true, limit: 12 }));
+  const latestArticles = useQuery(publishedPostsQuery());
   const allProducts = products.data ?? [];
 
   const featured = allProducts.filter((product) => product.is_featured);
@@ -200,6 +202,7 @@ function Home() {
           </div>
         </div>
       </section>
+      {(latestArticles.data?.length ?? 0) > 0 && <section className="page-container py-10"><div className="flex items-end justify-between gap-3"><h2 className="font-serif text-2xl font-bold">Latest articles</h2><Link to="/blog" className="text-sm text-primary hover:underline">View all articles →</Link></div><div className="mt-5 grid gap-3 md:grid-cols-3">{latestArticles.data?.slice(0,3).map(a=><Link key={a.id} to={postUrl(a.slug) as "/blog/$slug"} params={{slug:a.slug}} className="rounded-xl border bg-card p-4"><p className="text-xs uppercase text-primary">{a.category}</p><h3 className="mt-2 line-clamp-2 font-semibold">{a.title}</h3></Link>)}</div></section>}
     </>
   );
 }

@@ -7,6 +7,7 @@ import { isEmail, safeUrl, useSiteSettingsState, waLink } from "@/lib/settings";
 const SITE_LINKS = [
   { to: "/", label: "Home" },
   { to: "/shop", label: "Shop" },
+  { to: "/blog", label: "Blog" },
   { to: "/free-resources", label: "Free Resources" },
   { to: "/about", label: "About" },
   { to: "/contact", label: "Contact" },
