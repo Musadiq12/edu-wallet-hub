@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Newspaper,
   Moon,
   Package,
   Settings,
@@ -48,6 +49,7 @@ const NAV = [
   { to: "/admin/customers", label: "Customers", icon: Users, exact: false },
   { to: "/admin/messages", label: "Messages", icon: Bell, exact: false },
   { to: "/admin/reviews", label: "Reviews", icon: Star, exact: false },
+  { to: "/admin/blog", label: "Blog", icon: Newspaper, exact: false },
   { to: "/admin/free-resources", label: "Free Resources", icon: Gift, exact: false },
   { to: "/admin/settings", label: "Settings", icon: Settings, exact: false },
 ] as const;
