@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import { ArrowLeft, ArrowRight } from "lucide-react";
@@ -34,6 +35,27 @@ function BlogArticle() {
   const post = query.data;
   const cover = post ? coverImageUrl(post.cover_image) : "";
   const base = typeof window === "undefined" ? "https://eduwallet.in" : window.location.origin;
+  useEffect(() => {
+    if (!post) return;
+    const title = post.meta_title || post.title;
+    const description = post.meta_description || post.excerpt;
+    document.title = title;
+    const setMeta = (selector: string, attr: "name" | "property", key: string, value: string) => {
+      let el = document.head.querySelector<HTMLMetaElement>(selector);
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(attr, key);
+        document.head.appendChild(el);
+      }
+      el.content = value;
+    };
+    setMeta('meta[name="description"]', "name", "description", description);
+    setMeta('meta[property="og:type"]', "property", "og:type", "article");
+    setMeta('meta[property="og:title"]', "property", "og:title", title);
+    setMeta('meta[property="og:description"]', "property", "og:description", description);
+    if (cover) setMeta('meta[property="og:image"]', "property", "og:image", new URL(cover, window.location.origin).toString());
+  }, [post, cover]);
+
   const jsonLd = post ? {
     "@context": "https://schema.org",
     "@type": "Article",
@@ -51,7 +73,7 @@ function BlogArticle() {
   if (!post) return <main className="page-container py-12"><EmptyState title="Article not found" description="This article may have been unpublished or moved." action={<Link to="/blog" className="text-sm font-semibold text-primary hover:underline">Browse all articles</Link>} /></main>;
 
   return (
-    <main className="page-container max-w-5xl py-10 sm:py-14">
+    <main className="page-container max-w-5xl py-10 sm:py-14">\n      {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>}
       <article className="mx-auto max-w-3xl">
         {cover && <img src={cover} alt={post.title} className="mb-8 aspect-[16/9] w-full rounded-2xl object-cover" />}
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
