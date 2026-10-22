@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import { ArrowLeft, ArrowRight } from "lucide-react";
@@ -68,7 +67,8 @@ function BlogArticle() {
   if (!post) return <main className="page-container py-12"><EmptyState title="Article not found" description="This article may have been unpublished or moved." action={<Link to="/blog" className="text-sm font-semibold text-primary hover:underline">Browse all articles</Link>} /></main>;
 
   return (
-    <main className="page-container max-w-5xl py-10 sm:py-14">\n      {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</script>}
+    <main className="page-container max-w-5xl py-10 sm:py-14">
+      {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd).replace(/</g, "\\\\u003c")}</script>}
       <article className="mx-auto max-w-3xl">
         {cover && <img src={cover} alt={post.title} className="mb-8 aspect-[16/9] w-full rounded-2xl object-cover" />}
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
