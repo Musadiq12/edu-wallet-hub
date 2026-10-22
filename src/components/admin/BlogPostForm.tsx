@@ -34,6 +34,7 @@ export function BlogPostForm({ post }: { post?: BlogPost }) {
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [coverRemoved, setCoverRemoved] = useState(false);
+  const [coverPath, setCoverPath] = useState(post?.cover_image ?? "");
   const [previousCover] = useState(post?.cover_image ?? "");
   const slugCheck = useQuery({
     queryKey: ["admin","blog-slug-check",form.slug,post?.id ?? null],
@@ -42,7 +43,7 @@ export function BlogPostForm({ post }: { post?: BlogPost }) {
     staleTime: 0,
   });
   useEffect(() => { setSlugAvailable(slugCheck.data ?? null); }, [slugCheck.data]);
-  const cover = coverRemoved ? "" : coverFile ? URL.createObjectURL(coverFile) : coverImageUrl(form.cover_image);
+  const cover = coverRemoved ? "" : coverFile ? URL.createObjectURL(coverFile) : coverImageUrl(coverPath);
   useEffect(() => () => { if (coverFile) URL.revokeObjectURL(cover); }, [coverFile, cover]);
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm(current => ({...current,[key]:value}));
   const statusLabel = useMemo(() => post?.status === "published" ? "published" : "draft", [post?.status]);
@@ -66,22 +67,26 @@ export function BlogPostForm({ post }: { post?: BlogPost }) {
     setBusy(true);
     let uploadedPath = "";
     try {
-      let coverPath = coverRemoved ? "" : form.cover_image;
+      let savedCoverPath = coverRemoved ? "" : coverPath;
       if (coverFile) {
         setUploading(true);
         const upload = await uploadFile("blog-covers", coverFile, "blog");
         uploadedPath = upload.path;
-        coverPath = upload.path;
+        savedCoverPath = upload.path;
       }
       const input: BlogPostInput = {
         ...(post ? {id:post.id} : {}),
         title: form.title.trim(), slug: form.slug, excerpt: form.excerpt.trim(), content: form.content,
         category: form.category.trim(), tags: form.tags.split(",").map(tag => tag.trim()).filter(Boolean),
-        cover_image: coverPath, meta_title: form.meta_title.trim(), meta_description: form.meta_description.trim(),
+        cover_image: savedCoverPath, meta_title: form.meta_title.trim(), meta_description: form.meta_description.trim(),
         status, published_at: post?.published_at ?? null,
       };
       await savePost(input);
       if (previousCover && (coverRemoved || (uploadedPath && previousCover !== uploadedPath))) await removeFile("blog-covers", previousCover);
+      setCoverPath(savedCoverPath);
+      set("cover_image", savedCoverPath);
+      setCoverFile(null);
+      setCoverRemoved(false);
       await Promise.all([
         qc.invalidateQueries({queryKey:["blog"]}),
         qc.invalidateQueries({queryKey:["admin","blog-posts"]}),
@@ -109,7 +114,7 @@ export function BlogPostForm({ post }: { post?: BlogPost }) {
     </section>
     <section className="space-y-3">
       <Label htmlFor="blog-cover">Cover image (max 5 MB)</Label>
-      {cover && <div className="relative max-w-lg overflow-hidden rounded-lg border border-border"><img src={cover} alt="Article cover preview" className="aspect-video w-full object-cover"/><Button type="button" size="icon" variant="destructive" className="absolute right-2 top-2" aria-label="Remove cover" onClick={()=>{setCoverFile(null);set("cover_image","");setCoverRemoved(true);}}><X className="h-4 w-4"/></Button></div>}
+      {cover && <div className="relative max-w-lg overflow-hidden rounded-lg border border-border"><img src={cover} alt="Article cover preview" className="aspect-video w-full object-cover"/><Button type="button" size="icon" variant="destructive" className="absolute right-2 top-2" aria-label="Remove cover" onClick={()=>{setCoverFile(null);setCoverPath("");set("cover_image","");setCoverRemoved(true);}}><X className="h-4 w-4"/></Button></div>}
       <div className="flex items-center gap-3"><Input id="blog-cover" type="file" accept="image/*" disabled={uploading||busy} onChange={e=>handleCover(e.target.files?.[0])}/><Upload className="h-4 w-4 shrink-0 text-muted-foreground"/></div>
       {uploading && <p className="text-xs text-muted-foreground">Uploading cover image…</p>}
     </section>
