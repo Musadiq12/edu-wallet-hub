@@ -68,7 +68,7 @@ function BlogArticle() {
 
   return (
     <main className="page-container max-w-5xl py-10 sm:py-14">
-      {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd).replace(/</g, "\\\\u003c")}</script>}
+      {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</script>}
       <article className="mx-auto max-w-3xl">
         {cover && <img src={cover} alt={post.title} className="mb-8 aspect-[16/9] w-full rounded-2xl object-cover" />}
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
