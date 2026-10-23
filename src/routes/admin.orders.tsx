@@ -29,8 +29,8 @@ type HistorySchema = {
       Relationships: [];
     };
   };
-  Views: {};
-  Functions: {};
+  Views: Record<string, never>;
+  Functions: Record<string, never>;
 };
 
 const STATUSES: { value: "All" | OrderStatus; label: string }[] = [
