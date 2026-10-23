@@ -151,7 +151,7 @@ BEGIN
     RETURN jsonb_build_object('valid', false, 'error', 'COUPON_NOT_FOUND');
   END IF;
 
-  SELECT * INTO c FROM public.coupons WHERE code = upper(trim(p_code));
+  SELECT * INTO c FROM public.coupons WHERE upper(trim(code)) = upper(trim(p_code));
   IF NOT FOUND THEN RETURN jsonb_build_object('valid', false, 'error', 'COUPON_NOT_FOUND'); END IF;
   IF c.status NOT IN ('ACTIVE','SCHEDULED') OR (c.status = 'SCHEDULED' AND (c.starts_at IS NULL OR c.starts_at > now())) OR (c.starts_at IS NOT NULL AND c.starts_at > now()) OR (c.ends_at IS NOT NULL AND c.ends_at <= now()) THEN
     RETURN jsonb_build_object('valid', false, 'error', 'COUPON_EXPIRED');
