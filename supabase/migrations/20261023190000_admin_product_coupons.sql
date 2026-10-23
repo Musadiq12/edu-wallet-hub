@@ -1,8 +1,8 @@
 -- Upgrade the existing legacy coupons table in place; preserve all existing rows.
-DO $$ BEGIN CREATE TYPE public.coupon_discount_type AS ENUM ('PERCENTAGE', 'FIXED_AMOUNT', 'FREE_SHIPPING'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TYPE public.coupon_status AS ENUM ('DRAFT', 'ACTIVE', 'SCHEDULED', 'EXPIRED', 'DISABLED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TYPE public.coupon_target_type AS ENUM ('PRODUCT', 'VARIANT', 'CATEGORY', 'BRAND', 'ALL_PRODUCTS'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-DO $$ BEGIN CREATE TYPE public.coupon_target_mode AS ENUM ('INCLUDE', 'EXCLUDE'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $function$ BEGIN CREATE TYPE public.coupon_discount_type AS ENUM ('PERCENTAGE', 'FIXED_AMOUNT', 'FREE_SHIPPING'); EXCEPTION WHEN duplicate_object THEN NULL; END $function$;
+DO $function$ BEGIN CREATE TYPE public.coupon_status AS ENUM ('DRAFT', 'ACTIVE', 'SCHEDULED', 'EXPIRED', 'DISABLED'); EXCEPTION WHEN duplicate_object THEN NULL; END $function$;
+DO $function$ BEGIN CREATE TYPE public.coupon_target_type AS ENUM ('PRODUCT', 'VARIANT', 'CATEGORY', 'BRAND', 'ALL_PRODUCTS'); EXCEPTION WHEN duplicate_object THEN NULL; END $function$;
+DO $function$ BEGIN CREATE TYPE public.coupon_target_mode AS ENUM ('INCLUDE', 'EXCLUDE'); EXCEPTION WHEN duplicate_object THEN NULL; END $function$;
 
 CREATE TABLE IF NOT EXISTS public.coupons (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -75,14 +75,14 @@ DO $ BEGIN ALTER TABLE public.coupons ADD CONSTRAINT coupons_valid_window CHECK 
 CREATE UNIQUE INDEX IF NOT EXISTS coupons_code_case_insensitive_idx ON public.coupons (upper(trim(code)));
 CREATE INDEX IF NOT EXISTS coupons_status_window_idx ON public.coupons(status, starts_at, ends_at);
 
-DO $$ BEGIN
+DO $function$ BEGIN
   ALTER TABLE public.coupons ADD CONSTRAINT coupons_value_valid CHECK (
     (discount_type = 'PERCENTAGE' AND discount_value > 0 AND discount_value <= 100)
     OR (discount_type = 'FIXED_AMOUNT' AND discount_value > 0)
     OR (discount_type = 'FREE_SHIPPING' AND discount_value = 0)
   ) NOT VALID;
 EXCEPTION WHEN duplicate_object THEN NULL;
-END $$;
+END $function$;
 
 CREATE TABLE IF NOT EXISTS public.coupon_targets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -144,7 +144,7 @@ RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $$
+AS $function$
 DECLARE
   c public.coupons%ROWTYPE;
   v_eligible boolean;
@@ -191,7 +191,7 @@ BEGIN
     'discountType', c.discount_type, 'discountValue', c.discount_value, 'discountAmount', v_discount,
     'total', greatest(0, round(p_subtotal - v_discount, 2)), 'stackable', c.stackable);
 END;
-$$;
+$function$;
 REVOKE ALL ON FUNCTION public.validate_coupon(text, uuid, numeric) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.validate_coupon(text, uuid, numeric) TO anon, authenticated;
 
@@ -201,7 +201,7 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $$
+AS $function$
 DECLARE
   c public.coupons%ROWTYPE;
   v_quote jsonb;
@@ -238,14 +238,14 @@ BEGIN
   NEW.amount := greatest(0, round(NEW.amount - v_discount, 2));
   RETURN NEW;
 END;
-$$;
+$function$;
 
 CREATE OR REPLACE FUNCTION public.record_coupon_redemption()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $$
+AS $function$
 DECLARE
   v_coupon_id uuid;
 BEGIN
@@ -258,7 +258,7 @@ BEGIN
   UPDATE public.coupons SET usage_count = usage_count + 1, updated_at = now() WHERE id = v_coupon_id;
   RETURN NEW;
 END;
-$$;
+$function$;
 
 DROP TRIGGER IF EXISTS orders_consume_coupon_trigger ON public.orders;
 CREATE TRIGGER orders_consume_coupon_trigger
