@@ -1,10 +1,10 @@
--- Admin-controlled coupons for Edu Wallet's current single-product checkout.
-CREATE TYPE public.coupon_discount_type AS ENUM ('PERCENTAGE', 'FIXED_AMOUNT', 'FREE_SHIPPING');
-CREATE TYPE public.coupon_status AS ENUM ('DRAFT', 'ACTIVE', 'SCHEDULED', 'EXPIRED', 'DISABLED');
-CREATE TYPE public.coupon_target_type AS ENUM ('PRODUCT', 'VARIANT', 'CATEGORY', 'BRAND', 'ALL_PRODUCTS');
-CREATE TYPE public.coupon_target_mode AS ENUM ('INCLUDE', 'EXCLUDE');
+-- Upgrade the existing legacy coupons table in place; preserve all existing rows.
+DO $$ BEGIN CREATE TYPE public.coupon_discount_type AS ENUM ('PERCENTAGE', 'FIXED_AMOUNT', 'FREE_SHIPPING'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE public.coupon_status AS ENUM ('DRAFT', 'ACTIVE', 'SCHEDULED', 'EXPIRED', 'DISABLED'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE public.coupon_target_type AS ENUM ('PRODUCT', 'VARIANT', 'CATEGORY', 'BRAND', 'ALL_PRODUCTS'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+DO $$ BEGIN CREATE TYPE public.coupon_target_mode AS ENUM ('INCLUDE', 'EXCLUDE'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-CREATE TABLE public.coupons (
+CREATE TABLE IF NOT EXISTS public.coupons (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   code text NOT NULL,
   description text,
@@ -26,18 +26,65 @@ CREATE TABLE public.coupons (
   created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT coupons_code_normalized CHECK (code = upper(trim(code))),
-  CONSTRAINT coupons_code_unique UNIQUE (code),
-  CONSTRAINT coupons_valid_window CHECK (ends_at IS NULL OR starts_at IS NULL OR ends_at > starts_at),
-  CONSTRAINT coupons_value_valid CHECK (
+  expires_at timestamptz,
+  usage_limit integer,
+  is_active boolean NOT NULL DEFAULT true,
+  CONSTRAINT coupons_valid_window CHECK (ends_at IS NULL OR starts_at IS NULL OR ends_at > starts_at)
+);
+
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS description text;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS public_label text;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS max_discount_amount numeric(12,2);
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS min_subtotal numeric(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS min_item_quantity integer NOT NULL DEFAULT 1;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS starts_at timestamptz;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS ends_at timestamptz;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS total_usage_limit integer;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS per_customer_limit integer NOT NULL DEFAULT 1;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS first_order_only boolean NOT NULL DEFAULT false;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS stackable boolean NOT NULL DEFAULT false;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS priority integer NOT NULL DEFAULT 100;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS status public.coupon_status NOT NULL DEFAULT 'DRAFT';
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS expires_at timestamptz;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS usage_limit integer;
+ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS is_active boolean NOT NULL DEFAULT true;
+
+-- Normalize the legacy enum values without deleting or replacing any coupon rows.
+ALTER TABLE public.coupons ALTER COLUMN discount_type DROP DEFAULT;
+ALTER TABLE public.coupons ALTER COLUMN discount_type TYPE public.coupon_discount_type
+USING CASE
+  WHEN lower(discount_type::text) IN ('percent','percentage') THEN 'PERCENTAGE'::public.coupon_discount_type
+  WHEN lower(discount_type::text) IN ('free_shipping','freeshipping') THEN 'FREE_SHIPPING'::public.coupon_discount_type
+  ELSE 'FIXED_AMOUNT'::public.coupon_discount_type
+END;
+ALTER TABLE public.coupons ALTER COLUMN discount_type SET DEFAULT 'PERCENTAGE';
+UPDATE public.coupons SET ends_at = COALESCE(ends_at, expires_at), total_usage_limit = COALESCE(total_usage_limit, usage_limit);
+UPDATE public.coupons SET status = CASE
+  WHEN is_active = false THEN 'DISABLED'::public.coupon_status
+  WHEN COALESCE(ends_at, expires_at) IS NOT NULL AND COALESCE(ends_at, expires_at) <= now() THEN 'EXPIRED'::public.coupon_status
+  WHEN status = 'DRAFT' THEN 'ACTIVE'::public.coupon_status
+  ELSE status
+END;
+DO $ BEGIN ALTER TABLE public.coupons ADD CONSTRAINT coupons_min_subtotal_check CHECK (min_subtotal >= 0) NOT VALID; EXCEPTION WHEN duplicate_object THEN NULL; END $;
+DO $ BEGIN ALTER TABLE public.coupons ADD CONSTRAINT coupons_min_item_quantity_check CHECK (min_item_quantity >= 1) NOT VALID; EXCEPTION WHEN duplicate_object THEN NULL; END $;
+DO $ BEGIN ALTER TABLE public.coupons ADD CONSTRAINT coupons_total_usage_limit_check CHECK (total_usage_limit IS NULL OR total_usage_limit >= 1) NOT VALID; EXCEPTION WHEN duplicate_object THEN NULL; END $;
+DO $ BEGIN ALTER TABLE public.coupons ADD CONSTRAINT coupons_per_customer_limit_check CHECK (per_customer_limit >= 1) NOT VALID; EXCEPTION WHEN duplicate_object THEN NULL; END $;
+DO $ BEGIN ALTER TABLE public.coupons ADD CONSTRAINT coupons_valid_window CHECK (ends_at IS NULL OR starts_at IS NULL OR ends_at > starts_at) NOT VALID; EXCEPTION WHEN duplicate_object THEN NULL; END $;
+CREATE UNIQUE INDEX IF NOT EXISTS coupons_code_case_insensitive_idx ON public.coupons (upper(trim(code)));
+CREATE INDEX IF NOT EXISTS coupons_status_window_idx ON public.coupons(status, starts_at, ends_at);
+
+DO $$ BEGIN
+  ALTER TABLE public.coupons ADD CONSTRAINT coupons_value_valid CHECK (
     (discount_type = 'PERCENTAGE' AND discount_value > 0 AND discount_value <= 100)
     OR (discount_type = 'FIXED_AMOUNT' AND discount_value > 0)
     OR (discount_type = 'FREE_SHIPPING' AND discount_value = 0)
-  )
-);
-CREATE INDEX coupons_status_window_idx ON public.coupons(status, starts_at, ends_at);
+  ) NOT VALID;
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
-CREATE TABLE public.coupon_targets (
+CREATE TABLE IF NOT EXISTS public.coupon_targets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   coupon_id uuid NOT NULL REFERENCES public.coupons(id) ON DELETE CASCADE,
   target_type public.coupon_target_type NOT NULL,
@@ -47,9 +94,9 @@ CREATE TABLE public.coupon_targets (
   CONSTRAINT coupon_target_id_required CHECK ((target_type = 'ALL_PRODUCTS' AND target_id IS NULL) OR (target_type <> 'ALL_PRODUCTS' AND target_id IS NOT NULL)),
   CONSTRAINT coupon_target_unique UNIQUE (coupon_id, target_type, target_id, mode)
 );
-CREATE INDEX coupon_targets_coupon_idx ON public.coupon_targets(coupon_id);
+CREATE INDEX IF NOT EXISTS coupon_targets_coupon_idx ON public.coupon_targets(coupon_id);
 
-CREATE TABLE public.coupon_redemptions (
+CREATE TABLE IF NOT EXISTS public.coupon_redemptions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   coupon_id uuid NOT NULL REFERENCES public.coupons(id) ON DELETE RESTRICT,
   order_id uuid NOT NULL UNIQUE REFERENCES public.orders(id) ON DELETE CASCADE,
@@ -57,9 +104,9 @@ CREATE TABLE public.coupon_redemptions (
   discount_applied numeric(12,2) NOT NULL CHECK (discount_applied >= 0),
   created_at timestamptz NOT NULL DEFAULT now()
 );
-CREATE INDEX coupon_redemptions_customer_idx ON public.coupon_redemptions(coupon_id, customer_id);
+CREATE INDEX IF NOT EXISTS coupon_redemptions_customer_idx ON public.coupon_redemptions(coupon_id, customer_id);
 
-CREATE TABLE public.order_discount_allocations (
+CREATE TABLE IF NOT EXISTS public.order_discount_allocations (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id uuid NOT NULL REFERENCES public.orders(id) ON DELETE CASCADE,
   product_id uuid REFERENCES public.products(id) ON DELETE SET NULL,
@@ -77,12 +124,17 @@ ALTER TABLE public.coupon_targets ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.coupon_redemptions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.order_discount_allocations ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "staff manage coupons" ON public.coupons;
+DROP POLICY IF EXISTS "admins manage coupons" ON public.coupons;
 CREATE POLICY "admins manage coupons" ON public.coupons FOR ALL TO authenticated
   USING (public.is_admin_staff()) WITH CHECK (public.is_admin_staff());
+DROP POLICY IF EXISTS "admins manage coupon targets" ON public.coupon_targets;
 CREATE POLICY "admins manage coupon targets" ON public.coupon_targets FOR ALL TO authenticated
   USING (public.is_admin_staff()) WITH CHECK (public.is_admin_staff());
+DROP POLICY IF EXISTS "admins read coupon redemptions" ON public.coupon_redemptions;
 CREATE POLICY "admins read coupon redemptions" ON public.coupon_redemptions FOR SELECT TO authenticated
   USING (public.is_admin_staff());
+DROP POLICY IF EXISTS "admins read discount allocations" ON public.order_discount_allocations;
 CREATE POLICY "admins read discount allocations" ON public.order_discount_allocations FOR SELECT TO authenticated
   USING (public.is_admin_staff());
 
@@ -104,7 +156,7 @@ BEGIN
     RETURN jsonb_build_object('valid', false, 'error', 'COUPON_NOT_FOUND');
   END IF;
 
-  SELECT * INTO c FROM public.coupons WHERE code = upper(trim(p_code));
+  SELECT * INTO c FROM public.coupons WHERE upper(trim(code)) = upper(trim(p_code));
   IF NOT FOUND THEN RETURN jsonb_build_object('valid', false, 'error', 'COUPON_NOT_FOUND'); END IF;
   IF c.status NOT IN ('ACTIVE','SCHEDULED') OR (c.status = 'SCHEDULED' AND (c.starts_at IS NULL OR c.starts_at > now())) OR (c.starts_at IS NOT NULL AND c.starts_at > now()) OR (c.ends_at IS NOT NULL AND c.ends_at <= now()) THEN
     RETURN jsonb_build_object('valid', false, 'error', 'COUPON_EXPIRED');

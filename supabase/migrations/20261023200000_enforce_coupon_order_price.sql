@@ -27,7 +27,7 @@ BEGIN
   END IF;
   IF NEW.user_id IS NULL THEN RAISE EXCEPTION 'Coupon requires an authenticated customer'; END IF;
 
-  SELECT * INTO c FROM public.coupons WHERE code = upper(trim(NEW.coupon_code)) FOR UPDATE;
+  SELECT * INTO c FROM public.coupons WHERE upper(trim(code)) = upper(trim(NEW.coupon_code)) FOR UPDATE;
   IF NOT FOUND THEN RAISE EXCEPTION 'COUPON_NOT_FOUND'; END IF;
 
   v_quote := public.validate_coupon(c.code, NEW.product_id, v_subtotal);
