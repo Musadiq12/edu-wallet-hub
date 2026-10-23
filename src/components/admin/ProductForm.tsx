@@ -218,7 +218,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         preview_file: form.product_type === "pdf" ? next.preview_file : null,
       };
 
-      const { error: saveError } = await (supabase as any).rpc("admin_upsert_product", {
+      const { error: saveError } = await (supabase as unknown as { rpc: (name: string, args: { _product_id: string | null; _payload: typeof payload }) => Promise<{ error: Error | null }> }).rpc("admin_upsert_product", {
         _product_id: product?.id ?? null,
         _payload: payload,
       });

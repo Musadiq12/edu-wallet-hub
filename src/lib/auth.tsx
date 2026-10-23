@@ -34,7 +34,8 @@ export function useIsAdmin(userId: string | undefined) {
     queryKey: ["is-admin", userId],
     enabled: !!userId,
     queryFn: async () => {
-      const { data, error } = await (supabase as any).rpc("has_role", {
+      const roleRpc = supabase as unknown as { rpc: (name: string, args: { _user_id: string; _role: string }) => Promise<{ data: unknown; error: Error | null }> };
+      const { data, error } = await roleRpc.rpc("has_role", {
         _user_id: userId!,
         _role: "admin",
       });

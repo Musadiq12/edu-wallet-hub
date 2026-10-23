@@ -1,5 +1,5 @@
 type Env = {
-  PRODUCTS: any;
+  PRODUCTS: R2Bucket;
   SUPABASE_URL: string;
   SUPABASE_PUBLISHABLE_KEY: string;
   SUPABASE_SERVER_KEY: string;

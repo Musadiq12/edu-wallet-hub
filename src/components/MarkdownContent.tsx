@@ -32,7 +32,7 @@ export function MarkdownContent({ content }: { content: string }) {
   return <>{blocks.map((raw, i) => {
     const block = raw.trim();
     if (!block) return null;
-    if (/^\`\`\`/.test(block)) return <pre key={i}><code>{block.replace(/^\`\`\`[^\n]*\n?/, "").replace(/\n?\`\`\`$/, "")}</code></pre>;
+    if (/^```/.test(block)) return <pre key={i}><code>{block.replace(/^```[^\n]*\n?/, "").replace(/\n?```$/, "")}</code></pre>;
     const heading = block.match(/^(#{1,3})\s+(.+)$/);
     if (heading) {
       const rendered = inline(heading[2]);
