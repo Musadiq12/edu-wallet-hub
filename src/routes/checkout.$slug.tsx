@@ -286,7 +286,8 @@ function Checkout() {
         payment_status: "submitted" as const,
         order_status: "payment_submitted" as const,
       };
-      const { error: insertError } = await supabase.from("orders").insert(order);
+      const orderWriter = supabase as unknown as { from: (table: "orders") => { insert: (values: Record<string, unknown>) => Promise<{ error: { message: string } | null }> } };
+      const { error: insertError } = await orderWriter.from("orders").insert(order);
       if (insertError) throw insertError;
       setSubmitted(true);
     } catch (err) {
@@ -296,6 +297,7 @@ function Checkout() {
         setError("The coupon is no longer eligible. Please reapply it and confirm the updated payment amount.");
       } else {
         setError("We couldn't submit your confirmation. Please try again or contact support.");
+      }
     } finally {
       setSaving(false);
     }
