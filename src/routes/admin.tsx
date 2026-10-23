@@ -3,6 +3,7 @@ import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-rout
 import { useQuery } from "@tanstack/react-query";
 import {
   Bell,
+  BadgePercent,
   BarChart3,
   BookOpen,
   ChevronDown,
@@ -46,6 +47,7 @@ const NAV = [
   { to: "/admin/orders", label: "Sales", icon: ShoppingCart, exact: false },
   { to: "/", label: "View Site", icon: ExternalLink, exact: false, external: true },
   { to: "/admin/products", label: "Products", icon: Package, exact: false },
+  { to: "/admin/coupons", label: "Coupons", icon: BadgePercent, exact: false },
   { to: "/admin/customers", label: "Customers", icon: Users, exact: false },
   { to: "/admin/messages", label: "Messages", icon: Bell, exact: false },
   { to: "/admin/reviews", label: "Reviews", icon: Star, exact: false },
