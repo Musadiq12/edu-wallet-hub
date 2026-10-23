@@ -5,7 +5,6 @@ import {
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
-import { reportLovableError } from "../lib/lovable-error-reporting";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Toaster } from "@/components/ui/sonner";
@@ -24,7 +23,6 @@ function NotFoundComponent() {
 function ErrorComponent({ error, reset }: ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
-  useEffect(() => { reportLovableError(error, { boundary: "tanstack_root_error_component" }); }, [error]);
   return <div className="flex min-h-[60vh] items-center justify-center px-4"><div className="max-w-md text-center"><h1 className="font-serif text-xl font-semibold tracking-tight text-foreground">This page didn't load</h1><p className="mt-2 text-sm text-muted-foreground">Something went wrong on our end. Please try again or head back home.</p><div className="mt-6 flex flex-wrap justify-center gap-2"><button onClick={() => { router.invalidate(); reset(); }} className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">Try again</button><a href="/" className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/10">Go home</a></div></div></div>;
 }
 
@@ -37,12 +35,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: siteConfig.shortDescription },
       { property: "og:site_name", content: matches[0]?.loaderData?.brandName ?? defaultSettings.brandName },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "https://edu-wallet-hub.lovable.app/og-image.svg" },
-      { property: "og:url", content: "https://edu-wallet-hub.lovable.app/" },
+      { property: "og:image", content: "/og-image.svg" },
+      
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: matches[0]?.loaderData?.brandName ?? defaultSettings.brandName },
       { name: "twitter:description", content: siteConfig.shortDescription },
-      { name: "twitter:image", content: "https://edu-wallet-hub.lovable.app/og-image.svg" },
+      { name: "twitter:image", content: "/og-image.svg" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -50,7 +48,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" },
       { rel: "icon", href: "/edu-wallet-icon.svg", type: "image/svg+xml" },
-      { rel: "canonical", href: "https://edu-wallet-hub.lovable.app/" },
     ],
   }),
   shellComponent: RootShell, component: RootComponent, notFoundComponent: NotFoundComponent, errorComponent: ErrorComponent,
