@@ -54,6 +54,40 @@ function Checkout() {
 
   const p = product.data;
   const amount = p ? effectivePrice(p) : 0;
+  const [couponCode, setCouponCode] = useState("");
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number; total: number; label: string | null } | null>(null);
+  const couponRpc = supabase as unknown as { rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }> };
+  const payableAmount = appliedCoupon?.total ?? amount;
+
+  const applyCoupon = async () => {
+    if (!p || !couponCode.trim()) return toast.error("Enter a coupon code.");
+    setCouponLoading(true);
+    try {
+      const { data, error } = await couponRpc.rpc("validate_coupon", { p_code: couponCode.trim(), p_product_id: p.id, p_subtotal: amount });
+      if (error) throw new Error(error.message);
+      const quote = data as { valid?: boolean; error?: string; code?: string; label?: string | null; discountAmount?: number; total?: number };
+      if (!quote?.valid) {
+        const messages: Record<string, string> = {
+          COUPON_NOT_FOUND: "That coupon code is not valid.", COUPON_EXPIRED: "This coupon is not currently active.",
+          MIN_SUBTOTAL_NOT_MET: "Your order does not meet this coupon’s minimum subtotal.", USAGE_LIMIT_REACHED: "This coupon has reached its usage limit.",
+          NOT_ELIGIBLE_FOR_CART: "This coupon does not apply to this product.", COUPON_NOT_STACKABLE: "This coupon cannot be combined with another offer.",
+        };
+        throw new Error(messages[quote?.error ?? ""] ?? "This coupon cannot be applied.");
+      }
+      const total = Number(quote.total ?? amount);
+      if (total <= 0) throw new Error("This checkout requires a payment; this coupon cannot reduce the order to zero.");
+      setAppliedCoupon({ code: quote.code ?? couponCode.trim().toUpperCase(), discountAmount: Number(quote.discountAmount ?? 0), total, label: quote.label ?? null });
+      setForm((current) => ({ ...current, amount: total.toFixed(2) }));
+      toast.success("Coupon applied.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not apply coupon.");
+    } finally { setCouponLoading(false); }
+  };
+  const removeCoupon = () => {
+    setAppliedCoupon(null); setCouponCode(""); setForm((current) => ({ ...current, amount: amount.toFixed(2) }));
+    toast.message("Coupon removed.");
+  };
   
 
   useEffect(() => {
@@ -209,6 +243,10 @@ function Checkout() {
       setError("Please enter the amount you paid.");
       return;
     }
+    if (Math.abs(paid - payableAmount) > 0.01) {
+      setError(`The expected payment is ${formatPrice(payableAmount)}. Please update the amount to match the checkout total.`);
+      return;
+    }
     if (!form.confirm) {
       setError("Please confirm that you have completed the payment and agree to the Terms & Conditions.");
       return;
@@ -244,17 +282,26 @@ function Checkout() {
         delivery_postal_code: p.product_type === "physical" ? form.delivery_postal_code.trim() : null,
         delivery_country: p.product_type === "physical" ? form.delivery_country.trim() : null,
         amount: paid,
+        coupon_code: appliedCoupon?.code ?? null,
+        coupon_discount: appliedCoupon?.discountAmount ?? 0,
         payment_method: "UPI",
         transaction_id: form.transaction_id.trim(),
         screenshot_path: screenshotPath,
         payment_status: "submitted" as const,
         order_status: "payment_submitted" as const,
       };
-      const { error: insertError } = await supabase.from("orders").insert(order);
+      const orderWriter = supabase as unknown as { from: (table: "orders") => { insert: (values: Record<string, unknown>) => Promise<{ error: { message: string } | null }> } };
+      const { error: insertError } = await orderWriter.from("orders").insert(order);
       if (insertError) throw insertError;
       setSubmitted(true);
-    } catch {
-      setError("We couldn't submit your confirmation. Please try again or contact support.");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      if (message.includes("COUPON_") || message.includes("NOT_ELIGIBLE_FOR_CART")) {
+        setAppliedCoupon(null);
+        setError("The coupon is no longer eligible. Please reapply it and confirm the updated payment amount.");
+      } else {
+        setError("We couldn't submit your confirmation. Please try again or contact support.");
+      }
     } finally {
       setSaving(false);
     }
@@ -278,13 +325,13 @@ function Checkout() {
             <div className="mt-4 rounded-md border border-border bg-surface p-4 text-sm">
               <p className="font-medium">{p.title}</p>
               <p className="mt-1 text-muted-foreground">
-                Amount payable: <span className="font-semibold text-foreground">{formatPrice(amount)}</span>
+                Amount payable: <span className="font-semibold text-foreground">{formatPrice(payableAmount)}</span>{appliedCoupon && <span className="ml-2 text-xs text-success">({formatPrice(appliedCoupon.discountAmount)} saved)</span>}
               </p>
             </div>
 
             <ol className="mt-5 space-y-2 text-sm text-muted-foreground">
               <li>1. Scan the QR code below with any UPI app, or pay to the UPI ID.</li>
-              <li>2. Pay exactly {formatPrice(amount)}.</li>
+              <li>2. Pay exactly {formatPrice(payableAmount)}.</li>
               <li>3. Return here and submit the payment confirmation form.</li>
             </ol>
 
@@ -300,7 +347,7 @@ function Checkout() {
                   value={upiLink(
   siteSettings.upiId,
   siteSettings.upiPayeeName,
-  amount,
+  payableAmount,
   p.title.slice(0, 40)
 )}
                 />
@@ -332,6 +379,14 @@ function Checkout() {
             </p>
 
             <form className="mt-5 space-y-4" onSubmit={onSubmit} noValidate>
+              <div className="rounded-lg border border-border bg-surface p-3">
+                <Label htmlFor="coupon-code">Coupon code</Label>
+                <div className="mt-1.5 flex gap-2">
+                  <Input id="coupon-code" value={couponCode} disabled={!!appliedCoupon || couponLoading} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="Enter code" maxLength={64} />
+                  {appliedCoupon ? <Button type="button" variant="outline" onClick={removeCoupon}>Remove</Button> : <Button type="button" variant="outline" disabled={couponLoading || !couponCode.trim()} onClick={() => void applyCoupon()}>{couponLoading ? "Checking…" : "Apply"}</Button>}
+                </div>
+                {appliedCoupon && <p className="mt-2 text-sm text-success">{appliedCoupon.label || appliedCoupon.code} applied — you save {formatPrice(appliedCoupon.discountAmount)}.</p>}
+              </div>
               <div>
                 <Label htmlFor="full_name">Full name</Label>
                 <Input
