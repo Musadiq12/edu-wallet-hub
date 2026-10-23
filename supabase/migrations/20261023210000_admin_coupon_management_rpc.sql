@@ -13,7 +13,7 @@ BEGIN
     'minSubtotal', c.min_subtotal, 'startsAt', c.starts_at, 'endsAt', c.ends_at,
     'totalUsageLimit', c.total_usage_limit, 'perCustomerLimit', c.per_customer_limit,
     'usageCount', c.usage_count, 'firstOrderOnly', c.first_order_only, 'stackable', c.stackable,
-    'priority', c.priority, 'status', c.status, 'createdAt', c.created_at,
+    'priority', c.priority, 'status', CASE WHEN c.status IN ('ACTIVE','SCHEDULED') AND c.ends_at IS NOT NULL AND c.ends_at <= now() THEN 'EXPIRED' WHEN c.status = 'ACTIVE' AND c.starts_at > now() THEN 'SCHEDULED' ELSE c.status::text END, 'createdAt', c.created_at,
     'targets', COALESCE((SELECT jsonb_agg(jsonb_build_object('targetType', t.target_type, 'targetId', t.target_id, 'mode', t.mode))
       FROM public.coupon_targets t WHERE t.coupon_id = c.id), '[]'::jsonb)
   ) ORDER BY c.created_at DESC), '[]'::jsonb)
