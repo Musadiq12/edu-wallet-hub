@@ -1,8 +1,8 @@
 -- Upgrade the existing legacy coupons table in place; preserve all existing rows.
-DO $function$ BEGIN CREATE TYPE public.coupon_discount_type AS ENUM ('PERCENTAGE', 'FIXED_AMOUNT', 'FREE_SHIPPING'); EXCEPTION WHEN duplicate_object THEN NULL; END $function$;
-DO $function$ BEGIN CREATE TYPE public.coupon_status AS ENUM ('DRAFT', 'ACTIVE', 'SCHEDULED', 'EXPIRED', 'DISABLED'); EXCEPTION WHEN duplicate_object THEN NULL; END $function$;
-DO $function$ BEGIN CREATE TYPE public.coupon_target_type AS ENUM ('PRODUCT', 'VARIANT', 'CATEGORY', 'BRAND', 'ALL_PRODUCTS'); EXCEPTION WHEN duplicate_object THEN NULL; END $function$;
-DO $function$ BEGIN CREATE TYPE public.coupon_target_mode AS ENUM ('INCLUDE', 'EXCLUDE'); EXCEPTION WHEN duplicate_object THEN NULL; END $function$;
+CREATE TYPE public.coupon_discount_type AS ENUM ('PERCENTAGE', 'FIXED_AMOUNT', 'FREE_SHIPPING');
+CREATE TYPE public.coupon_status AS ENUM ('DRAFT', 'ACTIVE', 'SCHEDULED', 'EXPIRED', 'DISABLED');
+CREATE TYPE public.coupon_target_type AS ENUM ('PRODUCT', 'VARIANT', 'CATEGORY', 'BRAND', 'ALL_PRODUCTS');
+CREATE TYPE public.coupon_target_mode AS ENUM ('INCLUDE', 'EXCLUDE');
 
 CREATE TABLE IF NOT EXISTS public.coupons (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -29,7 +29,6 @@ CREATE TABLE IF NOT EXISTS public.coupons (
   expires_at timestamptz,
   usage_limit integer,
   is_active boolean NOT NULL DEFAULT true,
-  CONSTRAINT coupons_valid_window CHECK (ends_at IS NULL OR starts_at IS NULL OR ends_at > starts_at)
 );
 
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS description text;
