@@ -3,7 +3,7 @@ RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $$
+AS $function$
 DECLARE v_result jsonb;
 BEGIN
   IF NOT public.is_admin_staff() THEN RAISE EXCEPTION 'administrator access required'; END IF;
@@ -20,14 +20,14 @@ BEGIN
   INTO v_result FROM public.coupons c;
   RETURN v_result;
 END;
-$$;
+$function$;
 
 CREATE OR REPLACE FUNCTION public.admin_save_coupon(p_coupon jsonb, p_targets jsonb, p_coupon_id uuid DEFAULT NULL)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $$
+AS $function$
 DECLARE
   v_coupon public.coupons%ROWTYPE;
   v_before jsonb;
@@ -94,14 +94,14 @@ BEGIN
     v_before, to_jsonb(v_coupon));
   RETURN jsonb_build_object('id',v_coupon.id,'code',v_coupon.code,'status',v_coupon.status);
 END;
-$$;
+$function$;
 
 CREATE OR REPLACE FUNCTION public.admin_set_coupon_status(p_coupon_id uuid, p_status public.coupon_status)
 RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $$
+AS $function$
 DECLARE v_before jsonb; v_after public.coupons%ROWTYPE;
 BEGIN
   IF NOT public.is_admin_staff() THEN RAISE EXCEPTION 'administrator access required'; END IF;
@@ -112,7 +112,7 @@ BEGIN
   VALUES(auth.uid(),'status_change','coupon',v_after.id,'Changed coupon '||v_after.code||' to '||p_status::text,v_before,to_jsonb(v_after));
   RETURN jsonb_build_object('id',v_after.id,'status',v_after.status);
 END;
-$$;
+$function$;
 
 REVOKE ALL ON FUNCTION public.admin_list_coupons() FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.admin_save_coupon(jsonb,jsonb,uuid) FROM PUBLIC, anon;
