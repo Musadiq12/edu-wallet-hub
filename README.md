@@ -1507,9 +1507,7 @@ Do not add unnecessary features merely to make the website look complicated.
 
 This project was built with [Lovable](https://lovable.dev).
 
-**Live app**: https://edu-wallet-hub.lovable.app
 
-## Build with Lovable
 
 Continue developing this project in the [Lovable editor](https://lovable.dev/projects/5a2b033c-198a-48c3-b1d9-f0530d11a1c2).
 
