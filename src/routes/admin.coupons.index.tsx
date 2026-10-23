@@ -40,6 +40,7 @@ function AdminCoupons() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [editing, setEditing] = useState<Coupon | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
   const [draft, setDraft] = useState<CouponDraft>(emptyDraft);
   const [targets, setTargets] = useState<CouponTarget[]>([{ targetType: "ALL_PRODUCTS", targetId: null, mode: "INCLUDE" }]);
   const [targetType, setTargetType] = useState<"PRODUCT" | "CATEGORY" | "ALL_PRODUCTS">("PRODUCT");
@@ -68,10 +69,12 @@ function AdminCoupons() {
   ), [coupons.data, search, filter]);
 
   function startNew() {
+    setFormOpen(true);
     setEditing(null); setDraft({ ...emptyDraft, code: `SAVE${Math.random().toString(36).slice(2, 6).toUpperCase()}` });
     setTargets([{ targetType: "ALL_PRODUCTS", targetId: null, mode: "INCLUDE" }]);
   }
   function startEdit(coupon: Coupon) {
+    setFormOpen(true);
     setEditing(coupon);
     setDraft({
       code: coupon.code, description: coupon.description ?? "", publicLabel: coupon.publicLabel ?? "",
@@ -135,9 +138,9 @@ function AdminCoupons() {
         <Button onClick={startNew}><Plus className="mr-2 h-4 w-4" /> New coupon</Button>
       </div>
 
-      {draft.code !== emptyDraft.code && (
+      {formOpen && (
         <form onSubmit={saveCoupon} className="space-y-5 rounded-xl border border-border bg-card p-5">
-          <div className="flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">{editing ? `Edit ${editing.code}` : "Create coupon"}</h2><Button type="button" variant="ghost" size="icon" onClick={() => { setDraft(emptyDraft); setEditing(null); }} aria-label="Close form"><X className="h-4 w-4" /></Button></div>
+          <div className="flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">{editing ? `Edit ${editing.code}` : "Create coupon"}</h2><Button type="button" variant="ghost" size="icon" onClick={() => { setDraft(emptyDraft); setEditing(null); setFormOpen(false); }} aria-label="Close form"><X className="h-4 w-4" /></Button></div>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="space-y-2"><Label htmlFor="coupon-code">Coupon code</Label><div className="flex gap-2"><Input id="coupon-code" value={draft.code} maxLength={64} onChange={(e) => setDraft({ ...draft, code: e.target.value.toUpperCase().replace(/\s/g, "") })} required /><Button type="button" variant="outline" onClick={() => setDraft({ ...draft, code: `SAVE${Math.random().toString(36).slice(2, 7).toUpperCase()}` })} aria-label="Generate code"><Ticket className="h-4 w-4" /></Button></div></div>
             <div className="space-y-2"><Label htmlFor="coupon-label">Public label</Label><Input id="coupon-label" value={draft.publicLabel} onChange={(e) => setDraft({ ...draft, publicLabel: e.target.value })} placeholder="10% off selected notes" /></div>
@@ -165,7 +168,7 @@ function AdminCoupons() {
             <p className="text-xs text-muted-foreground">Only product, category, and all-products targets are enabled because the current catalog has no variant or brand tables.</p>
           </section>
           <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm"><p className="font-medium">Live preview</p><p className="mt-1 text-muted-foreground">{sampleProduct ? `A customer buying ${sampleProduct.title} at ${formatPrice(samplePrice)} saves ${formatPrice(sampleDiscount)} and pays ${formatPrice(Math.max(0, samplePrice - sampleDiscount))}.` : "Add a product to preview the discount."}</p></div>
-          <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => { setDraft(emptyDraft); setEditing(null); }}>Cancel</Button><Button type="submit" disabled={saving}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}{editing ? "Save changes" : "Create coupon"}</Button></div>
+          <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => { setDraft(emptyDraft); setEditing(null); setFormOpen(false); }}>Cancel</Button><Button type="submit" disabled={saving}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}{editing ? "Save changes" : "Create coupon"}</Button></div>
         </form>
       )}
 
