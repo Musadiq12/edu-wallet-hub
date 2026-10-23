@@ -14,7 +14,7 @@ export function CookieConsent() {
   if (!visible) return null;
 
   const accept = () => {
-    try { localStorage.setItem(KEY, "accepted"); } catch {}
+    try { localStorage.setItem(KEY, "accepted"); } catch { /* Browser storage may be unavailable. */ }
     setVisible(false);
   };
 
