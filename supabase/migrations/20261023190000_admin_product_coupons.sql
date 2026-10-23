@@ -106,7 +106,7 @@ BEGIN
 
   SELECT * INTO c FROM public.coupons WHERE code = upper(trim(p_code));
   IF NOT FOUND THEN RETURN jsonb_build_object('valid', false, 'error', 'COUPON_NOT_FOUND'); END IF;
-  IF c.status <> 'ACTIVE' OR (c.starts_at IS NOT NULL AND c.starts_at > now()) OR (c.ends_at IS NOT NULL AND c.ends_at <= now()) THEN
+  IF c.status NOT IN ('ACTIVE','SCHEDULED') OR (c.status = 'SCHEDULED' AND (c.starts_at IS NULL OR c.starts_at > now())) OR (c.starts_at IS NOT NULL AND c.starts_at > now()) OR (c.ends_at IS NOT NULL AND c.ends_at <= now()) THEN
     RETURN jsonb_build_object('valid', false, 'error', 'COUPON_EXPIRED');
   END IF;
   IF c.total_usage_limit IS NOT NULL AND c.usage_count >= c.total_usage_limit THEN
