@@ -3,7 +3,7 @@ RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
-AS $$
+AS $function$
 DECLARE
   c public.coupons%ROWTYPE;
   v_quote jsonb;
@@ -50,4 +50,4 @@ BEGIN
   NEW.amount := greatest(0, round(v_subtotal - v_discount, 2));
   RETURN NEW;
 END;
-$$;
+$function$;
