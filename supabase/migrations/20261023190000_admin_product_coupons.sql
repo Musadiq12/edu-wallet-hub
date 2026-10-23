@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS public.coupons (
   updated_at timestamptz NOT NULL DEFAULT now(),
   expires_at timestamptz,
   usage_limit integer,
-  is_active boolean NOT NULL DEFAULT true,
+  is_active boolean NOT NULL DEFAULT true
 );
 
 ALTER TABLE public.coupons ADD COLUMN IF NOT EXISTS description text;
@@ -66,22 +66,19 @@ UPDATE public.coupons SET status = CASE
   WHEN status = 'DRAFT' THEN 'ACTIVE'::public.coupon_status
   ELSE status
 END;
-DO $ BEGIN ALTER TABLE public.coupons ADD CONSTRAINT coupons_min_subtotal_check CHECK (min_subtotal >= 0) NOT VALID; EXCEPTION WHEN duplicate_object THEN NULL; END $;
-DO $ BEGIN ALTER TABLE public.coupons ADD CONSTRAINT coupons_min_item_quantity_check CHECK (min_item_quantity >= 1) NOT VALID; EXCEPTION WHEN duplicate_object THEN NULL; END $;
-DO $ BEGIN ALTER TABLE public.coupons ADD CONSTRAINT coupons_total_usage_limit_check CHECK (total_usage_limit IS NULL OR total_usage_limit >= 1) NOT VALID; EXCEPTION WHEN duplicate_object THEN NULL; END $;
-DO $ BEGIN ALTER TABLE public.coupons ADD CONSTRAINT coupons_per_customer_limit_check CHECK (per_customer_limit >= 1) NOT VALID; EXCEPTION WHEN duplicate_object THEN NULL; END $;
-DO $ BEGIN ALTER TABLE public.coupons ADD CONSTRAINT coupons_valid_window CHECK (ends_at IS NULL OR starts_at IS NULL OR ends_at > starts_at) NOT VALID; EXCEPTION WHEN duplicate_object THEN NULL; END $;
+ALTER TABLE public.coupons ADD CONSTRAINT coupons_min_subtotal_check CHECK (min_subtotal >= 0) NOT VALID;
+ALTER TABLE public.coupons ADD CONSTRAINT coupons_min_item_quantity_check CHECK (min_item_quantity >= 1) NOT VALID;
+ALTER TABLE public.coupons ADD CONSTRAINT coupons_total_usage_limit_check CHECK (total_usage_limit IS NULL OR total_usage_limit >= 1) NOT VALID;
+ALTER TABLE public.coupons ADD CONSTRAINT coupons_per_customer_limit_check CHECK (per_customer_limit >= 1) NOT VALID;
+ALTER TABLE public.coupons ADD CONSTRAINT coupons_valid_window CHECK (ends_at IS NULL OR starts_at IS NULL OR ends_at > starts_at) NOT VALID;
 CREATE UNIQUE INDEX IF NOT EXISTS coupons_code_case_insensitive_idx ON public.coupons (upper(trim(code)));
 CREATE INDEX IF NOT EXISTS coupons_status_window_idx ON public.coupons(status, starts_at, ends_at);
 
-DO $function$ BEGIN
-  ALTER TABLE public.coupons ADD CONSTRAINT coupons_value_valid CHECK (
+ALTER TABLE public.coupons ADD CONSTRAINT coupons_value_valid CHECK (
     (discount_type = 'PERCENTAGE' AND discount_value > 0 AND discount_value <= 100)
     OR (discount_type = 'FIXED_AMOUNT' AND discount_value > 0)
     OR (discount_type = 'FREE_SHIPPING' AND discount_value = 0)
   ) NOT VALID;
-EXCEPTION WHEN duplicate_object THEN NULL;
-END $function$;
 
 CREATE TABLE IF NOT EXISTS public.coupon_targets (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
