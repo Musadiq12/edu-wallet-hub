@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { adminProductsQuery, type AdminProduct } from "@/lib/admin";
+import { effectivePrice, formatPrice } from "@/lib/format";
 import { categoriesQuery } from "@/lib/catalog";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -58,6 +59,9 @@ function AdminCoupons() {
   const categories = useQuery(categoriesQuery());
   const productOptions = (products.data ?? []) as AdminProduct[];
   const categoryOptions = categories.data ?? [];
+  const sampleProduct = productOptions.find((product) => targets.some((target) => target.mode === "INCLUDE" && ((target.targetType === "ALL_PRODUCTS") || (target.targetType === "PRODUCT" && target.targetId === product.id) || (target.targetType === "CATEGORY" && target.targetId === product.category_id))) && !targets.some((target) => target.mode === "EXCLUDE" && ((target.targetType === "PRODUCT" && target.targetId === product.id) || (target.targetType === "CATEGORY" && target.targetId === product.category_id))) ) ?? productOptions[0];
+  const samplePrice = sampleProduct ? effectivePrice(sampleProduct) : 0;
+  const sampleDiscount = draft.discountType === "PERCENTAGE" ? Math.min(samplePrice * Number(draft.discountValue || 0) / 100, draft.maxDiscountAmount ? Number(draft.maxDiscountAmount) : samplePrice, samplePrice) : draft.discountType === "FIXED_AMOUNT" ? Math.min(samplePrice, Number(draft.discountValue || 0)) : 0;
   const visible = useMemo(() => (coupons.data ?? []).filter((coupon) =>
     (!search || coupon.code.toLowerCase().includes(search.toLowerCase())) &&
     (filter === "ALL" || coupon.status === filter)
@@ -160,6 +164,7 @@ function AdminCoupons() {
             <div className="flex flex-wrap gap-2">{targets.map((target, index) => <Badge key={`${target.targetType}-${target.targetId}-${target.mode}-${index}`} variant="secondary" className="gap-2">{target.mode === "EXCLUDE" ? "Exclude: " : "Include: "}{targetLabel(target)}<button type="button" aria-label="Remove target" onClick={() => setTargets((current) => current.filter((_, i) => i !== index))}><X className="h-3 w-3" /></button></Badge>)}</div>
             <p className="text-xs text-muted-foreground">Only product, category, and all-products targets are enabled because the current catalog has no variant or brand tables.</p>
           </section>
+          <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm"><p className="font-medium">Live preview</p><p className="mt-1 text-muted-foreground">{sampleProduct ? `A customer buying ${sampleProduct.title} at ${formatPrice(samplePrice)} saves ${formatPrice(sampleDiscount)} and pays ${formatPrice(Math.max(0, samplePrice - sampleDiscount))}.` : "Add a product to preview the discount."}</p></div>
           <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={() => { setDraft(emptyDraft); setEditing(null); }}>Cancel</Button><Button type="submit" disabled={saving}>{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}{editing ? "Save changes" : "Create coupon"}</Button></div>
         </form>
       )}
