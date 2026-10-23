@@ -243,6 +243,10 @@ function Checkout() {
       setError("Please enter the amount you paid.");
       return;
     }
+    if (Math.abs(paid - payableAmount) > 0.01) {
+      setError(`The expected payment is ${formatPrice(payableAmount)}. Please update the amount to match the checkout total.`);
+      return;
+    }
     if (!form.confirm) {
       setError("Please confirm that you have completed the payment and agree to the Terms & Conditions.");
       return;
