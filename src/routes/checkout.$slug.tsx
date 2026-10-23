@@ -90,6 +90,11 @@ function Checkout() {
   };
   
 
+  // The confirmation screen replaces the checkout form; reset scroll so its heading is visible.
+  useEffect(() => {
+    if (submitted) window.scrollTo(0, 0);
+  }, [submitted]);
+
   useEffect(() => {
     if (!user) return;
     void supabase
