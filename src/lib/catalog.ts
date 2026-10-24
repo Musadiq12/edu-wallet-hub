@@ -111,6 +111,8 @@ export async function fileUrl(
 ): Promise<string | null> {
   if (!path) return null;
 
+  if (bucket === "product-covers" && /^https:\/\//i.test(path)) return path;
+
   if (bucket === "product-covers" || bucket === "product-previews") {
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     return data?.publicUrl ?? null;
