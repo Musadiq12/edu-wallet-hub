@@ -1,7 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "@/lib/catalog";
-import { publicImageUrl } from "@/lib/image-storage";
 
 export const BUCKETS = {
   cover: "product-covers",
