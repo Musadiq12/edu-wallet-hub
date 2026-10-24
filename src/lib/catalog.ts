@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { publicImageUrl } from "@/lib/image-storage";
 
 export type Product = {
   id: string;
@@ -111,7 +112,8 @@ export async function fileUrl(
 ): Promise<string | null> {
   if (!path) return null;
 
-  if (bucket === "product-covers" || bucket === "product-previews") {
+  if (bucket === "product-covers") return publicImageUrl(bucket, path);
+  if (bucket === "product-previews") {
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
     return data?.publicUrl ?? null;
   }
