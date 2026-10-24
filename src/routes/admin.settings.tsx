@@ -9,7 +9,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { BUCKETS, LIMITS, friendlyError, uploadFile } from "@/lib/admin";
 import { publicImageUrl } from "@/lib/image-storage";
 import { AdminFileField, type PickedFile } from "@/components/admin/AdminFileField";
-import { supabase } from "@/integrations/supabase/client";
 import { SETTING_FIELDS, defaultSettings, saveSettings, settingsQuery, type SiteSettings } from "@/lib/settings";
 
 export const Route = createFileRoute("/admin/settings")({ component: AdminSettings });
