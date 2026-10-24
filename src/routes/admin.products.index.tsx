@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Archive, Eye, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -179,14 +180,11 @@ function AdminProducts() {
         <div>
           {visible.length === 0 ? <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">No products match your filters.</div> : (
         <div className="overflow-x-auto rounded-lg border border-border">
-          <table className="w-full min-w-[60rem] text-sm">
+          <table className="w-full min-w-[48rem] text-sm">
             <thead className="bg-surface text-left text-xs uppercase tracking-wide text-muted-foreground">
               <tr>
                 <th className="px-4 py-2.5 font-medium">Title</th>
-                <th className="px-4 py-2.5 font-medium">Type</th>
-                <th className="px-4 py-2.5 font-medium">Category</th>
-                <th className="px-4 py-2.5 font-medium">Course</th>
-                <th className="px-4 py-2.5 font-medium">Subject</th>
+                <th className="px-3 py-3 font-medium">Format</th>
                 <th className="px-4 py-2.5 font-medium">Price</th>
                 <th className="px-4 py-2.5 font-medium">Status</th>
                 <th className="px-4 py-2.5 font-medium">Featured</th>
@@ -200,11 +198,9 @@ function AdminProducts() {
                   <td className="max-w-[18rem] px-4 py-3">
                     <p className="truncate font-medium">{p.title}</p>
                     <p className="truncate text-xs text-muted-foreground">/shop/{p.slug}</p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">{[categoryName(p.category_id), p.course_label, p.subject_label].filter(Boolean).join(" · ") || "Uncategorised"}</p>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">{p.product_type === "physical" ? "Physical copy" : "Digital PDF"}</td>
-                  <td className="px-4 py-3">{categoryName(p.category_id)}</td>
-                  <td className="px-4 py-3">{p.course_label ?? "—"}</td>
-                  <td className="px-4 py-3">{p.subject_label ?? "—"}</td>
+                  <td className="px-3 py-3 whitespace-nowrap text-muted-foreground">{p.product_type === "physical" ? "Physical copy" : "Digital PDF"}</td>
                   <td className="px-4 py-3">
                     {p.is_free ? (
                       "Free"
