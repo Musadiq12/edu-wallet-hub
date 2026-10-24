@@ -8,6 +8,7 @@ import { useSession } from "@/lib/auth";
 import { canReviewQuery, myReviewQuery, productReviewsQuery, reviewSummaryQuery, submitReview, updateMyReview } from "@/lib/reviews";
 import { friendlyError } from "@/lib/admin";
 import { supabase } from "@/integrations/supabase/client";
+import { publicImageUrl } from "@/lib/image-storage";
 import { ArrowRight, Eye, FileText, ShieldCheck, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -121,7 +122,7 @@ function ProductDetail() {
 
   const ratingData = reviewSummary.data ?? { average: 0, count: 0, distribution: [0, 0, 0, 0, 0] };
   const schemaDescription = (p.description || p.whats_included || "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 300);
-  const coverUrl = p.cover_image ? (typeof window === "undefined" ? undefined : supabase.storage.from("product-covers").getPublicUrl(p.cover_image).data.publicUrl) : undefined;
+  const coverUrl = p.cover_image ? (typeof window === "undefined" ? undefined : publicImageUrl("product-covers", p.cover_image) ?? undefined) : undefined;
   const productSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Product",

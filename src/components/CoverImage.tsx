@@ -1,5 +1,5 @@
 import { BookOpen } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { publicImageUrl } from "@/lib/image-storage";
 
 export function CoverImage({
   path,
@@ -10,7 +10,7 @@ export function CoverImage({
   title: string;
   className?: string;
 }) {
-  const url = path ? supabase.storage.from("product-covers").getPublicUrl(path).data.publicUrl : null;
+  const url = publicImageUrl("product-covers", path);
 
   return (
     <div
