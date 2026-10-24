@@ -9,6 +9,8 @@ type Env = {
 };
 
 const MAX_PDF_BYTES = 50 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const DOWNLOAD_TTL_SECONDS = 48 * 60 * 60;
 
 function origin(_request: Request, _env: Env) {
@@ -135,6 +137,62 @@ export default {
 
     if (url.pathname === "/health" && request.method === "GET") {
       return json(request, env, { ok: true, service: "edu-wallet-r2" });
+    }
+
+    // Public, cacheable cover images. Only the dedicated covers/ prefix is exposed.
+    if ((url.pathname === "/image" || url.pathname === "/image/") &&
+        (request.method === "GET" || request.method === "HEAD")) {
+      const key = safeKey(url.searchParams.get("key") || "");
+      if (!key.startsWith("covers/") || key.includes("..")) {
+        return new Response("Not found.", { status: 404 });
+      }
+      const object = await env.PRODUCTS.get(key);
+      if (!object) return new Response("Image not found.", { status: 404 });
+      const headers = new Headers();
+      object.writeHttpMetadata(headers);
+      const contentType = headers.get("Content-Type") || "";
+      if (!IMAGE_TYPES.has(contentType)) return new Response("Unsupported image type.", { status: 415 });
+      headers.set("Cache-Control", "public, max-age=31536000, immutable");
+      headers.set("X-Content-Type-Options", "nosniff");
+      headers.set("Cross-Origin-Resource-Policy", "cross-origin");
+      headers.set("Content-Length", String(object.size));
+      return new Response(request.method === "HEAD" ? null : object.body, { headers });
+    }
+
+    if (url.pathname === "/upload-image" && request.method === "PUT") {
+      const adminId = await requireAdmin(request, env);
+      if (!adminId) return json(request, env, { error: "Administrator access required." }, 403);
+      const contentType = (request.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
+      const length = Number(request.headers.get("Content-Length") || 0);
+      if (!IMAGE_TYPES.has(contentType)) {
+        return json(request, env, { error: "Only JPG, PNG, WebP, and GIF images are allowed." }, 415);
+      }
+      if (length > MAX_IMAGE_BYTES) {
+        return json(request, env, { error: "The image is larger than 5 MB." }, 413);
+      }
+      if (!request.body) return json(request, env, { error: "The upload body is empty." }, 400);
+      const requestedFolder = safeKey(url.searchParams.get("folder") || "misc").replace(/^\\/+|\\/+$/g, "");
+      if (!requestedFolder || requestedFolder.includes("..") || requestedFolder.startsWith("covers/")) {
+        return json(request, env, { error: "Invalid image folder." }, 400);
+      }
+      const filename = safeKey(url.searchParams.get("filename") || "cover.webp").split("/").pop() || "cover.webp";
+      const key = safeKey(`covers/${requestedFolder}/${crypto.randomUUID()}-${filename}`);
+      await env.PRODUCTS.put(key, request.body, {
+        httpMetadata: { contentType, cacheControl: "public, max-age=31536000, immutable" },
+        customMetadata: { uploadedBy: adminId, assetType: "cover-image" },
+      });
+      return json(request, env, { ok: true, path: key });
+    }
+
+    if (url.pathname === "/delete-image" && request.method === "DELETE") {
+      const adminId = await requireAdmin(request, env);
+      if (!adminId) return json(request, env, { error: "Administrator access required." }, 403);
+      const key = safeKey(url.searchParams.get("key") || "");
+      if (!key.startsWith("covers/") || key.includes("..")) {
+        return json(request, env, { error: "Invalid cover image key." }, 400);
+      }
+      await env.PRODUCTS.delete(key);
+      return json(request, env, { ok: true });
     }
 
     if (url.pathname === "/upload" && request.method === "PUT") {
