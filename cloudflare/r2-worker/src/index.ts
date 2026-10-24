@@ -171,7 +171,7 @@ export default {
         return json(request, env, { error: "The image is larger than 5 MB." }, 413);
       }
       if (!request.body) return json(request, env, { error: "The upload body is empty." }, 400);
-      const requestedFolder = safeKey(url.searchParams.get("folder") || "misc").replace(/^\\/+|\\/+$/g, "");
+      const requestedFolder = safeKey(url.searchParams.get("folder") || "misc").replace(/^\/+|\/+$/g, "");
       if (!requestedFolder || requestedFolder.includes("..") || requestedFolder.startsWith("covers/")) {
         return json(request, env, { error: "Invalid image folder." }, 400);
       }
