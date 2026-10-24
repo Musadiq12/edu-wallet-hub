@@ -229,7 +229,7 @@ function AdminProducts() {
                   <td className="px-4 py-3">{p.is_featured ? "Yes" : "No"}</td>
                   <td className="px-4 py-3 whitespace-nowrap">{new Date(p.created_at).toLocaleDateString()}</td>
                   <td className="px-4 py-3">
-                    <div className="flex justify-end gap-1">
+                    <div className="flex items-center justify-end gap-2">
                       {busyId === p.id && <Loader2 className="mr-1 h-4 w-4 animate-spin self-center" />}
                       {p.is_archived ? (
                         <Button size="sm" variant="outline" disabled={busyId === p.id} onClick={() => void restore(p)}>Restore</Button>
@@ -244,12 +244,14 @@ function AdminProducts() {
                           <Button size="icon" variant="ghost" aria-label="Edit product" asChild>
                             <Link to="/admin/products/$id" params={{ id: p.id }}><Pencil className="h-4 w-4" /></Link>
                           </Button>
-                          <Button size="sm" variant="outline" disabled={busyId === p.id} onClick={() => { setTarget(p); setDialogAction("archive"); }}>
-                            <Archive className="mr-1 h-4 w-4" /> Archive
-                          </Button>
-                          <Button size="icon" variant="ghost" aria-label="Permanently delete product" disabled={busyId === p.id} onClick={() => { setTarget(p); setDialogAction("delete"); }}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <div className="flex flex-col items-stretch gap-1">
+                            <Button size="sm" variant="outline" className="justify-start" disabled={busyId === p.id} onClick={() => { setTarget(p); setDialogAction("archive"); }}>
+                              <Archive className="mr-1 h-4 w-4" /> Archive
+                            </Button>
+                            <Button size="sm" variant="outline" className="justify-start" aria-label="Permanently delete product" disabled={busyId === p.id} onClick={() => { setTarget(p); setDialogAction("delete"); }}>
+                              <Trash2 className="mr-1 h-4 w-4" /> Delete
+                            </Button>
+                          </div>
                         </>
                       )}
                     </div>
