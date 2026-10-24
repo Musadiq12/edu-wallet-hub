@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BUCKETS, LIMITS, friendlyError, uploadFile } from "@/lib/admin";
+import { publicImageUrl } from "@/lib/image-storage";
 import { AdminFileField, type PickedFile } from "@/components/admin/AdminFileField";
 import { supabase } from "@/integrations/supabase/client";
 import { SETTING_FIELDS, defaultSettings, saveSettings, settingsQuery, type SiteSettings } from "@/lib/settings";
@@ -72,13 +73,11 @@ function AdminSettings() {
         const mobilePicked = pickedMobileHeroImages[index];
         if (desktopPicked) {
           const { path } = await uploadFile(BUCKETS.cover, desktopPicked.file, "hero-banners");
-          const { data: publicData } = supabase.storage.from(BUCKETS.cover).getPublicUrl(path);
-          updatedSlides[index] = { ...slide, imageUrl: publicData.publicUrl };
+          updatedSlides[index] = { ...slide, imageUrl: publicImageUrl(BUCKETS.cover, path) ?? "" };
         }
         if (mobilePicked) {
           const { path } = await uploadFile(BUCKETS.cover, mobilePicked.file, "hero-banners-mobile");
-          const { data: publicData } = supabase.storage.from(BUCKETS.cover).getPublicUrl(path);
-          updatedSlides[index] = { ...(updatedSlides[index] ?? slide), mobileImageUrl: publicData.publicUrl };
+          updatedSlides[index] = { ...(updatedSlides[index] ?? slide), mobileImageUrl: publicImageUrl(BUCKETS.cover, path) ?? "" };
         }
       }
       await saveSettings({
