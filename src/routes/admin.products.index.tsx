@@ -234,20 +234,26 @@ function AdminProducts() {
                           <Button size="sm" variant="outline" disabled={busyId === p.id} onClick={() => void setPublished(p, !p.is_active)}>
                             {p.is_active ? "Unpublish" : "Publish"}
                           </Button>
-                          <Button size="icon" variant="ghost" aria-label="View product" asChild>
-                            <Link to="/shop/$slug" params={{ slug: p.slug }} target="_blank"><Eye className="h-4 w-4" /></Link>
-                          </Button>
-                          <Button size="icon" variant="ghost" aria-label="Edit product" asChild>
-                            <Link to="/admin/products/$id" params={{ id: p.id }}><Pencil className="h-4 w-4" /></Link>
-                          </Button>
-                          <div className="flex flex-col items-stretch gap-1">
-                            <Button size="sm" variant="outline" className="justify-start" disabled={busyId === p.id} onClick={() => { setTarget(p); setDialogAction("archive"); }}>
-                              <Archive className="mr-1 h-4 w-4" /> Archive
-                            </Button>
-                            <Button size="sm" variant="outline" className="justify-start" aria-label="Permanently delete product" disabled={busyId === p.id} onClick={() => { setTarget(p); setDialogAction("delete"); }}>
-                              <Trash2 className="mr-1 h-4 w-4" /> Delete
-                            </Button>
-                          </div>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="outline" disabled={busyId === p.id}>Manage</Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem asChild>
+                                <Link to="/shop/$slug" params={{ slug: p.slug }} target="_blank"><Eye className="h-4 w-4" /> View product</Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem asChild>
+                                <Link to="/admin/products/$id" params={{ id: p.id }}><Pencil className="h-4 w-4" /> Edit product</Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onSelect={() => { setTarget(p); setDialogAction("archive"); }}>
+                                <Archive className="h-4 w-4" /> Archive product
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => { setTarget(p); setDialogAction("delete"); }}>
+                                <Trash2 className="h-4 w-4" /> Delete permanently
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </>
                       )}
                     </div>
