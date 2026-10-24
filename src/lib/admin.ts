@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import type { Product } from "@/lib/catalog";
+import { publicImageUrl } from "@/lib/image-storage";
 
 export const BUCKETS = {
   cover: "product-covers",
@@ -76,6 +77,30 @@ export async function uploadFile(bucket: string, file: File, folder: string): Pr
     return { path: data.path };
   }
 
+  if (bucket === BUCKETS.cover || bucket === "blog-covers") {
+    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+      throw new Error("Use a JPG, PNG, WebP, or GIF image.");
+    }
+    if (file.size > LIMITS.coverBytes) throw new Error("That image is larger than 5 MB.");
+    const token = await getAccessToken();
+    const response = await fetch(
+      `${R2_WORKER_URL}/upload-image?folder=${encodeURIComponent(folder)}&filename=${encodeURIComponent(file.name)}`,
+      {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": file.type },
+        body: file,
+      },
+    );
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(typeof data?.error === "string" ? data.error : "R2 image upload failed.");
+    }
+    if (typeof data?.path !== "string" || !data.path.startsWith("covers/")) {
+      throw new Error("R2 upload did not return a valid cover image path.");
+    }
+    return { path: data.path };
+  }
+
   const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
   const path = `${folder}/${Date.now()}-${safe}`;
   const { error } = await supabase.storage.from(bucket).upload(path, file, {
@@ -100,6 +125,15 @@ export async function removeFile(bucket: string, path: string | null | undefined
       },
     );
     if (!response.ok) return;
+    return;
+  }
+
+  if ((bucket === BUCKETS.cover || bucket === "blog-covers") && path.startsWith("covers/")) {
+    const token = await getAccessToken();
+    await fetch(`${R2_WORKER_URL}/delete-image?key=${encodeURIComponent(path)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
     return;
   }
 
