@@ -176,7 +176,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
     try {
       if (cover) {
         setStatus("Uploading cover image…");
-        const { path } = await uploadFile(BUCKETS.cover, cover.file, "covers");
+        const { path } = await uploadFile(BUCKETS.cover, cover.file, "products");
         uploaded.push({ bucket: BUCKETS.cover, path });
         next.cover_image = path;
       }
