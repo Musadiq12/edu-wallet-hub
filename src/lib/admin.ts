@@ -49,6 +49,32 @@ async function getAccessToken() {
 }
 
 export async function uploadFile(bucket: string, file: File, folder: string): Promise<UploadResult> {
+  if ((bucket === BUCKETS.cover || bucket === "blog-covers") && R2_WORKER_URL) {
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      throw new Error("Use a JPEG, PNG, WebP, GIF, or AVIF image.");
+    }
+    if (file.size > LIMITS.coverBytes) throw new Error("That image is larger than 5 MB.");
+
+    const token = await getAccessToken();
+    const response = await fetch(
+      `${R2_WORKER_URL}/images/upload?filename=${encodeURIComponent(file.name)}`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": file.type },
+        body: file,
+      },
+    );
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(typeof data?.error === "string" ? data.error : "Cloudflare Images upload failed.");
+    }
+    if (typeof data?.path !== "string" || !data.path.startsWith("https://imagedelivery.net/")) {
+      throw new Error("Cloudflare Images did not return a valid delivery URL.");
+    }
+    return { path: data.path };
+  }
+
   if (bucket === BUCKETS.file && R2_WORKER_URL) {
     if (file.type !== "application/pdf") throw new Error("Only PDF files are allowed.");
     if (file.size > LIMITS.fileBytes) throw new Error("That PDF is larger than 50 MB.");
@@ -89,6 +115,22 @@ export async function uploadFile(bucket: string, file: File, folder: string): Pr
 
 export async function removeFile(bucket: string, path: string | null | undefined) {
   if (!path) return;
+
+  if ((bucket === BUCKETS.cover || bucket === "blog-covers") && R2_WORKER_URL && path.startsWith("https://imagedelivery.net/")) {
+    const parts = new URL(path).pathname.split("/").filter(Boolean);
+    const imageId = parts[1];
+    if (!imageId) throw new Error("Could not identify the Cloudflare image to delete.");
+    const token = await getAccessToken();
+    const response = await fetch(
+      `${R2_WORKER_URL}/images/delete?id=${encodeURIComponent(imageId)}`,
+      { method: "DELETE", headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(typeof data?.error === "string" ? data.error : "Cloudflare Images deletion failed.");
+    }
+    return;
+  }
 
   if (bucket === BUCKETS.file && R2_WORKER_URL && path.startsWith("products/")) {
     const token = await getAccessToken();

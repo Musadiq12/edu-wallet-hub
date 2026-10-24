@@ -6,6 +6,8 @@ type Env = {
   DOWNLOAD_SIGNING_SECRET: string;
   DELIVERY_SECRET: string;
   ALLOWED_ORIGIN?: string;
+  CF_IMAGES_ACCOUNT_ID?: string;
+  CF_IMAGES_API_TOKEN?: string;
 };
 
 const MAX_PDF_BYTES = 50 * 1024 * 1024;
@@ -135,6 +137,72 @@ export default {
 
     if (url.pathname === "/health" && request.method === "GET") {
       return json(request, env, { ok: true, service: "edu-wallet-r2" });
+    }
+
+    if (url.pathname === "/images/upload" && request.method === "POST") {
+      const adminId = await requireAdmin(request, env);
+      if (!adminId) return json(request, env, { error: "Administrator access required." }, 403);
+      if (!env.CF_IMAGES_ACCOUNT_ID || !env.CF_IMAGES_API_TOKEN) {
+        return json(request, env, { error: "Cloudflare Images is not configured on the Worker." }, 503);
+      }
+
+      const contentType = (request.headers.get("Content-Type") || "").split(";")[0].trim().toLowerCase();
+      const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
+      const length = Number(request.headers.get("Content-Length") || 0);
+      if (!allowedTypes.includes(contentType)) {
+        return json(request, env, { error: "Use a JPEG, PNG, WebP, GIF, or AVIF image." }, 415);
+      }
+      if (length > 5 * 1024 * 1024) {
+        return json(request, env, { error: "The image is larger than 5 MB." }, 413);
+      }
+      if (!request.body) return json(request, env, { error: "The image upload body is empty." }, 400);
+
+      const filename = (url.searchParams.get("filename") || "cover-image").replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 120);
+      const bytes = await request.arrayBuffer();
+      if (bytes.byteLength === 0) return json(request, env, { error: "The image upload body is empty." }, 400);
+      if (bytes.byteLength > 5 * 1024 * 1024) return json(request, env, { error: "The image is larger than 5 MB." }, 413);
+
+      const form = new FormData();
+      form.set("file", new Blob([bytes], { type: contentType }), filename);
+      form.set("requireSignedURLs", "false");
+      form.set("metadata", JSON.stringify({ uploadedBy: adminId, source: "edu-wallet-hub" }));
+
+      const uploadResponse = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(env.CF_IMAGES_ACCOUNT_ID)}/images/v1`,
+        { method: "POST", headers: { Authorization: `Bearer ${env.CF_IMAGES_API_TOKEN}` }, body: form },
+      );
+      const result = await uploadResponse.json() as {
+        success?: boolean;
+        errors?: Array<{ message?: string }>;
+        result?: { id?: string; variants?: string[] };
+      };
+      const imageId = result.result?.id;
+      const deliveryUrl = result.result?.variants?.find((variant) => variant.endsWith("/public")) || result.result?.variants?.[0];
+      if (!uploadResponse.ok || !result.success || !imageId || !deliveryUrl) {
+        return json(request, env, { error: result.errors?.[0]?.message || "Cloudflare Images upload failed." }, 502);
+      }
+      return json(request, env, { ok: true, path: deliveryUrl, id: imageId });
+    }
+
+    if (url.pathname === "/images/delete" && request.method === "DELETE") {
+      const adminId = await requireAdmin(request, env);
+      if (!adminId) return json(request, env, { error: "Administrator access required." }, 403);
+      if (!env.CF_IMAGES_ACCOUNT_ID || !env.CF_IMAGES_API_TOKEN) {
+        return json(request, env, { error: "Cloudflare Images is not configured on the Worker." }, 503);
+      }
+      const imageId = url.searchParams.get("id") || "";
+      if (!/^[a-zA-Z0-9_-]{8,128}$/.test(imageId)) {
+        return json(request, env, { error: "Invalid Cloudflare image ID." }, 400);
+      }
+      const deleteResponse = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(env.CF_IMAGES_ACCOUNT_ID)}/images/v1/${encodeURIComponent(imageId)}`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${env.CF_IMAGES_API_TOKEN}` } },
+      );
+      const result = await deleteResponse.json().catch(() => ({})) as { success?: boolean; errors?: Array<{ message?: string }> };
+      if (!deleteResponse.ok || result.success === false) {
+        return json(request, env, { error: result.errors?.[0]?.message || "Cloudflare Images deletion failed." }, 502);
+      }
+      return json(request, env, { ok: true });
     }
 
     if (url.pathname === "/upload" && request.method === "PUT") {

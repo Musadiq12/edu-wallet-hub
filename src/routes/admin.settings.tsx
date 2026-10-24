@@ -72,13 +72,11 @@ function AdminSettings() {
         const mobilePicked = pickedMobileHeroImages[index];
         if (desktopPicked) {
           const { path } = await uploadFile(BUCKETS.cover, desktopPicked.file, "hero-banners");
-          const { data: publicData } = supabase.storage.from(BUCKETS.cover).getPublicUrl(path);
-          updatedSlides[index] = { ...slide, imageUrl: publicData.publicUrl };
+          updatedSlides[index] = { ...slide, imageUrl: path };
         }
         if (mobilePicked) {
           const { path } = await uploadFile(BUCKETS.cover, mobilePicked.file, "hero-banners-mobile");
-          const { data: publicData } = supabase.storage.from(BUCKETS.cover).getPublicUrl(path);
-          updatedSlides[index] = { ...(updatedSlides[index] ?? slide), mobileImageUrl: publicData.publicUrl };
+          updatedSlides[index] = { ...(updatedSlides[index] ?? slide), mobileImageUrl: path };
         }
       }
       await saveSettings({

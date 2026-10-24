@@ -10,7 +10,7 @@ export function CoverImage({
   title: string;
   className?: string;
 }) {
-  const url = path ? supabase.storage.from("product-covers").getPublicUrl(path).data.publicUrl : null;
+  const url = path ? (/^https:\/\//i.test(path) ? path : supabase.storage.from("product-covers").getPublicUrl(path).data.publicUrl) : null;
 
   return (
     <div
