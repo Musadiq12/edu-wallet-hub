@@ -84,7 +84,7 @@ type ExistingCheckoutOrder = CheckoutOrder & {
       .from("orders")
       .update({
         razorpay_order_id: gateway.id,
-        razorpay_status: "created",
+        razorpay_status: "creating",
         razorpay_creation_started_at: null,
       })
       .eq("id", order.id)
@@ -391,7 +391,6 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
 
   total = amountPaise / 100;
   const shipping = product.product_type === "physical";
-  const optionalText = (v: unknown, max: number) => typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
   if (shipping && (!validText(body.deliveryAddress, 300) || !validText(body.deliveryCity, 100) ||
       !validText(body.deliveryState, 100) || !/^[0-9]{5,10}$/.test(String(body.deliveryPostalCode ?? "").trim()))) {
     return json(req, { error: "A complete shipping address is required for this physical product." }, 400);
@@ -404,6 +403,8 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
     .from("orders")
     .insert({
       user_id: auth.user.id,
+      checkout_idempotency_key: idempotencyKey,
+      razorpay_creation_started_at: new Date().toISOString(),
       product_id: product.id,
       product_type: product.product_type,
       product_title: product.title,
@@ -427,55 +428,37 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
       order_status: "pending_payment",
       razorpay_status: "created",
     })
-    .select("id")
+    .select("id,amount,product_title,full_name,email,whatsapp")
     .single();
 
   if (orderError || !order) {
+    if (orderError?.code === "23505") {
+      const { data: racedRaw, error: racedLookupError } = await ctx.supabaseAdmin
+        .from("orders")
+        .select(IDEMPOTENCY_ORDER_FIELDS)
+        .eq("user_id", auth.user.id)
+        .eq("checkout_idempotency_key", idempotencyKey)
+        .maybeSingle();
+
+      if (racedLookupError) {
+        console.error("Could not resolve duplicate Razorpay checkout request:", racedLookupError);
+        return json(req, { error: "Checkout is already being processed. Retry shortly; do not pay again." }, 409);
+      }
+
+      const raced = racedRaw as ExistingCheckoutOrder | null;
+      if (raced?.razorpay_order_id && raced.razorpay_status === "created") {
+        const racedAmountPaise = rupeesToPaise(Number(raced.amount));
+        if (Number.isSafeInteger(racedAmountPaise) && racedAmountPaise >= 100) {
+          return checkoutResponse(req, raced, raced.razorpay_order_id, keyId, racedAmountPaise, 200);
+        }
+      }
+
+      return json(req, { error: "This checkout is already being prepared. Retry in a moment without paying again." }, 409);
+    }
+
     console.error("Razorpay order record creation failed:", orderError);
     return json(req, { error: "Could not create your order. Please retry." }, 500);
   }
 
-  const receipt = `ew_${order.id.replaceAll("-", "").slice(0, 24)}`;
-  let gatewayResponse: Response;
-  try {
-    gatewayResponse = await fetch("https://api.razorpay.com/v1/orders", {
-      method: "POST",
-      headers: {
-        Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ amount: amountPaise, currency: "INR", receipt, notes: { internal_order_id: order.id } }),
-      signal: AbortSignal.timeout(10_000),
-    });
-  } catch (error) {
-    console.error("Razorpay order API request failed:", error);
-    await ctx.supabaseAdmin.from("orders").update({ razorpay_status: "failed" }).eq("id", order.id);
-    return json(req, { error: "Payment service is temporarily unavailable. You can safely retry checkout." }, 502);
-  }
-
-  const gatewayOrder = await gatewayResponse.json().catch(() => null);
-  if (!gatewayResponse.ok || typeof gatewayOrder?.id !== "string" ||
-      gatewayOrder.amount !== amountPaise || gatewayOrder.currency !== "INR") {
-    console.error("Razorpay order API rejected request:", gatewayResponse.status, gatewayOrder?.error?.code);
-    await ctx.supabaseAdmin.from("orders").update({ razorpay_status: "failed" }).eq("id", order.id);
-    return json(req, { error: "Payment service could not create the payment session. Please retry." }, 502);
-  }
-
-  const { error: updateError } = await ctx.supabaseAdmin.from("orders")
-    .update({ razorpay_order_id: gatewayOrder.id })
-    .eq("id", order.id);
-  if (updateError) {
-    console.error("Failed to attach Razorpay order ID:", updateError);
-    return json(req, { error: "Payment session could not be saved. Contact support before retrying." }, 500);
-  }
-
-  return json(req, {
-    orderId: order.id,
-    razorpayOrderId: gatewayOrder.id,
-    amount: amountPaise,
-    currency: "INR",
-    keyId,
-    name: product.title,
-    prefill: { name: body.fullName.trim(), email, contact: body.whatsapp.trim() },
-  }, 201);
+  return await createAndAttachGatewayOrder(order as CheckoutOrder, amountPaise, 201);
 }));
