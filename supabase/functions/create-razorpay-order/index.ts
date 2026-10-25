@@ -125,9 +125,11 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
       delivery_state: shipping ? optionalText(body.deliveryState, 100) : null,
       delivery_postal_code: shipping ? optionalText(body.deliveryPostalCode, 10) : null,
       delivery_country: shipping ? optionalText(body.deliveryCountry, 100) ?? "India" : null,
-      amount: total,
+      // The database coupon trigger validates and deducts the discount on INSERT.
+      // Store the pre-discount subtotal here so the discount is applied exactly once.
+      amount: subtotal,
       coupon_code: couponCode,
-      coupon_discount: couponDiscount,
+      coupon_discount: 0,
       payment_method: "Razorpay",
       payment_gateway: "razorpay",
       payment_status: "pending",
