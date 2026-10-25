@@ -25,6 +25,90 @@ function validEmail(value: string) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value) && value.length <= 254;
 }
 
+function validUuid(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
+function optionalText(value: unknown, max: number): string | null {
+  return typeof value === "string" && value.trim() ? value.trim().slice(0, max) : null;
+}
+
+type CheckoutOrder = {
+  id: string;
+  amount: number | string;
+  product_title: string;
+  full_name: string;
+  email: string;
+  whatsapp: string;
+};
+
+type GatewayOrderResult =
+  | { ok: true; id: string }
+  | { ok: false; status: 502; message: string };
+
+async function createGatewayOrder(
+  orderId: string,
+  amountPaise: number,
+  keyId: string,
+  keySecret: string,
+): Promise<GatewayOrderResult> {
+  const receipt = `ew_${orderId.replaceAll("-", "").slice(0, 24)}`;
+  let response: Response;
+
+  try {
+    response = await fetch("https://api.razorpay.com/v1/orders", {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        amount: amountPaise,
+        currency: "INR",
+        receipt,
+        notes: { internal_order_id: orderId },
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (error) {
+    console.error("Razorpay order API request failed:", error);
+    return { ok: false, status: 502, message: "Payment service is temporarily unavailable. Retry checkout using the same page; do not pay again if a payment window already opened." };
+  }
+
+  const payload = await response.json().catch(() => null);
+  if (
+    !response.ok ||
+    typeof payload?.id !== "string" ||
+    !/^order_[A-Za-z0-9]+$/.test(payload.id) ||
+    payload.amount !== amountPaise ||
+    payload.currency !== "INR"
+  ) {
+    console.error("Razorpay order API rejected request:", response.status, payload?.error?.code);
+    return { ok: false, status: 502, message: "Payment service could not create the payment session. Retry checkout; do not create a second payment manually." };
+  }
+
+  return { ok: true, id: payload.id };
+}
+
+function checkoutResponse(
+  req: Request,
+  order: CheckoutOrder,
+  razorpayOrderId: string,
+  keyId: string,
+  amountPaise: number,
+  status = 200,
+) {
+  return json(req, {
+    orderId: order.id,
+    razorpayOrderId,
+    amount: amountPaise,
+    currency: "INR",
+    keyId,
+    name: order.product_title,
+    prefill: { name: order.full_name, email: order.email, contact: order.whatsapp },
+  }, status);
+}
+
 Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: headers(req.headers.get("Origin")) });
   if (req.method !== "POST") return json(req, { error: "Method not allowed." }, 405);
