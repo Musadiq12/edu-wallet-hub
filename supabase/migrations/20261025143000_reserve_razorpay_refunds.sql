@@ -10,7 +10,8 @@ create or replace function public.reserve_razorpay_refund(
 returns table (
   refund_id uuid,
   payment_id text,
-  order_amount_paise bigint
+  order_amount_paise bigint,
+  order_razorpay_status text
 )
 language plpgsql
 security definer
