@@ -156,7 +156,7 @@ Deno.serve(withSupabase({ auth: "none" }, async (req, ctx) => {
       const { data: refundRow, error: refundLookupError } = await ctx.supabaseAdmin.from("razorpay_refunds").select("id,order_id").eq("razorpay_refund_id", refundId).maybeSingle();
       if (refundLookupError) throw new Error("Could not look up local refund.");
       if (!refundRow) throw new Error("No local refund matches this Razorpay refund ID.");
-      const { data: relatedOrder, error: relatedOrderError } = await ctx.supabaseAdmin.from("orders").select("id,amount,razorpay_payment_id").eq("id", refundRow.order_id).maybeSingle();
+      const { data: relatedOrder, error: relatedOrderError } = await ctx.supabaseAdmin.from("orders").select("id,amount,razorpay_payment_id,razorpay_status").eq("id", refundRow.order_id).maybeSingle();
       if (relatedOrderError || !relatedOrder || relatedOrder.razorpay_payment_id !== refundPaymentId) throw new Error("Refund payment does not match its local order.");
       const newStatus = eventType === "refund.processed" ? "processed" : "failed";
       const { error: updateRefundError } = await ctx.supabaseAdmin.from("razorpay_refunds").update({ status: newStatus, updated_at: new Date().toISOString() }).eq("id", refundRow.id);
@@ -165,7 +165,7 @@ Deno.serve(withSupabase({ auth: "none" }, async (req, ctx) => {
       if (totalsError) throw new Error("Could not recalculate refund totals.");
       const processedPaise = (refunds ?? []).filter((r: {status:string}) => r.status === "processed").reduce((sum: number, r: {amount_paise:number}) => sum + Number(r.amount_paise), 0);
       const totalPaise = Math.round(Number(relatedOrder.amount) * 100);
-      const nextStatus = processedPaise >= totalPaise ? "refunded" : processedPaise > 0 ? "partially_refunded" : "paid";
+      const nextStatus = processedPaise >= totalPaise ? "refunded" : processedPaise > 0 ? "partially_refunded" : relatedOrder.razorpay_status === "fulfilled" ? "fulfilled" : "paid";
       const { error: updateOrderError } = await ctx.supabaseAdmin.from("orders").update({ razorpay_status: nextStatus }).eq("id", relatedOrder.id).eq("payment_gateway", "razorpay");
       if (updateOrderError) throw new Error("Refund saved but order status could not be updated.");
       const { error: processedError } = await ctx.supabaseAdmin.from("razorpay_webhook_events").update({ processed_at: new Date().toISOString(), processing_error: null }).eq("event_id", eventId);
