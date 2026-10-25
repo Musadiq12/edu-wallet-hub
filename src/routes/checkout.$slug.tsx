@@ -234,7 +234,8 @@ function Checkout() {
               const payload=await context?.json?.().catch(()=>null);
               setError(`${payload?.error || "Payment may have completed, but verification is pending."} Payment reference: ${response.razorpay_payment_id}. Do not pay again; contact support if verification remains pending.`);setSaving(false);return;
             }
-            setSubmittedOrderId(String(verified.orderId || checkout.orderId));\n            setSubmitted(true);
+            setSubmittedOrderId(String(verified.orderId || checkout.orderId));
+            setSubmitted(true);
           } catch { setError(`Payment may have completed, but verification could not finish. Payment reference: ${response.razorpay_payment_id}. Do not pay again; contact support if verification remains pending.`); }
           finally {setSaving(false);}
         },modal:{ondismiss:()=>setSaving(false)}});
