@@ -76,14 +76,14 @@ async function createGatewayOrder(
   keyId: string,
   keySecret: string,
 ): Promise<GatewayOrderResult> {
-  const receipt = \`ew_\${orderId.replaceAll("-", "").slice(0, 24)}\`;
-  const authorization = \`Basic \${btoa(\`\${keyId}:\${keySecret}\`)}\`;
+  const receipt = `ew_${orderId.replaceAll("-", "").slice(0, 24)}`;
+  const authorization = `Basic ${btoa(`${keyId}:${keySecret}`)}`;
 
   const recoverOrderByReceipt = async (): Promise<string | null> => {
     let lookupResponse: Response;
     try {
       lookupResponse = await fetch(
-        \`https://api.razorpay.com/v1/orders?receipt=\${encodeURIComponent(receipt)}&count=10\`,
+        `https://api.razorpay.com/v1/orders?receipt=${encodeURIComponent(receipt)}&count=10`,
         {
           headers: { Authorization: authorization },
           signal: AbortSignal.timeout(10_000),
