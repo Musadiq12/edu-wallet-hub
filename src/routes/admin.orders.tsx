@@ -134,6 +134,10 @@ function AdminOrders() {
 
   const verifyPayment = async (order: AdminOrder) => {
     if (order.status !== "Pending") return;
+    if (order.product_type === "physical" && order.payment_gateway === "razorpay") {
+      toast.error("Razorpay orders are marked Payment Confirmed only after server-side signature and capture verification. Do not manually verify this payment.");
+      return;
+    }
     if (!window.confirm(`Verify payment for order #${order.id}? Make sure the payment has reached your account.`)) return;
     await updateOrder(order, {
       status: "Payment Verified",
