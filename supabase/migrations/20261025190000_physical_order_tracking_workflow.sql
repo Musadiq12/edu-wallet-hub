@@ -1,6 +1,7 @@
 BEGIN;
 
-ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS estimated_delivery text;\nALTER TABLE public.orders ADD COLUMN IF NOT EXISTS quantity integer NOT NULL DEFAULT 1 CHECK (quantity > 0);
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS estimated_delivery text;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS quantity integer NOT NULL DEFAULT 1 CHECK (quantity > 0);
 ALTER TABLE public.orders DROP CONSTRAINT IF EXISTS orders_status_check;
 ALTER TABLE public.orders ADD CONSTRAINT orders_status_check
   CHECK (status IN ('Pending', 'Payment Verified', 'Preparing Order', 'Dispatched', 'Cancelled'));
