@@ -19,7 +19,7 @@ export const Route = createFileRoute("/track-order/$orderId")({
 });
 
 type TrackingStatus = "Payment Verified" | "Preparing Order" | "Dispatched";
-type TrackingResponse = {
+const trackingRpc = supabase as unknown as {\n  rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;\n};\n\ntype TrackingResponse = {
   order: {
     id: string;
     product_title: string;
@@ -62,7 +62,7 @@ function TrackOrderPage() {
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
     queryFn: async (): Promise<TrackingResponse["order"]> => {
-      const { data, error } = await supabase.rpc("get_physical_order_tracking", { p_order_id: orderId });
+      const { data, error } = await trackingRpc.rpc("get_physical_order_tracking", { p_order_id: orderId });
       if (error) throw error;
       const payload = data as unknown as TrackingResponse;
       if (!payload?.order?.id) throw new Error("We couldn't find this verified physical order.");
