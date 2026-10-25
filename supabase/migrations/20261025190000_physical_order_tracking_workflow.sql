@@ -1,6 +1,6 @@
 BEGIN;
 
-ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS estimated_delivery text;
+ALTER TABLE public.orders ADD COLUMN IF NOT EXISTS estimated_delivery text;\nALTER TABLE public.orders ADD COLUMN IF NOT EXISTS quantity integer NOT NULL DEFAULT 1 CHECK (quantity > 0);
 ALTER TABLE public.orders DROP CONSTRAINT IF EXISTS orders_status_check;
 ALTER TABLE public.orders ADD CONSTRAINT orders_status_check
   CHECK (status IN ('Pending', 'Payment Verified', 'Preparing Order', 'Dispatched', 'Cancelled'));
@@ -43,7 +43,7 @@ BEGIN
     AND h.status IN ('Payment Verified', 'Preparing Order', 'Dispatched');
 
   RETURN jsonb_build_object('order', jsonb_build_object(
-    'id', v_order.id, 'product_title', v_order.product_title, 'amount', v_order.amount,
+    'id', v_order.id, 'product_title', v_order.product_title, 'quantity', v_order.quantity, 'amount', v_order.amount,
     'created_at', v_order.created_at, 'verified_at', v_order.verified_at, 'status', v_order.status,
     'delivery_address', concat_ws(', ', v_order.delivery_address, v_order.delivery_city,
       v_order.delivery_state, v_order.delivery_postal_code, v_order.delivery_country),
