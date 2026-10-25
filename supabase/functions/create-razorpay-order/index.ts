@@ -494,7 +494,7 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
       payment_gateway: "razorpay",
       payment_status: "pending",
       order_status: "pending_payment",
-      razorpay_status: "created",
+      razorpay_status: "creating",
     })
     .select("id,amount,product_title,full_name,email,whatsapp")
     .single();
