@@ -68,7 +68,7 @@ const IDEMPOTENCY_ORDER_FIELDS =
 
 type GatewayOrderResult =
   | { ok: true; id: string }
-  | { ok: false; status: 502; message: string };
+  | { ok: false; status: 502; message: string; preserveClaim: boolean };
 
 async function createGatewayOrder(
   orderId: string,
@@ -76,14 +76,51 @@ async function createGatewayOrder(
   keyId: string,
   keySecret: string,
 ): Promise<GatewayOrderResult> {
-  const receipt = `ew_${orderId.replaceAll("-", "").slice(0, 24)}`;
-  let response: Response;
+  const receipt = \`ew_\${orderId.replaceAll("-", "").slice(0, 24)}\`;
+  const authorization = \`Basic \${btoa(\`\${keyId}:\${keySecret}\`)}\`;
 
+  const recoverOrderByReceipt = async (): Promise<string | null> => {
+    let lookupResponse: Response;
+    try {
+      lookupResponse = await fetch(
+        \`https://api.razorpay.com/v1/orders?receipt=\${encodeURIComponent(receipt)}&count=10\`,
+        {
+          headers: { Authorization: authorization },
+          signal: AbortSignal.timeout(10_000),
+        },
+      );
+    } catch (error) {
+      console.error("Razorpay receipt recovery request failed:", error);
+      return null;
+    }
+
+    if (!lookupResponse.ok) {
+      console.error("Razorpay receipt recovery rejected request:", lookupResponse.status);
+      return null;
+    }
+
+    const lookup = await lookupResponse.json().catch(() => null);
+    const items = Array.isArray(lookup?.items) ? lookup.items : [];
+    const existing = items.find((item: Record<string, unknown>) =>
+      item.receipt === receipt &&
+      item.amount === amountPaise &&
+      item.currency === "INR" &&
+      item.notes !== null &&
+      typeof item.notes === "object" &&
+      (item.notes as Record<string, unknown>).internal_order_id === orderId &&
+      typeof item.id === "string" &&
+      /^order_[A-Za-z0-9]+$/.test(item.id)
+    );
+
+    return existing?.id ?? null;
+  };
+
+  let response: Response;
   try {
     response = await fetch("https://api.razorpay.com/v1/orders", {
       method: "POST",
       headers: {
-        Authorization: `Basic ${btoa(`${keyId}:${keySecret}`)}`,
+        Authorization: authorization,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -96,22 +133,48 @@ async function createGatewayOrder(
     });
   } catch (error) {
     console.error("Razorpay order API request failed:", error);
-    return { ok: false, status: 502, message: "Payment service is temporarily unavailable. Retry checkout using the same page; do not pay again if a payment window already opened." };
+    const recoveredId = await recoverOrderByReceipt();
+    if (recoveredId) return { ok: true, id: recoveredId };
+    // The request may have reached Razorpay even when the response was lost.
+    // Keep the creation lease so a retry reconciles by the unique receipt first.
+    return {
+      ok: false,
+      status: 502,
+      preserveClaim: true,
+      message: "Payment service did not confirm whether the order was created. Retry this checkout shortly; do not start a separate payment.",
+    };
   }
 
   const payload = await response.json().catch(() => null);
   if (
-    !response.ok ||
-    typeof payload?.id !== "string" ||
-    !/^order_[A-Za-z0-9]+$/.test(payload.id) ||
-    payload.amount !== amountPaise ||
-    payload.currency !== "INR"
+    response.ok &&
+    typeof payload?.id === "string" &&
+    /^order_[A-Za-z0-9]+$/.test(payload.id) &&
+    payload.amount === amountPaise &&
+    payload.currency === "INR" &&
+    payload.receipt === receipt
   ) {
-    console.error("Razorpay order API rejected request:", response.status, payload?.error?.code);
-    return { ok: false, status: 502, message: "Payment service could not create the payment session. Retry checkout; do not create a second payment manually." };
+    return { ok: true, id: payload.id };
   }
 
-  return { ok: true, id: payload.id };
+  const description = String(payload?.error?.description ?? payload?.error?.reason ?? "");
+  const duplicateReceipt = /receipt.*(already|unique|created|duplicate)|duplicate.*receipt|already been processed/i.test(description);
+  const ambiguousResponse = response.status >= 500 || response.status === 408 || duplicateReceipt;
+
+  if (ambiguousResponse) {
+    const recoveredId = await recoverOrderByReceipt();
+    if (recoveredId) return { ok: true, id: recoveredId };
+  }
+
+  console.error("Razorpay order API rejected request:", response.status, payload?.error?.code);
+  return {
+    ok: false,
+    status: 502,
+    preserveClaim: ambiguousResponse,
+    message: ambiguousResponse
+      ? "Payment service could not confirm the existing order. Retry this checkout shortly; do not start a separate payment."
+      : "Payment service could not create the payment session. Correct the checkout problem or contact support before retrying.",
+  };
 }
 
 function checkoutResponse(
@@ -151,13 +214,15 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
   ) => {
     const gateway = await createGatewayOrder(order.id, amountPaise, keyId, keySecret);
     if (!gateway.ok) {
-      const { error: markFailedError } = await ctx.supabaseAdmin
-        .from("orders")
-        .update({ razorpay_status: "failed", razorpay_creation_started_at: null })
-        .eq("id", order.id)
-        .eq("razorpay_status", "creating")
-        .is("razorpay_order_id", null);
-      if (markFailedError) console.error("Failed to record Razorpay order creation failure:", markFailedError);
+      if (!gateway.preserveClaim) {
+        const { error: markFailedError } = await ctx.supabaseAdmin
+          .from("orders")
+          .update({ razorpay_status: "failed", razorpay_creation_started_at: null })
+          .eq("id", order.id)
+          .eq("razorpay_status", "creating")
+          .is("razorpay_order_id", null);
+        if (markFailedError) console.error("Failed to record Razorpay order creation failure:", markFailedError);
+      }
       return json(req, { error: gateway.message }, gateway.status);
     }
 
