@@ -105,7 +105,7 @@ Deno.serve(withSupabase({ auth: "none" }, async (req, ctx) => {
   }
 
   const eventType = typeof event.event === "string" ? event.event : "";
-  const supported = ["payment.captured", "order.paid", "payment.failed"];
+  const supported = ["payment.captured", "order.paid", "payment.failed", "refund.processed", "refund.failed"];
   if (!supported.includes(eventType)) {
     // Validly signed but unsupported events are acknowledged to prevent pointless retries.
     return response({ ok: true, ignored: true });
@@ -148,6 +148,30 @@ Deno.serve(withSupabase({ auth: "none" }, async (req, ctx) => {
   }
 
   try {
+    if (eventType === "refund.processed" || eventType === "refund.failed") {
+      const refundEntity = (event.payload as { refund?: { entity?: Record<string, unknown> } } | undefined)?.refund?.entity ?? {};
+      const refundId = typeof refundEntity.id === "string" ? refundEntity.id : null;
+      const refundPaymentId = typeof refundEntity.payment_id === "string" ? refundEntity.payment_id : null;
+      if (!refundId || !refundPaymentId) throw new Error("Refund webhook payload is missing refund or payment ID.");
+      const { data: refundRow, error: refundLookupError } = await ctx.supabaseAdmin.from("razorpay_refunds").select("id,order_id").eq("razorpay_refund_id", refundId).maybeSingle();
+      if (refundLookupError) throw new Error("Could not look up local refund.");
+      if (!refundRow) throw new Error("No local refund matches this Razorpay refund ID.");
+      const { data: relatedOrder, error: relatedOrderError } = await ctx.supabaseAdmin.from("orders").select("id,amount,razorpay_payment_id").eq("id", refundRow.order_id).maybeSingle();
+      if (relatedOrderError || !relatedOrder || relatedOrder.razorpay_payment_id !== refundPaymentId) throw new Error("Refund payment does not match its local order.");
+      const newStatus = eventType === "refund.processed" ? "processed" : "failed";
+      const { error: updateRefundError } = await ctx.supabaseAdmin.from("razorpay_refunds").update({ status: newStatus, updated_at: new Date().toISOString() }).eq("id", refundRow.id);
+      if (updateRefundError) throw new Error("Could not update refund status.");
+      const { data: refunds, error: totalsError } = await ctx.supabaseAdmin.from("razorpay_refunds").select("amount_paise,status").eq("order_id", refundRow.order_id);
+      if (totalsError) throw new Error("Could not recalculate refund totals.");
+      const processedPaise = (refunds ?? []).filter((r: {status:string}) => r.status === "processed").reduce((sum: number, r: {amount_paise:number}) => sum + Number(r.amount_paise), 0);
+      const totalPaise = Math.round(Number(relatedOrder.amount) * 100);
+      const nextStatus = processedPaise >= totalPaise ? "refunded" : processedPaise > 0 ? "partially_refunded" : "paid";
+      const { error: updateOrderError } = await ctx.supabaseAdmin.from("orders").update({ razorpay_status: nextStatus }).eq("id", relatedOrder.id).eq("payment_gateway", "razorpay");
+      if (updateOrderError) throw new Error("Refund saved but order status could not be updated.");
+      const { error: processedError } = await ctx.supabaseAdmin.from("razorpay_webhook_events").update({ processed_at: new Date().toISOString(), processing_error: null }).eq("event_id", eventId);
+      if (processedError) throw new Error("Refund saved but webhook event could not be marked complete.");
+      return response({ ok: true, refundStatus: newStatus });
+    }
     if (!gatewayOrderId) {
       throw new Error("Webhook payload did not include a Razorpay order ID.");
     }
