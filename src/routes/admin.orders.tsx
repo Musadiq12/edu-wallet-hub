@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, ChevronDown, ExternalLink, FileText, Loader2, MessageCircle, PackageCheck, Search, Truck } from "lucide-react";
+import { CheckCircle2, ChevronDown, ExternalLink, FileText, Loader2, MessageCircle, PackageCheck, Search, Truck, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +65,7 @@ function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState<"All" | OrderStatus>("All");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [digitalLinks, setDigitalLinks] = useState<Record<string, string>>({});
+  const [refundBusyId, setRefundBusyId] = useState<string | null>(null);
 
   const historyQuery = useQuery({
     queryKey: ["admin", "order-status-history", expandedId],
@@ -299,6 +300,46 @@ function AdminOrders() {
     }
   };
 
+  const requestRefund = async (order: AdminOrder) => {
+    if (order.payment_gateway !== "razorpay" || !order.razorpay_payment_id || order.payment_status !== "verified") {
+      toast.error("Only verified Razorpay payments can be refunded.");
+      return;
+    }
+    if (order.razorpay_status !== "paid" && order.razorpay_status !== "fulfilled" && order.razorpay_status !== "partially_refunded") {
+      toast.error("This payment is not refundable in its current state.");
+      return;
+    }
+    const rawAmount = window.prompt(`Enter refund amount in rupees. Maximum original order value: ₹${Number(order.amount).toFixed(2)}`, Number(order.amount).toFixed(2));
+    if (rawAmount === null) return;
+    if (!/^\d+(?:\.\d{1,2})?$/.test(rawAmount.trim()) || Number(rawAmount) <= 0) {
+      toast.error("Enter a valid amount with up to two decimal places.");
+      return;
+    }
+    const reason = window.prompt("Refund reason (optional, up to 500 characters):") ?? "";
+    if (reason.length > 500) {
+      toast.error("Refund reason must be 500 characters or fewer.");
+      return;
+    }
+    if (!window.confirm(`Request a Razorpay refund of ₹${Number(rawAmount).toFixed(2)} for order #${order.id}? This will contact Razorpay.`)) return;
+    setRefundBusyId(order.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-razorpay-refund", {
+        body: { orderId: order.id, amountRupees: rawAmount.trim(), reason },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || "Refund request failed.");
+      toast.success(data.message || `Refund request created: ${data.razorpayRefundId || data.refundRequestId}`);
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin", "orders"] }),
+        qc.invalidateQueries({ queryKey: ["admin", "razorpay-refunds", order.id] }),
+      ]);
+    } catch (error) {
+      toast.error(friendlyError(error, "Could not request the refund. Check the refund status before retrying."));
+    } finally {
+      setRefundBusyId(null);
+    }
+  };
+
   const openPaymentProof = async (order: AdminOrder) => {
     if (!order.screenshot_path) return;
     setBusyId(order.id);
@@ -438,6 +479,20 @@ Thank you for shopping with us!`;
 
                     <section className="rounded-lg border border-border p-3 sm:p-4">
                       <h2 className="mb-3 text-sm font-semibold">Order actions</h2>
+                      {order.payment_gateway === "razorpay" && (
+                        <div className="mb-4 rounded-lg border border-border bg-muted/20 p-3">
+                          <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
+                            <span className="font-medium">Razorpay payment</span>
+                            <Badge variant="outline">{order.razorpay_status || "Unknown status"}</Badge>
+                          </div>
+                          <p className="mb-3 text-xs text-muted-foreground">Refund requests are recorded and submitted securely through the server. Check Razorpay and the order record if a request reports an uncertain result.</p>
+                          <Button size="sm" variant="outline" disabled={busy || refundBusyId === order.id || !order.razorpay_payment_id || order.payment_status !== "verified" || !["paid", "fulfilled", "partially_refunded"].includes(order.razorpay_status || "")} onClick={() => void requestRefund(order)}>
+                            {refundBusyId === order.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-1.5 h-4 w-4" />}
+                            Request refund
+                          </Button>
+                        </div>
+                      )}
+
                       {order.status === "Pending" && order.product_type === "physical" && (
                         <div className="flex flex-wrap gap-2">
                           <Button size="sm" disabled={busy} onClick={() => void verifyPayment(order)}>Verify Payment</Button>
