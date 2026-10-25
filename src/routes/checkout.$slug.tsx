@@ -181,7 +181,7 @@ function Checkout() {
     setError(null);
     if (!form.full_name.trim() || form.full_name.trim().length > 100) return setError("Please enter your full name.");
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.trim())) return setError("Please enter a valid email address.");
-    if (!/^[0-9+\\-\\s]{8,16}$/.test(form.whatsapp.trim())) return setError("Please enter a valid WhatsApp number.");
+    if (!/^[0-9+\-\s]{8,16}$/.test(form.whatsapp.trim())) return setError("Please enter a valid WhatsApp number.");
     if (p.product_type === "physical" && (!form.delivery_address.trim() || form.delivery_address.trim().length > 300)) return setError("Please enter your complete delivery address.");
     if (p.product_type === "physical" && (!form.delivery_city.trim() || !form.delivery_state.trim())) return setError("Please enter your city and state.");
     if (p.product_type === "physical" && !/^[0-9]{5,10}$/.test(form.delivery_postal_code.trim())) return setError("Please enter a valid postal PIN code.");
@@ -223,10 +223,10 @@ function Checkout() {
             if(verifyError||!verified?.ok){
               const context=(verifyError as {context?:{json?:()=>Promise<{error?:string}>}}|null)?.context;
               const payload=await context?.json?.().catch(()=>null);
-              setError(payload?.error||"Payment may have completed, but verification is pending. Do not pay again; contact support with your Razorpay payment ID.");setSaving(false);return;
+              setError(`${payload?.error || "Payment may have completed, but verification is pending."} Payment reference: ${response.razorpay_payment_id}. Do not pay again; contact support if verification remains pending.`);setSaving(false);return;
             }
             setSubmitted(true);
-          } catch { setError("Payment may have completed, but verification could not finish. Do not pay again; contact support with your Razorpay payment ID."); }
+          } catch { setError(`Payment may have completed, but verification could not finish. Payment reference: ${response.razorpay_payment_id}. Do not pay again; contact support if verification remains pending.`); }
           finally {setSaving(false);}
         },modal:{ondismiss:()=>setSaving(false)}});
       razorpay.on("payment.failed",(response)=>{setError(response.error?.description||"Payment was not completed. You can retry checkout.");setSaving(false);});
