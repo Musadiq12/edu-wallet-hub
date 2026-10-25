@@ -15,7 +15,7 @@ function headers(origin: string | null) {
 function json(req: Request, data: unknown, status = 200) {
   return new Response(JSON.stringify(data), { status, headers: headers(req.headers.get("Origin")) });
 }
-function validText(value: unknown, max: number) {
+function validText(value: unknown, max: number): value is string {
   return typeof value === "string" && value.trim().length > 0 && value.trim().length <= max;
 }
 function rupeesToPaise(value: number) {
@@ -67,7 +67,11 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
     return json(req, { error: "This product is unavailable for purchase." }, 404);
   }
 
-  const subtotal = Number(product.discounted_price ?? product.price);
+  const listedPrice = Number(product.price ?? 0);
+  const discountedPrice = product.discounted_price == null ? null : Number(product.discounted_price);
+  const subtotal = discountedPrice !== null && Number.isFinite(discountedPrice) && discountedPrice >= 0 && discountedPrice <= listedPrice
+    ? discountedPrice
+    : listedPrice;
   if (!Number.isFinite(subtotal) || subtotal <= 0 || subtotal > 1_000_000) {
     return json(req, { error: "This product has an invalid price. Please contact support." }, 400);
   }
@@ -98,6 +102,7 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
     return json(req, { error: "The payable amount is invalid." }, 400);
   }
 
+  total = amountPaise / 100;
   const shipping = product.product_type === "physical";
   const optionalText = (v: unknown, max: number) => typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
   if (shipping && (!validText(body.deliveryAddress, 300) || !validText(body.deliveryCity, 100) ||
