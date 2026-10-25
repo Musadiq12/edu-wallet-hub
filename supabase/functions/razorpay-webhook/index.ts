@@ -124,7 +124,7 @@ Deno.serve(withSupabase({ auth: "none" }, async (req, ctx) => {
 
     const { data: order, error: orderError } = await ctx.supabaseAdmin
       .from("orders")
-      .select("id,amount,payment_status,order_status,razorpay_status,razorpay_payment_id")
+      .select("id,user_id,product_id,product_type,product_title,full_name,email,amount,payment_status,order_status,razorpay_status,razorpay_payment_id,verified_at,delivered_at")
       .eq("payment_gateway", "razorpay")
       .eq("razorpay_order_id", gatewayOrderId)
       .maybeSingle();
