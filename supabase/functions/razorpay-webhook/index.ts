@@ -231,8 +231,19 @@ Deno.serve(withSupabase({ auth: "none" }, async (req, ctx) => {
       const deliverySecret = Deno.env.get("R2_WORKER_DELIVERY_SECRET");
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
       const fromEmail = Deno.env.get("EDUWALLET_FROM_EMAIL");
-      if (!workerUrl || !deliverySecret || !resendApiKey || !fromEmail) {
-        throw new Error("PDF fulfilment requires R2 worker and email secrets.");
+      if (!workerUrl || !deliverySecret) {
+        throw new Error("PDF fulfilment requires R2 worker secrets.");
+      }
+      // A buyer may configure their own email provider after acquiring the site.
+      // Record the payment event as handled, but leave the order paid (not fulfilled)
+      // until email delivery is configured and the order can be fulfilled safely.
+      if (!resendApiKey || !fromEmail) {
+        const message = "PDF email delivery deferred: RESEND_API_KEY and EDUWALLET_FROM_EMAIL are not configured.";
+        const { error: deferredError } = await ctx.supabaseAdmin.from("razorpay_webhook_events")
+          .update({ processed_at: new Date().toISOString(), processing_error: message })
+          .eq("event_id", eventId);
+        if (deferredError) throw new Error("Email delivery is deferred, but webhook event could not be marked complete.");
+        return response({ ok: true, deliveryDeferred: true });
       }
       if (!order.product_id || !order.email) throw new Error("Order is missing product or customer email.");
 
