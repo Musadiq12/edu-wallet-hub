@@ -284,10 +284,12 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
   const email = body.email.trim();
   const productId = body.productId.trim();
   const whatsapp = body.whatsapp.trim();
-  const idempotencyKey = typeof body.idempotencyKey === "string" ? body.idempotencyKey.trim() : "";
-  if (!validUuid(idempotencyKey)) {
-    return json(req, { error: "Checkout attempt identifier is missing or invalid. Refresh checkout and try again." }, 400);
+  const suppliedIdempotencyKey = typeof body.idempotencyKey === "string" ? body.idempotencyKey.trim() : "";
+  if (suppliedIdempotencyKey && !validUuid(suppliedIdempotencyKey)) {
+    return json(req, { error: "Checkout attempt identifier is invalid. Refresh checkout and try again." }, 400);
   }
+  // Older deployed clients don't send this field; generate a valid key for backward compatibility.
+  const idempotencyKey = suppliedIdempotencyKey || crypto.randomUUID();
   if (!validEmail(email) || !/^[0-9+\-\s]{8,16}$/.test(whatsapp)) {
     return json(req, { error: "Please provide a valid email and WhatsApp number." }, 400);
   }
