@@ -103,9 +103,18 @@ Deno.serve(withSupabase({ auth: "none" }, async (req, ctx) => {
     });
 
   if (eventInsertError) {
-    if (eventInsertError.code === "23505") return response({ ok: true, duplicate: true });
-    console.error("Could not persist Razorpay webhook event:", eventInsertError);
-    return response({ error: "Webhook event could not be recorded; retry later." }, 500);
+    if (eventInsertError.code !== "23505") {
+      console.error("Could not persist Razorpay webhook event:", eventInsertError);
+      return response({ error: "Webhook event could not be recorded; retry later." }, 500);
+    }
+    const { data: existingEvent, error: existingEventError } = await ctx.supabaseAdmin
+      .from("razorpay_webhook_events")
+      .select("processed_at,processing_error")
+      .eq("event_id", eventId)
+      .maybeSingle();
+    if (existingEventError) return response({ error: "Could not inspect duplicate webhook event." }, 500);
+    if (existingEvent?.processed_at) return response({ ok: true, duplicate: true });
+    // A previous attempt inserted the event but failed before completion. Reprocess it.
   }
 
   try {
@@ -127,16 +136,10 @@ Deno.serve(withSupabase({ auth: "none" }, async (req, ctx) => {
     }
 
     if (eventType === "payment.failed") {
-      if (order.razorpay_status !== "paid" && order.razorpay_status !== "fulfilled") {
-        const { error } = await ctx.supabaseAdmin.from("orders")
-          .update({
-            razorpay_status: "failed",
-            payment_status: "rejected",
-            order_status: "payment_rejected",
-          })
-          .eq("id", order.id)
-          .eq("razorpay_status", "created");
-        if (error) throw new Error("Could not record failed payment status.");
+      // A failed attempt does not mean the Razorpay order itself is unusable;
+      // customers may retry with another payment method. Keep the order retryable.
+      if (order.razorpay_status === "paid" || order.razorpay_status === "fulfilled") {
+        // Ignore late failure events after a successful captured payment.
       }
     } else {
       const expectedPaise = Math.round((Number(order.amount) + Number.EPSILON) * 100);
