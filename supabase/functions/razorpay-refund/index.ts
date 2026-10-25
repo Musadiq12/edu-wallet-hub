@@ -150,9 +150,10 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
       { amount: amountPaise, notes: { internal_order_id: order.id, refund_request_id: refundRecord.id } },
     );
   } catch (error) {
-    console.error("Razorpay refund request failed:", error);
-    await ctx.supabaseAdmin.from("razorpay_refunds").update({ status: "failed" }).eq("id", refundRecord.id);
-    return json({ error: "Razorpay could not confirm the refund request. Check the payment dashboard before retrying." }, 502);
+    // A network timeout is ambiguous: Razorpay may have accepted the refund.
+    // Keep the local request pending for reconciliation; do not invite a duplicate refund.
+    console.error("Razorpay refund request outcome is uncertain:", error);
+    return json({ error: "Refund outcome is uncertain. Check Razorpay Dashboard and reconcile this request before retrying.", refundRequestId: refundRecord.id }, 502);
   }
 
   const gatewayRefund = await gatewayResponse.json().catch(() => null);
