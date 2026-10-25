@@ -444,7 +444,138 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
       console.error("Razorpay coupon validation failed:", couponError);
       return json(req, { error: "Coupon validation is temporarily unavailable. Please retry." }, 503);
     }
-    if (!quote?.valid) return json(req, { error: "The coupon is no longer valid. Refresh checkout and try again." }, 400);
+    if (!quote?.valid) {
+      const couponMessages: Record<string, string> = {
+        COUPON_ALREADY_USED: "You have already used this coupon. It can only be used once per customer.",
+        COUPON_CUSTOMER_LIMIT_REACHED: "You have reached the allowed number of uses for this coupon.",
+        COUPON_CHECKOUT_PENDING: "You already have an unfinished checkout using this coupon. Resume that checkout instead of starting another.",
+        USAGE_LIMIT_REACHED: "This coupon has reached its usage limit.",
+        COUPON_EXPIRED: "This coupon is no longer active.",
+        COUPON_NOT_FOUND: "This coupon code is not valid.",
+        MIN_SUBTOTAL_NOT_MET: "Your order does not meet this coupon's minimum subtotal.",
+        NOT_ELIGIBLE_FOR_CART: "This coupon does not apply to this product or account.",
+      };
+      return json(req, { error: couponMessages[String(quote?.error ?? "")] ?? "This coupon cannot be applied." }, 400);
+    }
+
+    if (quote.checkoutPending === true) {
+      const reservedOrderId = typeof quote.checkoutOrderId === "string" ? quote.checkoutOrderId : "";
+      if (!validUuid(reservedOrderId)) {
+        return json(req, { error: "Your existing coupon checkout could not be recovered safely. Contact support before paying again." }, 409);
+      }
+
+      const { data: reservedRaw, error: reservedLookupError } = await ctx.supabaseAdmin
+        .from("orders")
+        .select(IDEMPOTENCY_ORDER_FIELDS)
+        .eq("id", reservedOrderId)
+        .eq("user_id", auth.user.id)
+        .maybeSingle();
+
+      if (reservedLookupError) {
+        console.error("Could not recover the existing coupon checkout:", reservedLookupError);
+        return json(req, { error: "Could not recover your existing checkout. Retry shortly; do not pay again yet." }, 500);
+      }
+
+      const reserved = reservedRaw as ExistingCheckoutOrder | null;
+      const requestedCoupon = String(quote.code ?? body.couponCode).trim().toUpperCase();
+      const formMatches = Boolean(reserved) &&
+        reserved!.product_id === product.id &&
+        reserved!.full_name === body.fullName.trim() &&
+        reserved!.email === email &&
+        reserved!.whatsapp === whatsapp &&
+        reserved!.coupon_code?.trim().toUpperCase() === requestedCoupon &&
+        (reserved!.product_type !== "physical" || (
+          reserved!.delivery_address === optionalText(body.deliveryAddress, 300) &&
+          reserved!.delivery_city === optionalText(body.deliveryCity, 100) &&
+          reserved!.delivery_state === optionalText(body.deliveryState, 100) &&
+          reserved!.delivery_postal_code === optionalText(body.deliveryPostalCode, 10) &&
+          reserved!.delivery_country === (optionalText(body.deliveryCountry, 100) ?? "India")
+        ));
+
+      if (!reserved || !formMatches) {
+        return json(req, {
+          error: "This coupon is reserved for an unfinished checkout with its original details. Restore those details, or remove the coupon to start a new order.",
+        }, 409);
+      }
+
+      if (reserved.payment_status === "verified" || ["paid", "fulfilled", "partially_refunded", "refunded"].includes(reserved.razorpay_status)) {
+        return json(req, {
+          error: "This coupon checkout has already been paid or is no longer payable. Check your order and do not pay again.",
+        }, 409);
+      }
+
+      if (reserved.payment_gateway !== "razorpay") {
+        return json(req, {
+          error: "This coupon is already reserved by an unfinished order using another payment method. Finish or cancel that order before trying Razorpay.",
+        }, 409);
+      }
+
+      const reservedAmountPaise = rupeesToPaise(Number(reserved.amount));
+      if (!Number.isSafeInteger(reservedAmountPaise) || reservedAmountPaise < 100) {
+        return json(req, { error: "Your existing checkout has an invalid saved amount. Contact support before paying." }, 409);
+      }
+
+      if (reserved.razorpay_order_id && reserved.razorpay_status === "created") {
+        return checkoutResponse(req, reserved, reserved.razorpay_order_id, keyId, reservedAmountPaise, 200);
+      }
+
+      if (reserved.razorpay_order_id || !["failed", "creating"].includes(reserved.razorpay_status)) {
+        return json(req, {
+          error: "Your existing payment session is still being reconciled. Retry shortly without starting a new payment.",
+        }, 409);
+      }
+
+      const now = new Date().toISOString();
+      let claimQuery = ctx.supabaseAdmin
+        .from("orders")
+        .update({ razorpay_status: "creating", razorpay_creation_started_at: now })
+        .eq("id", reserved.id)
+        .is("razorpay_order_id", null);
+
+      if (reserved.razorpay_status === "failed") {
+        claimQuery = claimQuery.eq("razorpay_status", "failed");
+      } else {
+        const startedAt = reserved.razorpay_creation_started_at || reserved.created_at;
+        if (Date.now() - new Date(startedAt).getTime() < 45_000) {
+          return json(req, {
+            error: "Your existing payment session is still being prepared. Wait briefly, then retry this same checkout.",
+          }, 409);
+        }
+        claimQuery = claimQuery.eq("razorpay_status", "creating");
+        claimQuery = reserved.razorpay_creation_started_at
+          ? claimQuery.eq("razorpay_creation_started_at", reserved.razorpay_creation_started_at)
+          : claimQuery.is("razorpay_creation_started_at", null);
+      }
+
+      const { data: claimedRaw, error: claimError } = await claimQuery
+        .select(IDEMPOTENCY_ORDER_FIELDS)
+        .maybeSingle();
+
+      if (claimError) {
+        console.error("Could not claim recovered coupon checkout:", claimError);
+        return json(req, { error: "Could not safely resume this checkout. Retry shortly without paying again." }, 500);
+      }
+
+      if (!claimedRaw) {
+        const { data: latestRaw } = await ctx.supabaseAdmin
+          .from("orders")
+          .select(IDEMPOTENCY_ORDER_FIELDS)
+          .eq("id", reserved.id)
+          .eq("user_id", auth.user.id)
+          .maybeSingle();
+        const latest = latestRaw as ExistingCheckoutOrder | null;
+        if (latest?.razorpay_order_id && latest.razorpay_status === "created") {
+          const latestAmountPaise = rupeesToPaise(Number(latest.amount));
+          if (Number.isSafeInteger(latestAmountPaise) && latestAmountPaise >= 100) {
+            return checkoutResponse(req, latest, latest.razorpay_order_id, keyId, latestAmountPaise, 200);
+          }
+        }
+        return json(req, { error: "Another request is already resuming this checkout. Retry in a moment without paying again." }, 409);
+      }
+
+      return await createAndAttachGatewayOrder(claimedRaw as CheckoutOrder, reservedAmountPaise, 200);
+    }
+
     total = Number(quote.total);
     couponDiscount = Number(quote.discountAmount ?? 0);
     couponCode = String(quote.code ?? body.couponCode).slice(0, 64);
@@ -525,6 +656,9 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
     }
 
     const couponErrors: Record<string, string> = {
+      COUPON_ALREADY_USED: "You have already used this coupon. It can only be used once per customer.",
+      COUPON_CUSTOMER_LIMIT_REACHED: "You have reached the allowed number of uses for this coupon.",
+      COUPON_CHECKOUT_PENDING: "This coupon is reserved by an unfinished checkout. Resume that checkout or remove the coupon.",
       USAGE_LIMIT_REACHED: "This coupon has already been used on your account or has reached its usage limit. Remove it and retry without the coupon.",
       COUPON_EXPIRED: "This coupon is no longer active. Remove it and try another code.",
       COUPON_NOT_FOUND: "This coupon code is not valid. Remove it and retry.",
