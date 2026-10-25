@@ -208,7 +208,7 @@ export const adminOrdersQuery = () =>
       const { data, error } = await supabase
         .from("orders")
         .select(
-          "id,user_id,product_id,product_type,status,dispatched_at,whatsapp_sent_at,product_title,full_name,email,whatsapp,delivery_address,delivery_city,delivery_state,delivery_postal_code,delivery_country,courier_name,courier_tracking_id,courier_tracking_url,amount,payment_method,transaction_id,screenshot_path,payment_status,order_status,admin_note,created_at,verified_at,delivered_at",
+          "id,user_id,product_id,product_type,status,dispatched_at,whatsapp_sent_at,product_title,full_name,email,whatsapp,delivery_address,delivery_city,delivery_state,delivery_postal_code,delivery_country,courier_name,courier_tracking_id,courier_tracking_url,amount,payment_method,payment_gateway,razorpay_payment_id,razorpay_status,transaction_id,screenshot_path,payment_status,order_status,admin_note,created_at,verified_at,delivered_at",
         )
         .order("created_at", { ascending: false });
       if (error) throw error;
