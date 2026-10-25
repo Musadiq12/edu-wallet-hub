@@ -36,7 +36,7 @@ begin
   if v_order.payment_status <> 'verified' or v_order.razorpay_payment_id is null then
     raise exception 'Only verified Razorpay payments can be refunded';
   end if;
-  if v_order.razorpay_status not in ('paid', 'partially_refunded') then
+  if v_order.razorpay_status not in ('paid', 'fulfilled', 'partially_refunded') then
     raise exception 'Order is not refundable in its current state';
   end if;
 
@@ -56,7 +56,7 @@ begin
     nullif(left(trim(coalesce(p_reason, '')), 500), ''), p_requested_by
   ) returning id into v_refund_id;
 
-  return query select v_refund_id, v_order.razorpay_payment_id, v_total;
+  return query select v_refund_id, v_order.razorpay_payment_id, v_total, v_order.razorpay_status;
 end;
 $$;
 
