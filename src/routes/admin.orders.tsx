@@ -37,6 +37,7 @@ const STATUSES: { value: "All" | OrderStatus; label: string }[] = [
   { value: "All", label: "All" },
   { value: "Pending", label: "Pending" },
   { value: "Payment Verified", label: "Payment Verified" },
+  { value: "Preparing Order", label: "Preparing Order" },
   { value: "Dispatched", label: "Dispatched" },
   { value: "Cancelled", label: "Cancelled" },
 ];
@@ -44,6 +45,7 @@ const STATUSES: { value: "All" | OrderStatus; label: string }[] = [
 const statusStyles: Record<OrderStatus, string> = {
   Pending: "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200",
   "Payment Verified": "border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200",
+  "Preparing Order": "border-violet-300 bg-violet-50 text-violet-800 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-200",
   Dispatched: "border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200",
   Cancelled: "border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200",
 };
