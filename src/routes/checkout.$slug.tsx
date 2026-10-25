@@ -203,6 +203,7 @@ function Checkout() {
         productId:p.id, fullName:form.full_name.trim(), email:form.email.trim(), whatsapp:form.whatsapp.trim(),
         couponCode:appliedCoupon?.code ?? null, deliveryAddress:form.delivery_address.trim(), deliveryCity:form.delivery_city.trim(),
         deliveryState:form.delivery_state.trim(), deliveryPostalCode:form.delivery_postal_code.trim(), deliveryCountry:form.delivery_country.trim() || "India",
+        estimatedDelivery: p.product_type === "physical" ? siteSettings.deliveryEstimate : null,
       }});
       if (createError) {
         const context=(createError as {context?:{json?:()=>Promise<{error?:string}>}}).context;
@@ -234,7 +235,8 @@ function Checkout() {
               const payload=await context?.json?.().catch(()=>null);
               setError(`${payload?.error || "Payment may have completed, but verification is pending."} Payment reference: ${response.razorpay_payment_id}. Do not pay again; contact support if verification remains pending.`);setSaving(false);return;
             }
-            setSubmittedOrderId(String(verified.orderId || checkout.orderId));\n            setSubmitted(true);
+            setSubmittedOrderId(String(verified.orderId || checkout.orderId));
+            setSubmitted(true);
           } catch { setError(`Payment may have completed, but verification could not finish. Payment reference: ${response.razorpay_payment_id}. Do not pay again; contact support if verification remains pending.`); }
           finally {setSaving(false);}
         },modal:{ondismiss:()=>setSaving(false)}});
