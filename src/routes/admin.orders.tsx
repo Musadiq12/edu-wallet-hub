@@ -305,7 +305,7 @@ function AdminOrders() {
       toast.error("Only verified Razorpay payments can be refunded.");
       return;
     }
-    if (order.razorpay_status !== "paid" && order.razorpay_status !== "partially_refunded") {
+    if (order.razorpay_status !== "paid" && order.razorpay_status !== "fulfilled" && order.razorpay_status !== "partially_refunded") {
       toast.error("This payment is not refundable in its current state.");
       return;
     }
@@ -486,7 +486,7 @@ Thank you for shopping with us!`;
                             <Badge variant="outline">{order.razorpay_status || "Unknown status"}</Badge>
                           </div>
                           <p className="mb-3 text-xs text-muted-foreground">Refund requests are recorded and submitted securely through the server. Check Razorpay and the order record if a request reports an uncertain result.</p>
-                          <Button size="sm" variant="outline" disabled={busy || refundBusyId === order.id || !order.razorpay_payment_id || order.payment_status !== "verified" || !["paid", "partially_refunded"].includes(order.razorpay_status || "")} onClick={() => void requestRefund(order)}>
+                          <Button size="sm" variant="outline" disabled={busy || refundBusyId === order.id || !order.razorpay_payment_id || order.payment_status !== "verified" || !["paid", "fulfilled", "partially_refunded"].includes(order.razorpay_status || "")} onClick={() => void requestRefund(order)}>
                             {refundBusyId === order.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-1.5 h-4 w-4" />}
                             Request refund
                           </Button>
