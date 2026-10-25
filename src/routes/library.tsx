@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Download, FileText, ShieldCheck } from "lucide-react";
+import { BookOpen, CalendarDays, Download, FileText, PackageCheck, ShieldCheck, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CoverImage } from "@/components/CoverImage";
 import { useSession } from "@/lib/auth";
 import { signedUrl } from "@/lib/catalog";
+import { formatPrice } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 
 type LibraryItem = {
@@ -23,6 +24,22 @@ type LibraryItem = {
   amount: number | string;
   verified_at: string | null;
   delivered_at: string | null;
+};
+
+type PhysicalOrder = {
+  order_id: string;
+  product_title: string;
+  amount: number | string;
+  created_at: string;
+  status: "Payment Verified" | "Preparing Order" | "Dispatched";
+  estimated_delivery: string | null;
+};
+
+const physicalOrdersRpc = supabase as unknown as {
+  rpc: (name: string, args?: Record<string, unknown>) => Promise<{
+    data: unknown;
+    error: { message: string } | null;
+  }>;
 };
 
 export const Route = createFileRoute("/library")({
@@ -49,6 +66,42 @@ function LibraryPage() {
       void navigate({ to: "/login", search: { redirect: "/library" } });
     }
   }, [authLoading, user, navigate]);
+
+  const physicalOrders = useQuery({
+    queryKey: ["my-physical-orders", user?.id],
+    enabled: !!user,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    queryFn: async (): Promise<PhysicalOrder[]> => {
+      const { data, error } = await physicalOrdersRpc.rpc("get_my_physical_orders", {});
+      if (error) throw error;
+
+      if (!Array.isArray(data)) return [];
+      return data.flatMap((value): PhysicalOrder[] => {
+        if (!value || typeof value !== "object") return [];
+        const row = value as Record<string, unknown>;
+        if (
+          typeof row.order_id !== "string" ||
+          !/^[0-9a-f-]{36}$/i.test(row.order_id) ||
+          typeof row.product_title !== "string" ||
+          typeof row.created_at !== "string" ||
+          !["Payment Verified", "Preparing Order", "Dispatched"].includes(String(row.status)) ||
+          !(typeof row.amount === "number" || typeof row.amount === "string")
+        ) {
+          return [];
+        }
+
+        return [{
+          order_id: row.order_id,
+          product_title: row.product_title,
+          amount: row.amount,
+          created_at: row.created_at,
+          status: row.status as PhysicalOrder["status"],
+          estimated_delivery: typeof row.estimated_delivery === "string" ? row.estimated_delivery : null,
+        }];
+      });
+    },
+  });
 
   const library = useQuery({
     queryKey: ["my-library", user?.id],
@@ -150,7 +203,7 @@ function LibraryPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Your account</p>
               <h1 className="mt-2 text-3xl font-semibold sm:text-4xl">My Library</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                Your verified digital purchases stay available here. Open or download your PDFs securely from this library.
+                Your verified purchases appear below. Track physical deliveries and open your digital PDFs securely from this library.
               </p>
             </div>
             <div className="hidden rounded-xl border border-border bg-card p-3 sm:block">
@@ -159,6 +212,60 @@ function LibraryPage() {
           </div>
         </div>
       </section>
+
+      {physicalOrders.isLoading || physicalOrders.isError || (physicalOrders.data?.length ?? 0) > 0 ? (
+        <section className="page-container pt-8">
+          {physicalOrders.isError ? (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-5">
+              <p className="font-medium">Your physical orders could not be loaded.</p>
+              <p className="mt-1 text-sm text-muted-foreground">Refresh this section to try again. Your payment and order records are unchanged.</p>
+              <Button variant="outline" size="sm" className="mt-3" onClick={() => void physicalOrders.refetch()}>Try again</Button>
+            </div>
+          ) : physicalOrders.isLoading ? (
+            <Skeleton className="h-36 w-full rounded-xl" />
+          ) : (
+            <>
+              <div className="mb-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-accent">Physical orders</p>
+                <h2 className="mt-1 text-xl font-semibold">Track your deliveries</h2>
+                <p className="mt-1 text-sm text-muted-foreground">Tracking is shown only for physical purchases verified on your account.</p>
+              </div>
+              <div className="grid items-stretch gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {physicalOrders.data?.map((order) => (
+                  <article key={order.order_id} className="flex min-w-0 flex-col rounded-xl border border-border bg-card p-5 text-card-foreground transition-shadow hover:shadow-md">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="break-words font-semibold leading-6">{order.product_title}</h3>
+                        <p className="mt-1 text-xs text-muted-foreground">Order #{order.order_id.slice(-8).toUpperCase()}</p>
+                      </div>
+                      <span className="shrink-0 rounded-full bg-success/10 px-2.5 py-1 text-[11px] font-medium text-success">Purchased</span>
+                    </div>
+                    <div className="mt-4 space-y-2 text-sm">
+                      <p className="flex items-center gap-2 text-muted-foreground">
+                        <PackageCheck className="h-4 w-4 shrink-0" />
+                        <span>{order.status === "Payment Verified" ? "Payment Confirmed" : order.status}</span>
+                      </p>
+                      <p className="flex items-center gap-2 text-muted-foreground">
+                        <CalendarDays className="h-4 w-4 shrink-0" />
+                        <span>{new Date(order.created_at).toLocaleDateString(undefined, { dateStyle: "medium" })}</span>
+                      </p>
+                      <p className="font-semibold text-foreground">{formatPrice(Number(order.amount))}</p>
+                      {order.estimated_delivery && (
+                        <p className="text-xs text-muted-foreground">Estimated delivery: {order.estimated_delivery}</p>
+                      )}
+                    </div>
+                    <Button className="mt-auto w-full" size="sm" asChild>
+                      <Link to="/track-order/$orderId" params={{ orderId: order.order_id }}>
+                        <Truck className="mr-2 h-4 w-4" />Track Delivery
+                      </Link>
+                    </Button>
+                  </article>
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+      ) : null}
 
       <section className="page-container py-10">
         {library.isLoading ? (
@@ -199,6 +306,15 @@ function LibraryPage() {
                 </div>
               </article>
             ))}
+          </div>
+        ) : physicalOrders.data?.length ? (
+          <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-10 text-center">
+            <BookOpen className="mx-auto h-9 w-9 text-muted-foreground/50" />
+            <h2 className="mt-3 text-lg font-semibold">No digital resources yet</h2>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+              Your physical orders are listed above. Purchased PDFs will appear here after payment is verified.
+            </p>
+            <Button className="mt-4" asChild><Link to="/shop">Browse resources</Link></Button>
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-14 text-center">
