@@ -42,6 +42,30 @@ type CheckoutOrder = {
   whatsapp: string;
 };
 
+type ExistingCheckoutOrder = CheckoutOrder & {
+  user_id: string;
+  product_id: string | null;
+  product_type: string;
+  payment_status: string;
+  order_status: string;
+  payment_gateway: string;
+  razorpay_order_id: string | null;
+  razorpay_status: string;
+  checkout_idempotency_key: string | null;
+  razorpay_creation_started_at: string | null;
+  created_at: string;
+  coupon_code: string | null;
+  delivery_address: string | null;
+  delivery_city: string | null;
+  delivery_state: string | null;
+  delivery_postal_code: string | null;
+  delivery_country: string | null;
+  estimated_delivery: string | null;
+};
+
+const IDEMPOTENCY_ORDER_FIELDS =
+  "id,user_id,product_id,product_type,product_title,full_name,email,whatsapp,amount,payment_status,order_status,payment_gateway,razorpay_order_id,razorpay_status,checkout_idempotency_key,razorpay_creation_started_at,created_at,coupon_code,delivery_address,delivery_city,delivery_state,delivery_postal_code,delivery_country,estimated_delivery";
+
 type GatewayOrderResult =
   | { ok: true; id: string }
   | { ok: false; status: 502; message: string };
