@@ -63,6 +63,64 @@ type ExistingCheckoutOrder = CheckoutOrder & {
   estimated_delivery: string | null;
 };
 
+  const createAndAttachGatewayOrder = async (
+    order: CheckoutOrder,
+    amountPaise: number,
+    successStatus = 201,
+  ) => {
+    const gateway = await createGatewayOrder(order.id, amountPaise, keyId, keySecret);
+    if (!gateway.ok) {
+      const { error: markFailedError } = await ctx.supabaseAdmin
+        .from("orders")
+        .update({ razorpay_status: "failed", razorpay_creation_started_at: null })
+        .eq("id", order.id)
+        .eq("razorpay_status", "creating")
+        .is("razorpay_order_id", null);
+      if (markFailedError) console.error("Failed to record Razorpay order creation failure:", markFailedError);
+      return json(req, { error: gateway.message }, gateway.status);
+    }
+
+    const { data: attached, error: attachError } = await ctx.supabaseAdmin
+      .from("orders")
+      .update({
+        razorpay_order_id: gateway.id,
+        razorpay_status: "created",
+        razorpay_creation_started_at: null,
+      })
+      .eq("id", order.id)
+      .eq("razorpay_status", "creating")
+      .is("razorpay_order_id", null)
+      .select("id")
+      .maybeSingle();
+
+    if (attachError || !attached) {
+      const { data: latest } = await ctx.supabaseAdmin
+        .from("orders")
+        .select("razorpay_order_id,razorpay_status")
+        .eq("id", order.id)
+        .maybeSingle();
+
+      if (latest?.razorpay_order_id === gateway.id && latest.razorpay_status === "created") {
+        return checkoutResponse(req, order, gateway.id, keyId, amountPaise, 200);
+      }
+
+      const { error: markFailedError } = await ctx.supabaseAdmin
+        .from("orders")
+        .update({ razorpay_status: "failed", razorpay_creation_started_at: null })
+        .eq("id", order.id)
+        .eq("razorpay_status", "creating")
+        .is("razorpay_order_id", null);
+      if (markFailedError) console.error("Could not clear the failed checkout claim:", markFailedError);
+
+      console.error("Failed to attach Razorpay order ID:", attachError);
+      return json(req, {
+        error: "Payment session could not be safely saved. Retry this checkout; do not pay again if a payment window already opened.",
+      }, 500);
+    }
+
+    return checkoutResponse(req, order, gateway.id, keyId, amountPaise, successStatus);
+  };
+
 const IDEMPOTENCY_ORDER_FIELDS =
   "id,user_id,product_id,product_type,product_title,full_name,email,whatsapp,amount,payment_status,order_status,payment_gateway,razorpay_order_id,razorpay_status,checkout_idempotency_key,razorpay_creation_started_at,created_at,coupon_code,delivery_address,delivery_city,delivery_state,delivery_postal_code,delivery_country,estimated_delivery";
 
@@ -158,8 +216,129 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
     return json(req, { error: "Please provide valid product and customer details." }, 400);
   }
   const email = body.email.trim();
-  if (!validEmail(email) || !/^[0-9+\-\s]{8,16}$/.test(body.whatsapp.trim())) {
+  const productId = body.productId.trim();
+  const whatsapp = body.whatsapp.trim();
+  const idempotencyKey = typeof body.idempotencyKey === "string" ? body.idempotencyKey.trim() : "";
+  if (!validUuid(idempotencyKey)) {
+    return json(req, { error: "Checkout attempt identifier is missing or invalid. Refresh checkout and try again." }, 400);
+  }
+  if (!validEmail(email) || !/^[0-9+\-\s]{8,16}$/.test(whatsapp)) {
     return json(req, { error: "Please provide a valid email and WhatsApp number." }, 400);
+  }
+
+  const { data: existingRaw, error: existingLookupError } = await ctx.supabaseAdmin
+    .from("orders")
+    .select(IDEMPOTENCY_ORDER_FIELDS)
+    .eq("user_id", auth.user.id)
+    .eq("checkout_idempotency_key", idempotencyKey)
+    .maybeSingle();
+
+  if (existingLookupError) {
+    console.error("Razorpay idempotency lookup failed:", existingLookupError);
+    return json(req, { error: "Could not safely resume this checkout. Please retry shortly." }, 500);
+  }
+
+  if (existingRaw) {
+    const existing = existingRaw as ExistingCheckoutOrder;
+    const requestedCoupon = typeof body.couponCode === "string" && body.couponCode.trim()
+      ? body.couponCode.trim().toUpperCase()
+      : null;
+    const storedCoupon = existing.coupon_code?.trim().toUpperCase() ?? null;
+    const formMatches =
+      existing.product_id === productId &&
+      existing.full_name === body.fullName.trim() &&
+      existing.email === email &&
+      existing.whatsapp === whatsapp &&
+      storedCoupon === requestedCoupon &&
+      (existing.product_type !== "physical" || (
+        existing.delivery_address === optionalText(body.deliveryAddress, 300) &&
+        existing.delivery_city === optionalText(body.deliveryCity, 100) &&
+        existing.delivery_state === optionalText(body.deliveryState, 100) &&
+        existing.delivery_postal_code === optionalText(body.deliveryPostalCode, 10) &&
+        existing.delivery_country === (optionalText(body.deliveryCountry, 100) ?? "India")
+      ));
+
+    if (!formMatches) {
+      return json(req, { error: "Checkout details changed. Start a new checkout attempt before paying." }, 409);
+    }
+
+    if (
+      existing.payment_status === "verified" ||
+      ["paid", "fulfilled", "partially_refunded", "refunded"].includes(existing.razorpay_status)
+    ) {
+      return json(req, {
+        error: "This checkout has already been paid or is no longer payable. Refresh the page and check your order; do not pay again.",
+      }, 409);
+    }
+
+    if (existing.razorpay_order_id && existing.razorpay_status === "created") {
+      const existingAmountPaise = rupeesToPaise(Number(existing.amount));
+      if (!Number.isSafeInteger(existingAmountPaise) || existingAmountPaise < 100) {
+        return json(req, { error: "This checkout has an invalid saved amount. Please contact support before paying." }, 409);
+      }
+      return checkoutResponse(req, existing, existing.razorpay_order_id, keyId, existingAmountPaise, 200);
+    }
+
+    // A failed or stale creation may be retried using the same internal order. Claim it atomically
+    // so two simultaneous retries cannot create separate Razorpay sessions.
+    const now = new Date().toISOString();
+    let claimQuery = ctx.supabaseAdmin
+      .from("orders")
+      .update({ razorpay_status: "creating", razorpay_creation_started_at: now })
+      .eq("id", existing.id)
+      .is("razorpay_order_id", null);
+
+    if (existing.razorpay_status === "failed") {
+      claimQuery = claimQuery.eq("razorpay_status", "failed");
+    } else if (existing.razorpay_status === "creating") {
+      const startedAt = existing.razorpay_creation_started_at || existing.created_at;
+      if (Date.now() - new Date(startedAt).getTime() < 45_000) {
+        return json(req, { error: "This checkout is still being prepared. Wait briefly, then retry using this same page. Do not pay again yet." }, 409);
+      }
+      claimQuery = claimQuery.eq("razorpay_status", "creating");
+      if (existing.razorpay_creation_started_at) {
+        claimQuery = claimQuery.eq("razorpay_creation_started_at", existing.razorpay_creation_started_at);
+      } else {
+        claimQuery = claimQuery.is("razorpay_creation_started_at", null);
+      }
+    } else {
+      return json(req, { error: "This checkout is already being processed. Retry shortly or contact support; do not pay again." }, 409);
+    }
+
+    const { data: claimedRaw, error: claimError } = await claimQuery
+      .select(IDEMPOTENCY_ORDER_FIELDS)
+      .maybeSingle();
+
+    if (claimError) {
+      console.error("Could not claim Razorpay checkout retry:", claimError);
+      return json(req, { error: "Could not safely retry this checkout. Please try again shortly." }, 500);
+    }
+    if (!claimedRaw) {
+      const { data: latestRaw } = await ctx.supabaseAdmin
+        .from("orders")
+        .select(IDEMPOTENCY_ORDER_FIELDS)
+        .eq("id", existing.id)
+        .maybeSingle();
+      const latest = latestRaw as ExistingCheckoutOrder | null;
+      if (latest?.razorpay_order_id && latest.razorpay_status === "created") {
+        const latestAmountPaise = rupeesToPaise(Number(latest.amount));
+        if (Number.isSafeInteger(latestAmountPaise) && latestAmountPaise >= 100) {
+          return checkoutResponse(req, latest, latest.razorpay_order_id, keyId, latestAmountPaise, 200);
+        }
+      }
+      return json(req, { error: "Another request is already preparing this checkout. Retry in a moment without paying again." }, 409);
+    }
+
+    const claimed = claimedRaw as ExistingCheckoutOrder;
+    const recoveryAmountPaise = rupeesToPaise(Number(claimed.amount));
+    if (!Number.isSafeInteger(recoveryAmountPaise) || recoveryAmountPaise < 100) {
+      await ctx.supabaseAdmin.from("orders")
+        .update({ razorpay_status: "failed", razorpay_creation_started_at: null })
+        .eq("id", claimed.id).eq("razorpay_status", "creating").is("razorpay_order_id", null);
+      return json(req, { error: "This checkout has an invalid saved amount. Please contact support before paying." }, 409);
+    }
+
+    return await createAndAttachGatewayOrder(claimed, recoveryAmountPaise, 200);
   }
 
   const { data: product, error: productError } = await ctx.supabaseAdmin
