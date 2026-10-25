@@ -1,7 +1,8 @@
 BEGIN;
 
 ALTER TABLE public.orders
-  ADD COLUMN IF NOT EXISTS checkout_idempotency_key text;
+  ADD COLUMN IF NOT EXISTS checkout_idempotency_key text,
+  ADD COLUMN IF NOT EXISTS razorpay_creation_started_at timestamptz;
 
 ALTER TABLE public.orders
   DROP CONSTRAINT IF EXISTS orders_razorpay_status_check;
