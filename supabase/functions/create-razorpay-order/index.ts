@@ -109,6 +109,9 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
       !validText(body.deliveryState, 100) || !/^[0-9]{5,10}$/.test(String(body.deliveryPostalCode ?? "").trim()))) {
     return json(req, { error: "A complete shipping address is required for this physical product." }, 400);
   }
+  const estimatedDelivery = shipping && typeof body.estimatedDelivery === "string"
+    ? body.estimatedDelivery.trim().slice(0, 120) || null
+    : null;
 
   const { data: order, error: orderError } = await ctx.supabaseAdmin
     .from("orders")
@@ -125,6 +128,7 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
       delivery_state: shipping ? optionalText(body.deliveryState, 100) : null,
       delivery_postal_code: shipping ? optionalText(body.deliveryPostalCode, 10) : null,
       delivery_country: shipping ? optionalText(body.deliveryCountry, 100) ?? "India" : null,
+      estimated_delivery: estimatedDelivery,
       // The database coupon trigger validates and deducts the discount on INSERT.
       // Store the pre-discount subtotal here so the discount is applied exactly once.
       amount: subtotal,
