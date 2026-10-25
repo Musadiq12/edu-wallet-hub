@@ -16,6 +16,10 @@ import type { PostgrestClient } from "@supabase/supabase-js";
 
 export const Route = createFileRoute("/admin/orders")({ component: AdminOrders });
 
+const physicalTrackingRpc = supabase as unknown as {
+  rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+};
+
 type OrderStatus = AdminOrder["status"];
 type HistoryItem = { id: string; status: OrderStatus; changed_at: string };
 
@@ -193,14 +197,14 @@ function AdminOrders() {
 
     setBusyId(order.id);
     try {
-      const { data, error } = await supabase.rpc("admin_update_physical_order_tracking", {
+      const { data, error } = await physicalTrackingRpc.rpc("admin_update_physical_order_tracking", {
         p_order_id: order.id,
         p_status: status,
         p_courier_name: details?.courierName || null,
         p_tracking_id: details?.trackingId || null,
         p_tracking_link: details?.trackingLink || null,
         p_estimated_delivery: details?.estimatedDelivery || null,
-      } as never);
+      });
       if (error) throw error;
       const result = data as { ok?: boolean; status?: string };
       if (!result?.ok) throw new Error("The order status could not be updated.");
@@ -325,7 +329,8 @@ function AdminOrders() {
     try {
       // Always create a fresh URL so an expired 48-hour link is never reused.
       const downloadUrl = await requestDigitalLink(order);
-      const message = `Hi ${order.full_name || "there"}, your payment for ${order.product_title} (order #${order.id}) has been verified. Download your PDF here: ${downloadUrl}\nYou can also access it anytime from My Library after signing in to EduWallet.`;
+      const message = `Hi ${order.full_name || "there"}, your payment for ${order.product_title} (order #${order.id}) has been verified. Download your PDF here: ${downloadUrl}
+You can also access it anytime from My Library after signing in to EduWallet.`;
       whatsappWindow.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
       toast.success("WhatsApp opened. The message is not marked as sent automatically.");
     } catch (error) {
