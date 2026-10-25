@@ -986,6 +986,8 @@ export type Database = {
         Row: {
           admin_note: string | null
           amount: number
+          estimated_delivery: string | null
+          quantity: number
           courier_name: string | null
           courier_tracking_id: string | null
           courier_tracking_url: string | null
@@ -1018,6 +1020,8 @@ export type Database = {
         Insert: {
           admin_note?: string | null
           amount: number
+          estimated_delivery?: string | null
+          quantity?: number
           courier_name?: string | null
           courier_tracking_id?: string | null
           courier_tracking_url?: string | null
@@ -1050,6 +1054,8 @@ export type Database = {
         Update: {
           admin_note?: string | null
           amount?: number
+          estimated_delivery?: string | null
+          quantity?: number
           courier_name?: string | null
           courier_tracking_id?: string | null
           courier_tracking_url?: string | null
