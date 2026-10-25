@@ -158,17 +158,23 @@ function Checkout() {
       <div className="page-container section-y">
         <div className="mx-auto max-w-lg rounded-lg border border-border bg-card p-8 text-center">
           <CheckCircle2 className="mx-auto h-10 w-10 text-success" aria-hidden="true" />
-          <h1 className="mt-4 font-serif text-2xl font-semibold">Payment verified</h1>
+          <h1 className="mt-4 font-serif text-2xl font-semibold">Payment verified successfully</h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            {p.product_type === "physical" ? `Your payment has been verified. We will prepare your order for delivery to the shipping address you provided. ${siteSettings.deliveryEstimate ? `${siteSettings.deliveryEstimate}.` : ""}` : "Your payment has been verified. Your digital order is recorded and can now be processed for delivery."}
+            {p.product_type === "physical"
+              ? `Your payment for ${p.title} is confirmed. We’ll prepare your order for delivery to the address you provided.${siteSettings.deliveryEstimate ? ` ${siteSettings.deliveryEstimate}.` : " We’ll contact you using the details provided at checkout if delivery updates are needed."}`
+              : `Your payment for ${p.title} is confirmed. Open My Library to access your digital purchase. If it does not appear immediately, refresh the library in a moment.`}
           </p>
           <div className="mt-5 rounded-lg border border-border bg-surface p-4 text-left text-sm">
             <p className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-success" /> Razorpay payment verification was confirmed by our server.</p>
-            <p className="mt-2 flex gap-2"><Headphones className="h-4 w-4 shrink-0 text-accent" /> Need help? Use the Contact page and mention your order details.</p>
+            <p className="mt-2 flex gap-2"><Headphones className="h-4 w-4 shrink-0 text-accent" /> Need help? Contact support and mention your order details.</p>
           </div>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-            <Button asChild><Link to="/shop">Continue browsing</Link></Button>
-            <Button variant="outline" onClick={() => navigate({ to: "/shop" })}>Continue shopping</Button>
+            {p.product_type === "physical" ? (
+              <Button asChild><Link to="/contact">Delivery support</Link></Button>
+            ) : (
+              <Button asChild><Link to="/library">Open My Library</Link></Button>
+            )}
+            <Button variant="outline" asChild><Link to="/shop">Continue shopping</Link></Button>
           </div>
         </div>
       </div>
