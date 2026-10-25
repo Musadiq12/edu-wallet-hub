@@ -63,64 +63,6 @@ type ExistingCheckoutOrder = CheckoutOrder & {
   estimated_delivery: string | null;
 };
 
-  const createAndAttachGatewayOrder = async (
-    order: CheckoutOrder,
-    amountPaise: number,
-    successStatus = 201,
-  ) => {
-    const gateway = await createGatewayOrder(order.id, amountPaise, keyId, keySecret);
-    if (!gateway.ok) {
-      const { error: markFailedError } = await ctx.supabaseAdmin
-        .from("orders")
-        .update({ razorpay_status: "failed", razorpay_creation_started_at: null })
-        .eq("id", order.id)
-        .eq("razorpay_status", "creating")
-        .is("razorpay_order_id", null);
-      if (markFailedError) console.error("Failed to record Razorpay order creation failure:", markFailedError);
-      return json(req, { error: gateway.message }, gateway.status);
-    }
-
-    const { data: attached, error: attachError } = await ctx.supabaseAdmin
-      .from("orders")
-      .update({
-        razorpay_order_id: gateway.id,
-        razorpay_status: "creating",
-        razorpay_creation_started_at: null,
-      })
-      .eq("id", order.id)
-      .eq("razorpay_status", "creating")
-      .is("razorpay_order_id", null)
-      .select("id")
-      .maybeSingle();
-
-    if (attachError || !attached) {
-      const { data: latest } = await ctx.supabaseAdmin
-        .from("orders")
-        .select("razorpay_order_id,razorpay_status")
-        .eq("id", order.id)
-        .maybeSingle();
-
-      if (latest?.razorpay_order_id === gateway.id && latest.razorpay_status === "created") {
-        return checkoutResponse(req, order, gateway.id, keyId, amountPaise, 200);
-      }
-
-      const { error: markFailedError } = await ctx.supabaseAdmin
-        .from("orders")
-        .update({ razorpay_status: "failed", razorpay_creation_started_at: null })
-        .eq("id", order.id)
-        .eq("razorpay_status", "creating")
-        .is("razorpay_order_id", null);
-      if (markFailedError) console.error("Could not clear the failed checkout claim:", markFailedError);
-
-      console.error("Failed to attach Razorpay order ID:", attachError);
-      return json(req, {
-        error: "Payment session could not be safely saved. Retry this checkout; do not pay again if a payment window already opened.",
-      }, 500);
-    }
-
-    return checkoutResponse(req, order, gateway.id, keyId, amountPaise, successStatus);
-  };
-
 const IDEMPOTENCY_ORDER_FIELDS =
   "id,user_id,product_id,product_type,product_title,full_name,email,whatsapp,amount,payment_status,order_status,payment_gateway,razorpay_order_id,razorpay_status,checkout_idempotency_key,razorpay_creation_started_at,created_at,coupon_code,delivery_address,delivery_city,delivery_state,delivery_postal_code,delivery_country,estimated_delivery";
 
@@ -201,6 +143,65 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
 
   const { data: auth, error: authError } = await ctx.supabase.auth.getUser();
   if (authError || !auth.user) return json(req, { error: "Please sign in before checkout." }, 401);
+
+  const createAndAttachGatewayOrder = async (
+    order: CheckoutOrder,
+    amountPaise: number,
+    successStatus = 201,
+  ) => {
+    const gateway = await createGatewayOrder(order.id, amountPaise, keyId, keySecret);
+    if (!gateway.ok) {
+      const { error: markFailedError } = await ctx.supabaseAdmin
+        .from("orders")
+        .update({ razorpay_status: "failed", razorpay_creation_started_at: null })
+        .eq("id", order.id)
+        .eq("razorpay_status", "creating")
+        .is("razorpay_order_id", null);
+      if (markFailedError) console.error("Failed to record Razorpay order creation failure:", markFailedError);
+      return json(req, { error: gateway.message }, gateway.status);
+    }
+
+    const { data: attached, error: attachError } = await ctx.supabaseAdmin
+      .from("orders")
+      .update({
+        razorpay_order_id: gateway.id,
+        razorpay_status: "created",
+        razorpay_creation_started_at: null,
+      })
+      .eq("id", order.id)
+      .eq("razorpay_status", "creating")
+      .is("razorpay_order_id", null)
+      .select("id")
+      .maybeSingle();
+
+    if (attachError || !attached) {
+      const { data: latest } = await ctx.supabaseAdmin
+        .from("orders")
+        .select("razorpay_order_id,razorpay_status")
+        .eq("id", order.id)
+        .maybeSingle();
+
+      if (latest?.razorpay_order_id === gateway.id && latest.razorpay_status === "created") {
+        return checkoutResponse(req, order, gateway.id, keyId, amountPaise, 200);
+      }
+
+      const { error: markFailedError } = await ctx.supabaseAdmin
+        .from("orders")
+        .update({ razorpay_status: "failed", razorpay_creation_started_at: null })
+        .eq("id", order.id)
+        .eq("razorpay_status", "creating")
+        .is("razorpay_order_id", null);
+      if (markFailedError) console.error("Could not clear the failed checkout claim:", markFailedError);
+
+      console.error("Failed to attach Razorpay order ID:", attachError);
+      return json(req, {
+        error: "Payment session could not be safely saved. Retry this checkout; do not pay again if a payment window already opened.",
+      }, 500);
+    }
+
+    return checkoutResponse(req, order, gateway.id, keyId, amountPaise, successStatus);
+  };
+
 
   let body: Record<string, unknown>;
   try {
