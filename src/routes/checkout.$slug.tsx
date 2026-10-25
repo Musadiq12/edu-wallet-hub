@@ -180,7 +180,7 @@ function Checkout() {
     if (saving) return;
     setError(null);
     if (!form.full_name.trim() || form.full_name.trim().length > 100) return setError("Please enter your full name.");
-    if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(form.email.trim())) return setError("Please enter a valid email address.");
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.trim())) return setError("Please enter a valid email address.");
     if (!/^[0-9+\\-\\s]{8,16}$/.test(form.whatsapp.trim())) return setError("Please enter a valid WhatsApp number.");
     if (p.product_type === "physical" && (!form.delivery_address.trim() || form.delivery_address.trim().length > 300)) return setError("Please enter your complete delivery address.");
     if (p.product_type === "physical" && (!form.delivery_city.trim() || !form.delivery_state.trim())) return setError("Please enter your city and state.");
