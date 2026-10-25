@@ -37,6 +37,7 @@ const STATUSES: { value: "All" | OrderStatus; label: string }[] = [
   { value: "All", label: "All" },
   { value: "Pending", label: "Pending" },
   { value: "Payment Verified", label: "Payment Verified" },
+  { value: "Preparing Order", label: "Preparing Order" },
   { value: "Dispatched", label: "Dispatched" },
   { value: "Cancelled", label: "Cancelled" },
 ];
@@ -44,6 +45,7 @@ const STATUSES: { value: "All" | OrderStatus; label: string }[] = [
 const statusStyles: Record<OrderStatus, string> = {
   Pending: "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200",
   "Payment Verified": "border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200",
+  "Preparing Order": "border-violet-300 bg-violet-50 text-violet-800 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-200",
   Dispatched: "border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200",
   Cancelled: "border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200",
 };
@@ -132,6 +134,10 @@ function AdminOrders() {
 
   const verifyPayment = async (order: AdminOrder) => {
     if (order.status !== "Pending") return;
+    if (order.product_type === "physical" && order.payment_gateway === "razorpay") {
+      toast.error("Razorpay orders are marked Payment Confirmed only after server-side signature and capture verification. Do not manually verify this payment.");
+      return;
+    }
     if (!window.confirm(`Verify payment for order #${order.id}? Make sure the payment has reached your account.`)) return;
     await updateOrder(order, {
       status: "Payment Verified",
@@ -151,44 +157,74 @@ function AdminOrders() {
     }, "Order cancelled.");
   };
 
+  const transitionPhysicalOrder = async (
+    order: AdminOrder,
+    status: "Preparing Order" | "Dispatched",
+    details?: { courierName: string; trackingId: string; trackingLink: string; estimatedDelivery: string },
+  ) => {
+    if (order.product_type !== "physical" || order.payment_gateway !== "razorpay" || order.payment_status !== "verified") {
+      toast.error("Only verified physical Razorpay orders can enter the delivery workflow.");
+      return;
+    }
+    if (status === "Preparing Order" && order.status !== "Payment Verified") {
+      toast.error("An order must be payment-confirmed before preparation.");
+      return;
+    }
+    if (status === "Dispatched" && order.status !== "Preparing Order") {
+      toast.error("Mark the order as Preparing Order before dispatching it.");
+      return;
+    }
+    if (status === "Dispatched" && details) {
+      let link: URL;
+      try { link = new URL(details.trackingLink); } catch {
+        toast.error("Enter a valid HTTPS courier tracking URL."); return;
+      }
+      if (link.protocol !== "https:") {
+        toast.error("Courier tracking link must use HTTPS."); return;
+      }
+      if (!details.courierName || !details.trackingId) {
+        toast.error("Courier name and tracking ID are required."); return;
+      }
+    }
+    const summary = status === "Preparing Order"
+      ? `Move order #${order.id} to Preparing Order?`
+      : `Dispatch order #${order.id} with ${details?.courierName}, tracking ID ${details?.trackingId}?`;
+    if (!window.confirm(summary)) return;
+
+    setBusyId(order.id);
+    try {
+      const { data, error } = await supabase.rpc("admin_update_physical_order_tracking", {
+        p_order_id: order.id,
+        p_status: status,
+        p_courier_name: details?.courierName || null,
+        p_tracking_id: details?.trackingId || null,
+        p_tracking_link: details?.trackingLink || null,
+        p_estimated_delivery: details?.estimatedDelivery || null,
+      } as never);
+      if (error) throw error;
+      const result = data as { ok?: boolean; status?: string };
+      if (!result?.ok) throw new Error("The order status could not be updated.");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin", "orders"] }),
+        qc.invalidateQueries({ queryKey: ["admin", "order-status-history", order.id] }),
+      ]);
+      toast.success(status === "Preparing Order" ? "Order marked as preparing." : "Order dispatched and tracking details saved.");
+    } catch (error) {
+      toast.error(friendlyError(error, "Could not update the delivery status."));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const dispatchOrder = async (order: AdminOrder, form: HTMLFormElement) => {
-    if (order.product_type !== "physical") {
-      toast.error("Courier dispatch is only available for physical products.");
-      return;
-    }
-    if (order.status !== "Payment Verified" || order.payment_status !== "verified") {
-      toast.error("Verify payment before dispatching this order.");
-      return;
-    }
     const values = new FormData(form);
-    const courier = String(values.get("courier_name") || "").trim();
+    const courierName = String(values.get("courier_name") || "").trim();
     const trackingId = String(values.get("courier_tracking_id") || "").trim();
-    const trackingUrl = String(values.get("courier_tracking_url") || "").trim();
-    if (!courier) {
-      toast.error("Choose a courier company.");
-      return;
-    }
-    if (!trackingId) {
-      toast.error("Tracking ID / courier number is required.");
-      return;
-    }
-    if (courier === "Other" && !trackingUrl) {
-      toast.error("A tracking URL is required when the courier is Other.");
-      return;
-    }
-    if (trackingUrl && !/^https?:\/\//i.test(trackingUrl)) {
-      toast.error("Enter a valid tracking URL starting with http:// or https://.");
-      return;
-    }
-    if (!window.confirm(`Dispatch order #${order.id} with ${courier}, tracking ID ${trackingId}?`)) return;
-    await updateOrder(order, {
-      status: "Dispatched",
-      order_status: "processing",
-      courier_name: courier,
-      courier_tracking_id: trackingId,
-      courier_tracking_url: trackingUrl || null,
-      dispatched_at: new Date().toISOString(),
-    }, "Order dispatched and tracking details saved.");
+    const trackingLink = String(values.get("courier_tracking_url") || "").trim();
+    const estimatedDelivery = String(values.get("estimated_delivery") || "").trim();
+    await transitionPhysicalOrder(order, "Dispatched", {
+      courierName, trackingId, trackingLink, estimatedDelivery,
+    });
   };
 
   const verifyAndDeliver = async (order: AdminOrder) => {
@@ -372,11 +408,13 @@ function AdminOrders() {
       toast.error("The customer phone number is invalid.");
       return;
     }
-    const message = `Hi ${order.full_name}, your order for ${order.product_title || "your purchased book"} has been confirmed and dispatched! 📦
+    const trackingPage = `${window.location.origin}/track-order/${order.id}`;
+    const message = `Hi ${order.full_name}, your order for ${order.product_title || "your purchased book"} has been dispatched.
 Courier: ${order.courier_name}
 Tracking ID: ${order.courier_tracking_id}
-Track your order here: ${order.courier_tracking_url || "Please check the courier's official tracking page."}
-Thank you for shopping with us!`;
+Track your order: ${trackingPage}
+Courier tracking page: ${order.courier_tracking_url || "Please check the courier's official tracking page."}
+Thank you for shopping with EduWallet.`;
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank", "noopener,noreferrer");
     toast.success("WhatsApp opened. After sending the message, return here and mark it as sent.");
   };
@@ -535,24 +573,36 @@ Thank you for shopping with us!`;
                         </div>
                       )}
 
-                      {/* Courier/tracking controls must never render for digital PDF orders. */}
-                      {order.product_type === "physical" && order.status === "Payment Verified" && (
-                        <form className="grid gap-3 sm:grid-cols-2" onSubmit={(event) => { event.preventDefault(); void dispatchOrder(order, event.currentTarget); }}>
-                          <div className="sm:col-span-2 flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300"><PackageCheck className="h-4 w-4" />Payment verified. Add courier details to dispatch.</div>
+                      {/* Courier controls are physical-only and require the next sequential status. */}
+                      {order.product_type === "physical" && order.payment_gateway === "razorpay" && order.payment_status === "verified" && order.status === "Payment Verified" && (
+                        <div className="space-y-3 rounded-lg border border-border p-4">
+                          <p className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300"><PackageCheck className="h-4 w-4" />Payment confirmed by Razorpay. Start preparing this order before dispatch.</p>
+                          <Button size="sm" disabled={busy} onClick={() => void transitionPhysicalOrder(order, "Preparing Order")}>
+                            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <PackageCheck className="mr-1.5 h-4 w-4" />Mark Preparing Order
+                          </Button>
+                          <Button size="sm" variant="destructive" disabled={busy} onClick={() => void cancelOrder(order)}>Cancel Order</Button>
+                        </div>
+                      )}
+
+                      {order.product_type === "physical" && order.payment_gateway === "razorpay" && order.payment_status === "verified" && order.status === "Preparing Order" && (
+                        <form className="grid gap-3 rounded-lg border border-border p-4 sm:grid-cols-2" onSubmit={(event) => { event.preventDefault(); void dispatchOrder(order, event.currentTarget); }}>
+                          <div className="sm:col-span-2 flex items-center gap-2 text-sm text-violet-700 dark:text-violet-300"><PackageCheck className="h-4 w-4" />Order is being prepared. Add all shipment details to dispatch it.</div>
                           <label className="grid gap-1.5 text-sm">
                             <span>Courier company</span>
-                            <select name="courier_name" defaultValue={order.courier_name || ""} className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm" required>
-                              <option value="" disabled>Select courier</option>
-                              <option>India Post</option><option>DTDC</option><option>Delhi</option><option>Blue Dart</option><option>Other</option>
-                            </select>
+                            <Input name="courier_name" defaultValue={order.courier_name || ""} placeholder="e.g. India Post, DTDC, Blue Dart" required maxLength={120} />
                           </label>
                           <label className="grid gap-1.5 text-sm">
-                            <span>Tracking ID / courier number</span>
-                            <Input name="courier_tracking_id" defaultValue={order.courier_tracking_id || ""} placeholder="Enter tracking ID" required maxLength={150} />
+                            <span>Tracking ID / AWB number</span>
+                            <Input name="courier_tracking_id" defaultValue={order.courier_tracking_id || ""} placeholder="Enter tracking ID" required maxLength={120} />
                           </label>
                           <label className="grid gap-1.5 text-sm sm:col-span-2">
-                            <span>Tracking URL <span className="text-muted-foreground">(required for Other)</span></span>
-                            <Input name="courier_tracking_url" type="url" defaultValue={order.courier_tracking_url || ""} placeholder="https://..." maxLength={500} />
+                            <span>Courier tracking URL (HTTPS required)</span>
+                            <Input name="courier_tracking_url" type="url" defaultValue={order.courier_tracking_url || ""} placeholder="https://courier.example/track/..." required maxLength={500} />
+                          </label>
+                          <label className="grid gap-1.5 text-sm sm:col-span-2">
+                            <span>Estimated delivery (optional)</span>
+                            <Input name="estimated_delivery" defaultValue={order.estimated_delivery || ""} placeholder="e.g. 3–5 business days" maxLength={120} />
                           </label>
                           <div className="flex flex-wrap gap-2 sm:col-span-2">
                             <Button type="submit" disabled={busy}>{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<Truck className="mr-1.5 h-4 w-4" />Dispatch Order</Button>
@@ -585,7 +635,7 @@ Thank you for shopping with us!`;
                       )}
 
                       {order.status === "Cancelled" && <p className="text-sm text-muted-foreground">This order has been cancelled.</p>}
-                      {order.status !== "Cancelled" && order.status !== "Dispatched" && order.status !== "Payment Verified" && order.status !== "Pending" && <p className="text-sm text-muted-foreground">No actions available for this status.</p>}
+                      {order.status !== "Cancelled" && order.status !== "Dispatched" && order.status !== "Payment Verified" && order.status !== "Preparing Order" && order.status !== "Pending" && <p className="text-sm text-muted-foreground">No actions available for this status.</p>}
                     </section>
 
                     <section>

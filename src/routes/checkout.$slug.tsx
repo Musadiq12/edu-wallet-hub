@@ -30,7 +30,8 @@ function Checkout() {
   const { user, loading: authLoading } = useSession();
   const product = useQuery(productBySlugQuery(slug));
   const siteSettings = useSiteSettings();
-  const [submitted, setSubmitted] = useState(false);\n  const [submittedOrderId, setSubmittedOrderId] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+  const [submittedOrderId, setSubmittedOrderId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
