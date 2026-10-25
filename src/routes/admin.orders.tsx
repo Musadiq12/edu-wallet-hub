@@ -14,7 +14,11 @@ import { supabase } from "@/integrations/supabase/client";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import type { PostgrestClient } from "@supabase/supabase-js";
 
-export const Route = createFileRoute("/admin/orders")({ component: AdminOrders });\n\nconst physicalTrackingRpc = supabase as unknown as {\n  rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;\n};
+export const Route = createFileRoute("/admin/orders")({ component: AdminOrders });
+
+const physicalTrackingRpc = supabase as unknown as {
+  rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+};
 
 type OrderStatus = AdminOrder["status"];
 type HistoryItem = { id: string; status: OrderStatus; changed_at: string };
@@ -325,7 +329,8 @@ function AdminOrders() {
     try {
       // Always create a fresh URL so an expired 48-hour link is never reused.
       const downloadUrl = await requestDigitalLink(order);
-      const message = `Hi ${order.full_name || "there"}, your payment for ${order.product_title} (order #${order.id}) has been verified. Download your PDF here: ${downloadUrl}\nYou can also access it anytime from My Library after signing in to EduWallet.`;
+      const message = `Hi ${order.full_name || "there"}, your payment for ${order.product_title} (order #${order.id}) has been verified. Download your PDF here: ${downloadUrl}
+You can also access it anytime from My Library after signing in to EduWallet.`;
       whatsappWindow.location.href = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
       toast.success("WhatsApp opened. The message is not marked as sent automatically.");
     } catch (error) {
