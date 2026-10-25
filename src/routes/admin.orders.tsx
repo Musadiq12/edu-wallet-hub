@@ -151,44 +151,74 @@ function AdminOrders() {
     }, "Order cancelled.");
   };
 
+  const transitionPhysicalOrder = async (
+    order: AdminOrder,
+    status: "Preparing Order" | "Dispatched",
+    details?: { courierName: string; trackingId: string; trackingLink: string; estimatedDelivery: string },
+  ) => {
+    if (order.product_type !== "physical" || order.payment_gateway !== "razorpay" || order.payment_status !== "verified") {
+      toast.error("Only verified physical Razorpay orders can enter the delivery workflow.");
+      return;
+    }
+    if (status === "Preparing Order" && order.status !== "Payment Verified") {
+      toast.error("An order must be payment-confirmed before preparation.");
+      return;
+    }
+    if (status === "Dispatched" && order.status !== "Preparing Order") {
+      toast.error("Mark the order as Preparing Order before dispatching it.");
+      return;
+    }
+    if (status === "Dispatched" && details) {
+      let link: URL;
+      try { link = new URL(details.trackingLink); } catch {
+        toast.error("Enter a valid HTTPS courier tracking URL."); return;
+      }
+      if (link.protocol !== "https:") {
+        toast.error("Courier tracking link must use HTTPS."); return;
+      }
+      if (!details.courierName || !details.trackingId) {
+        toast.error("Courier name and tracking ID are required."); return;
+      }
+    }
+    const summary = status === "Preparing Order"
+      ? `Move order #${order.id} to Preparing Order?`
+      : `Dispatch order #${order.id} with ${details?.courierName}, tracking ID ${details?.trackingId}?`;
+    if (!window.confirm(summary)) return;
+
+    setBusyId(order.id);
+    try {
+      const { data, error } = await supabase.rpc("admin_update_physical_order_tracking", {
+        p_order_id: order.id,
+        p_status: status,
+        p_courier_name: details?.courierName || null,
+        p_tracking_id: details?.trackingId || null,
+        p_tracking_link: details?.trackingLink || null,
+        p_estimated_delivery: details?.estimatedDelivery || null,
+      } as never);
+      if (error) throw error;
+      const result = data as { ok?: boolean; status?: string };
+      if (!result?.ok) throw new Error("The order status could not be updated.");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin", "orders"] }),
+        qc.invalidateQueries({ queryKey: ["admin", "order-status-history", order.id] }),
+      ]);
+      toast.success(status === "Preparing Order" ? "Order marked as preparing." : "Order dispatched and tracking details saved.");
+    } catch (error) {
+      toast.error(friendlyError(error, "Could not update the delivery status."));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const dispatchOrder = async (order: AdminOrder, form: HTMLFormElement) => {
-    if (order.product_type !== "physical") {
-      toast.error("Courier dispatch is only available for physical products.");
-      return;
-    }
-    if (order.status !== "Payment Verified" || order.payment_status !== "verified") {
-      toast.error("Verify payment before dispatching this order.");
-      return;
-    }
     const values = new FormData(form);
-    const courier = String(values.get("courier_name") || "").trim();
+    const courierName = String(values.get("courier_name") || "").trim();
     const trackingId = String(values.get("courier_tracking_id") || "").trim();
-    const trackingUrl = String(values.get("courier_tracking_url") || "").trim();
-    if (!courier) {
-      toast.error("Choose a courier company.");
-      return;
-    }
-    if (!trackingId) {
-      toast.error("Tracking ID / courier number is required.");
-      return;
-    }
-    if (courier === "Other" && !trackingUrl) {
-      toast.error("A tracking URL is required when the courier is Other.");
-      return;
-    }
-    if (trackingUrl && !/^https?:\/\//i.test(trackingUrl)) {
-      toast.error("Enter a valid tracking URL starting with http:// or https://.");
-      return;
-    }
-    if (!window.confirm(`Dispatch order #${order.id} with ${courier}, tracking ID ${trackingId}?`)) return;
-    await updateOrder(order, {
-      status: "Dispatched",
-      order_status: "processing",
-      courier_name: courier,
-      courier_tracking_id: trackingId,
-      courier_tracking_url: trackingUrl || null,
-      dispatched_at: new Date().toISOString(),
-    }, "Order dispatched and tracking details saved.");
+    const trackingLink = String(values.get("courier_tracking_url") || "").trim();
+    const estimatedDelivery = String(values.get("estimated_delivery") || "").trim();
+    await transitionPhysicalOrder(order, "Dispatched", {
+      courierName, trackingId, trackingLink, estimatedDelivery,
+    });
   };
 
   const verifyAndDeliver = async (order: AdminOrder) => {
