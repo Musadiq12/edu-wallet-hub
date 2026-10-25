@@ -30,7 +30,7 @@ function Checkout() {
   const { user, loading: authLoading } = useSession();
   const product = useQuery(productBySlugQuery(slug));
   const siteSettings = useSiteSettings();
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState(false);\n  const [submittedOrderId, setSubmittedOrderId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -169,8 +169,10 @@ function Checkout() {
             <p className="mt-2 flex gap-2"><Headphones className="h-4 w-4 shrink-0 text-accent" /> Need help? Contact support and mention your order details.</p>
           </div>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-            {p.product_type === "physical" ? (
-              <Button asChild><Link to="/contact">Delivery support</Link></Button>
+            {p.product_type === "physical" && submittedOrderId ? (
+              <Button asChild><Link to="/track-order/$orderId" params={{ orderId: submittedOrderId }}>Track Delivery</Link></Button>
+            ) : p.product_type === "physical" ? (
+              <Button variant="outline" onClick={() => void navigate({ to: "/library" })}>Order confirmation unavailable</Button>
             ) : (
               <Button asChild><Link to="/library">Open My Library</Link></Button>
             )}
@@ -231,7 +233,7 @@ function Checkout() {
               const payload=await context?.json?.().catch(()=>null);
               setError(`${payload?.error || "Payment may have completed, but verification is pending."} Payment reference: ${response.razorpay_payment_id}. Do not pay again; contact support if verification remains pending.`);setSaving(false);return;
             }
-            setSubmitted(true);
+            setSubmittedOrderId(String(verified.orderId || checkout.orderId));\n            setSubmitted(true);
           } catch { setError(`Payment may have completed, but verification could not finish. Payment reference: ${response.razorpay_payment_id}. Do not pay again; contact support if verification remains pending.`); }
           finally {setSaving(false);}
         },modal:{ondismiss:()=>setSaving(false)}});
