@@ -85,7 +85,18 @@ BEGIN
       'discountAmount', COALESCE(v_pending_order.coupon_discount, 0),
       'total', v_pending_order.amount,
       'stackable', c.stackable,
-      'checkoutPending', true
+      'checkoutPending', true,
+      'checkoutOrderId', v_pending_order.id,
+      'checkoutDetails', jsonb_build_object(
+        'fullName', v_pending_order.full_name,
+        'email', v_pending_order.email,
+        'whatsapp', v_pending_order.whatsapp,
+        'deliveryAddress', v_pending_order.delivery_address,
+        'deliveryCity', v_pending_order.delivery_city,
+        'deliveryState', v_pending_order.delivery_state,
+        'deliveryPostalCode', v_pending_order.delivery_postal_code,
+        'deliveryCountry', v_pending_order.delivery_country
+      )
     );
   END IF;
 
