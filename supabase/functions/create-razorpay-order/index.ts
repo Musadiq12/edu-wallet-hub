@@ -524,6 +524,20 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
       return json(req, { error: "This checkout is already being prepared. Retry in a moment without paying again." }, 409);
     }
 
+    const couponErrors: Record<string, string> = {
+      USAGE_LIMIT_REACHED: "This coupon has already been used on your account or has reached its usage limit. Remove it and retry without the coupon.",
+      COUPON_EXPIRED: "This coupon is no longer active. Remove it and try another code.",
+      COUPON_NOT_FOUND: "This coupon code is not valid. Remove it and retry.",
+      MIN_SUBTOTAL_NOT_MET: "Your order no longer meets this coupon's minimum subtotal. Remove it or update your order.",
+      NOT_ELIGIBLE_FOR_CART: "This coupon does not apply to this product or account.",
+    };
+    const matchedCouponError = Object.entries(couponErrors).find(([code]) =>
+      (orderError?.message ?? "").includes(code)
+    );
+    if (matchedCouponError) {
+      return json(req, { error: matchedCouponError[1] }, 409);
+    }
+
     console.error("Razorpay order record creation failed:", orderError);
     return json(req, { error: "Could not create your order. Please retry." }, 500);
   }
