@@ -10,7 +10,6 @@ import { EmptyState } from "@/components/EmptyState";
 import { productBySlugQuery } from "@/lib/catalog";
 import { effectivePrice, formatPrice } from "@/lib/format";
 import { useSession } from "@/lib/auth";
-import { siteConfig } from "@/config/site";
 import { useSiteSettings } from "@/lib/settings";
 import { supabase } from "@/integrations/supabase/client";
 
