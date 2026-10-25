@@ -32,7 +32,7 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
   }
   const amountPaise = parseAmountPaise(body.amountRupees);
   if (!amountPaise) return jsonResponse({ error: "Enter a valid refund amount in rupees (up to two decimal places)." }, 400);
-  if (body.reason !== undefined && body.reason !== null && !validText(body.reason, 500)) {
+  if (body.reason !== undefined && body.reason !== null && (typeof body.reason !== "string" || body.reason.trim().length > 500)) {
     return jsonResponse({ error: "Refund reason must be 1–500 characters." }, 400);
   }
   const reason = typeof body.reason === "string" ? body.reason.trim() : "";
