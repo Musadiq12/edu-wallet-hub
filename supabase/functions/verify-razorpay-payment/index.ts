@@ -27,7 +27,7 @@ async function hmacHex(secret: string, message: string) {
   return [...new Uint8Array(signature)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-Deno.serve((req) => withSupabase({ auth: "user" }, async (_req, ctx) => {
+Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: headers(req.headers.get("Origin")) });
   if (req.method !== "POST") return json(req, { error: "Method not allowed." }, 405);
 
@@ -128,4 +128,4 @@ Deno.serve((req) => withSupabase({ auth: "user" }, async (_req, ctx) => {
   }
 
   return json(req, { ok: true, orderId, status: "paid", message: "Payment verified. Order fulfilment will be handled securely." });
-}))(req));
+}));
