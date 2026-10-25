@@ -9,6 +9,11 @@ alter table public.orders
   add column if not exists razorpay_signature_verified_at timestamptz,
   add column if not exists razorpay_status text not null default 'created';
 
+-- Make constraint creation safe if a previous attempt applied only part of this migration.
+alter table public.orders
+  drop constraint if exists orders_payment_gateway_check,
+  drop constraint if exists orders_razorpay_status_check;
+
 alter table public.orders
   add constraint orders_payment_gateway_check
     check (payment_gateway in ('manual_upi', 'razorpay')),
