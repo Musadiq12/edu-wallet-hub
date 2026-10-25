@@ -48,7 +48,7 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
     return jsonResponse({ error: status === 500 ? "Could not reserve this refund. Check the database migration and try again." : message }, status);
   }
 
-  const reservation = reservationRows[0] as { refund_id: string; payment_id: string; order_amount_paise: number };
+  const reservation = reservationRows[0] as { refund_id: string; payment_id: string; order_amount_paise: number; order_razorpay_status: string };
   let gatewayRefund: RefundResponse;
   try {
     gatewayRefund = await razorpayRequest<RefundResponse>("/payments/" + encodeURIComponent(reservation.payment_id) + "/refund", {
@@ -84,7 +84,7 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
   }
   const committedPaise = (refundRows ?? []).filter((r: { status: string }) => r.status === "processed").reduce((sum: number, r: { amount_paise: number }) => sum + Number(r.amount_paise), 0);
   const pendingPaise = (refundRows ?? []).filter((r: { status: string }) => r.status === "requested").reduce((sum: number, r: { amount_paise: number }) => sum + Number(r.amount_paise), 0);
-  const orderStatus = committedPaise >= reservation.order_amount_paise ? "refunded" : committedPaise > 0 ? "partially_refunded" : "paid";
+  const orderStatus = committedPaise >= reservation.order_amount_paise ? "refunded" : committedPaise > 0 ? "partially_refunded" : reservation.order_razorpay_status === "fulfilled" ? "fulfilled" : "paid";
   const { error: orderUpdateError } = await ctx.supabaseAdmin.from("orders").update({ razorpay_status: orderStatus }).eq("id", body.orderId).eq("payment_gateway", "razorpay");
   if (orderUpdateError) {
     console.error("Refund saved, but order refund status could not be updated:", orderUpdateError);
