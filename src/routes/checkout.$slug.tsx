@@ -203,6 +203,7 @@ function Checkout() {
         productId:p.id, fullName:form.full_name.trim(), email:form.email.trim(), whatsapp:form.whatsapp.trim(),
         couponCode:appliedCoupon?.code ?? null, deliveryAddress:form.delivery_address.trim(), deliveryCity:form.delivery_city.trim(),
         deliveryState:form.delivery_state.trim(), deliveryPostalCode:form.delivery_postal_code.trim(), deliveryCountry:form.delivery_country.trim() || "India",
+        estimatedDelivery: p.product_type === "physical" ? siteSettings.deliveryEstimate : null,
       }});
       if (createError) {
         const context=(createError as {context?:{json?:()=>Promise<{error?:string}>}}).context;
