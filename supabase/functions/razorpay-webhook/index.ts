@@ -201,6 +201,68 @@ Deno.serve(withSupabase({ auth: "none" }, async (req, ctx) => {
       }
     }
 
+    // Auto-deliver paid digital PDFs. Physical orders stay payment-verified for admin shipping.
+    if (eventType !== "payment.failed" && order.product_type === "pdf" && order.razorpay_status !== "fulfilled") {
+      const workerUrl = Deno.env.get("R2_WORKER_URL")?.replace(/\/$/, "");
+      const deliverySecret = Deno.env.get("R2_WORKER_DELIVERY_SECRET");
+      const resendApiKey = Deno.env.get("RESEND_API_KEY");
+      const fromEmail = Deno.env.get("EDUWALLET_FROM_EMAIL");
+      if (!workerUrl || !deliverySecret || !resendApiKey || !fromEmail) {
+        throw new Error("PDF fulfilment requires R2 worker and email secrets.");
+      }
+      if (!order.product_id || !order.email) throw new Error("Order is missing product or customer email.");
+
+      const { data: product, error: productError } = await ctx.supabaseAdmin
+        .from("products").select("id,title,pdf_file,is_free,product_type")
+        .eq("id", order.product_id).maybeSingle();
+      if (productError) throw new Error("Could not load the purchased product.");
+      if (!product || product.product_type !== "pdf" || product.is_free || !product.pdf_file) {
+        throw new Error("Purchased PDF is unavailable for delivery.");
+      }
+
+      let pdfPath = product.pdf_file;
+      if (!pdfPath.startsWith("products/")) {
+        const migrationResponse = await fetch(workerUrl + "/migrate-legacy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Delivery-Secret": deliverySecret },
+          body: JSON.stringify({ path: pdfPath }),
+          signal: AbortSignal.timeout(20_000),
+        });
+        const migrationData = await migrationResponse.json().catch(() => null);
+        if (!migrationResponse.ok || typeof migrationData?.path !== "string" || !migrationData.path.startsWith("products/")) {
+          throw new Error("Could not migrate the purchased PDF to private R2 storage.");
+        }
+        pdfPath = migrationData.path;
+        const { error: pathUpdateError } = await ctx.supabaseAdmin.from("products")
+          .update({ pdf_file: pdfPath }).eq("id", product.id);
+        if (pathUpdateError) throw new Error("Could not save the migrated PDF path.");
+      }
+
+      const linkResponse = await fetch(workerUrl + "/delivery-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Delivery-Secret": deliverySecret },
+        body: JSON.stringify({ key: pdfPath, expiresIn: 48 * 60 * 60 }),
+        signal: AbortSignal.timeout(10_000),
+      });
+      const linkData = await linkResponse.json().catch(() => null);
+      if (!linkResponse.ok || typeof linkData?.url !== "string") throw new Error("Could not create a secure PDF link.");
+
+      await sendDeliveryEmail({
+        apiKey: resendApiKey, from: fromEmail, to: order.email, orderId: order.id,
+        customerName: order.full_name || "Customer", productTitle: product.title || order.product_title,
+        amount: Number(order.amount), downloadUrl: linkData.url,
+      });
+
+      const deliveredAt = new Date().toISOString();
+      const { data: fulfilled, error: fulfilError } = await ctx.supabaseAdmin.from("orders").update({
+        order_status: "delivered", status: "Payment Verified", payment_status: "verified",
+        verified_at: order.verified_at ?? deliveredAt, delivered_at: deliveredAt, razorpay_status: "fulfilled",
+      }).eq("id", order.id).eq("payment_status", "verified").neq("razorpay_status", "fulfilled").select("id").maybeSingle();
+      if (fulfilError || !fulfilled) {
+        throw new Error("Delivery email sent, but fulfilment status could not be saved.");
+      }
+    }
+
     const { error: processedError } = await ctx.supabaseAdmin
       .from("razorpay_webhook_events")
       .update({ processed_at: new Date().toISOString(), processing_error: null })
