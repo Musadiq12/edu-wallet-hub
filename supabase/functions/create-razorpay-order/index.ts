@@ -25,7 +25,7 @@ function validEmail(value: string) {
   return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value) && value.length <= 254;
 }
 
-Deno.serve((req) => withSupabase({ auth: "user" }, async (_req, ctx) => {
+Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: headers(req.headers.get("Origin")) });
   if (req.method !== "POST") return json(req, { error: "Method not allowed." }, 405);
 
@@ -180,4 +180,4 @@ Deno.serve((req) => withSupabase({ auth: "user" }, async (_req, ctx) => {
     name: product.title,
     prefill: { name: body.fullName.trim(), email, contact: body.whatsapp.trim() },
   }, 201);
-}))(req));
+}));
