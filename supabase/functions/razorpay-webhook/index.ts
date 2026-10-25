@@ -31,6 +31,36 @@ function safeEqual(a: string, b: string) {
   return difference === 0;
 }
 
+function escapeHtml(value: string) {
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
+}
+
+async function sendDeliveryEmail(args: {
+  apiKey: string; from: string; to: string; orderId: string;
+  customerName: string; productTitle: string; amount: number; downloadUrl: string;
+}) {
+  const amount = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }).format(args.amount);
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${args.apiKey}`,
+      "Idempotency-Key": `edu-wallet-order-${args.orderId}-razorpay-delivery`,
+    },
+    body: JSON.stringify({
+      from: args.from,
+      to: [args.to],
+      subject: `Your EduWallet purchase is ready — ${args.productTitle}`,
+      html: `<p>Hello ${escapeHtml(args.customerName)},</p><p>Your payment for <strong>${escapeHtml(args.productTitle)}</strong> is confirmed.</p><p>Amount paid: ${amount}</p><p><a href="${args.downloadUrl}">Download your PDF</a></p><p>This secure link expires in 48 hours. Contact support if it expires.</p><p>Thank you for using EduWallet.</p>`,
+    }),
+    signal: AbortSignal.timeout(10_000),
+  });
+  if (!response.ok) {
+    console.error("Razorpay delivery email failed:", await response.text());
+    throw new Error("Delivery email failed and can be retried.");
+  }
+}
+
 type RazorpayEvent = {
   event?: string;
   payload?: {
