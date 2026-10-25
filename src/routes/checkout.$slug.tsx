@@ -1,26 +1,24 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
-import { CheckCircle2, Copy, Headphones, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Headphones, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import { EmptyState } from "@/components/EmptyState";
 import { productBySlugQuery } from "@/lib/catalog";
 import { effectivePrice, formatPrice } from "@/lib/format";
 import { useSession } from "@/lib/auth";
 import { siteConfig } from "@/config/site";
-import { useSiteSettings, upiLink } from "@/lib/settings";
+import { useSiteSettings } from "@/lib/settings";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/checkout/$slug")({
   head: () => ({
     meta: [
       { title: "Checkout" },
-      { name: "description", content: "Complete your UPI payment and submit payment confirmation." },
+      { name: "description", content: "Securely complete your order using Razorpay." },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -46,11 +44,7 @@ function Checkout() {
     delivery_state: "",
     delivery_postal_code: "",
     delivery_country: "India",
-    transaction_id: "",
-    amount: "",
-    confirm: false,
   });
-  const [file, setFile] = useState<File | null>(null);
 
   const p = product.data;
   const amount = p ? effectivePrice(p) : 0;
@@ -78,14 +72,13 @@ function Checkout() {
       const total = Number(quote.total ?? amount);
       if (total <= 0) throw new Error("This checkout requires a payment; this coupon cannot reduce the order to zero.");
       setAppliedCoupon({ code: quote.code ?? couponCode.trim().toUpperCase(), discountAmount: Number(quote.discountAmount ?? 0), total, label: quote.label ?? null });
-      setForm((current) => ({ ...current, amount: total.toFixed(2) }));
       toast.success("Coupon applied.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not apply coupon.");
     } finally { setCouponLoading(false); }
   };
   const removeCoupon = () => {
-    setAppliedCoupon(null); setCouponCode(""); setForm((current) => ({ ...current, amount: amount.toFixed(2) }));
+    setAppliedCoupon(null); setCouponCode("");
     toast.message("Coupon removed.");
   };
   
@@ -111,10 +104,6 @@ function Checkout() {
         }));
       });
   }, [user]);
-
-  useEffect(() => {
-    if (p) setForm((f) => ({ ...f, amount: f.amount || String(effectivePrice(p)) }));
-  }, [p]);
 
   if (product.isLoading || authLoading) {
     return (
@@ -170,146 +159,80 @@ function Checkout() {
       <div className="page-container section-y">
         <div className="mx-auto max-w-lg rounded-lg border border-border bg-card p-8 text-center">
           <CheckCircle2 className="mx-auto h-10 w-10 text-success" aria-hidden="true" />
-          <h1 className="mt-4 font-serif text-2xl font-semibold">Payment confirmation received.</h1>
+          <h1 className="mt-4 font-serif text-2xl font-semibold">Payment verified</h1>
           <p className="mt-3 text-sm text-muted-foreground">
-            {p.product_type === "physical" ? `We will verify your payment and prepare your order for delivery to the shipping address you provided. ${siteSettings.deliveryEstimate ? `${siteSettings.deliveryEstimate}.` : ""}` : "We will verify your payment and prepare your digital PDF for delivery."}
+            {p.product_type === "physical" ? `Your payment has been verified. We will prepare your order for delivery to the shipping address you provided. ${siteSettings.deliveryEstimate ? `${siteSettings.deliveryEstimate}.` : ""}` : "Your payment has been verified. Your digital order is recorded and can now be processed for delivery."}
           </p>
           <div className="mt-5 rounded-lg border border-border bg-surface p-4 text-left text-sm">
-            <p className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-success" /> Your payment is reviewed manually before delivery.</p>
+            <p className="flex gap-2"><ShieldCheck className="h-4 w-4 shrink-0 text-success" /> Razorpay payment verification was confirmed by our server.</p>
             <p className="mt-2 flex gap-2"><Headphones className="h-4 w-4 shrink-0 text-accent" /> Need help? Use the Contact page and mention your order details.</p>
           </div>
-          <p className="mt-3 text-xs text-muted-foreground">Your payment is not confirmed until our team verifies it.</p>
           <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-            <Button asChild>
-              <Link to="/shop">Continue browsing</Link>
-            </Button>
-            <Button
-  variant="outline"
-  onClick={() => navigate({ to: "/shop" })}
->
-  Continue shopping
-</Button>
+            <Button asChild><Link to="/shop">Continue browsing</Link></Button>
+            <Button variant="outline" onClick={() => navigate({ to: "/shop" })}>Continue shopping</Button>
           </div>
         </div>
       </div>
     );
   }
 
-  const copyUpi = async () => {
-  try {
-    await navigator.clipboard.writeText(siteSettings.upiId);
-    toast.success("UPI ID copied");
-  } catch {
-    toast.error("Could not copy. Please note the UPI ID manually.");
-  }
-};
-
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Guard against duplicate submits even if multiple click/submit events arrive
-    // before React has re-rendered the disabled state.
     if (saving) return;
     setError(null);
-
-    const paid = Number(form.amount);
-    if (!form.full_name.trim() || form.full_name.length > 100) {
-      setError("Please enter your full name.");
-      return;
-    }
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-    if (!/^[0-9+\-\s]{8,16}$/.test(form.whatsapp)) {
-      setError("Please enter a valid WhatsApp number.");
-      return;
-    }
-    if (p.product_type === "physical" && (!form.delivery_address.trim() || form.delivery_address.trim().length > 300)) {
-      setError("Please enter your complete delivery address.");
-      return;
-    }
-    if (p.product_type === "physical" && (!form.delivery_city.trim() || !form.delivery_state.trim())) {
-      setError("Please enter your city and state.");
-      return;
-    }
-    if (p.product_type === "physical" && !/^[0-9]{5,10}$/.test(form.delivery_postal_code.trim())) {
-      setError("Please enter a valid postal PIN code.");
-      return;
-    }
-    if (p.product_type === "physical" && !form.delivery_country.trim()) {
-      setError("Please enter your country.");
-      return;
-    }
-    if (!/^[a-zA-Z0-9]{6,30}$/.test(form.transaction_id.trim())) {
-      setError("Please enter a valid UPI transaction ID / UTR (6–30 letters or digits).");
-      return;
-    }
-    if (!paid || paid <= 0) {
-      setError("Please enter the amount you paid.");
-      return;
-    }
-    if (Math.abs(paid - payableAmount) > 0.01) {
-      setError(`The expected payment is ${formatPrice(payableAmount)}. Please update the amount to match the checkout total.`);
-      return;
-    }
-    if (!form.confirm) {
-      setError("Please confirm that you have completed the payment and agree to the Terms & Conditions.");
-      return;
-    }
-
+    if (!form.full_name.trim() || form.full_name.trim().length > 100) return setError("Please enter your full name.");
+    if (!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(form.email.trim())) return setError("Please enter a valid email address.");
+    if (!/^[0-9+\\-\\s]{8,16}$/.test(form.whatsapp.trim())) return setError("Please enter a valid WhatsApp number.");
+    if (p.product_type === "physical" && (!form.delivery_address.trim() || form.delivery_address.trim().length > 300)) return setError("Please enter your complete delivery address.");
+    if (p.product_type === "physical" && (!form.delivery_city.trim() || !form.delivery_state.trim())) return setError("Please enter your city and state.");
+    if (p.product_type === "physical" && !/^[0-9]{5,10}$/.test(form.delivery_postal_code.trim())) return setError("Please enter a valid postal PIN code.");
+    if (p.product_type === "physical" && !form.delivery_country.trim()) return setError("Please enter your country.");
     setSaving(true);
     try {
-      let screenshotPath: string | null = null;
-      if (file) {
-        const path = `${user.id}/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.\-_]/g, "")}`;
-        const { error: upErr } = await supabase.storage
-          .from("payment-proofs")
-          .upload(path, file, { upsert: false });
-        if (upErr) {
-          setError("We couldn't upload your screenshot. You can submit without it.");
-          setSaving(false);
-          return;
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) throw new Error("Your session expired. Please sign in again.");
+      const { data: checkout, error: createError } = await supabase.functions.invoke("create-razorpay-order", { body: {
+        productId:p.id, fullName:form.full_name.trim(), email:form.email.trim(), whatsapp:form.whatsapp.trim(),
+        couponCode:appliedCoupon?.code ?? null, deliveryAddress:form.delivery_address.trim(), deliveryCity:form.delivery_city.trim(),
+        deliveryState:form.delivery_state.trim(), deliveryPostalCode:form.delivery_postal_code.trim(), deliveryCountry:form.delivery_country.trim() || "India",
+      }});
+      if (createError) {
+        const context=(createError as {context?:{json?:()=>Promise<{error?:string}>}}).context;
+        const payload=await context?.json?.().catch(()=>null);
+        throw new Error(payload?.error || createError.message || "Could not start secure checkout.");
+      }
+      if (!checkout?.orderId || !checkout?.razorpayOrderId || !checkout?.keyId || !checkout?.amount) throw new Error("The payment service returned an incomplete checkout session. Please retry.");
+      const loadRazorpay=async()=>{
+        if ((window as Window & {Razorpay?:unknown}).Razorpay) return;
+        let script=document.querySelector<HTMLScriptElement>('script[data-razorpay-checkout="true"]');
+        if (!script) {
+          script=document.createElement("script"); script.src="https://checkout.razorpay.com/v1/checkout.js"; script.async=true; script.dataset.razorpayCheckout="true"; document.head.appendChild(script);
         }
-        screenshotPath = path;
-      }
-
-      const order = {
-        user_id: user.id,
-        product_id: p.id,
-        product_type: p.product_type,
-        product_title: p.title,
-        full_name: form.full_name.trim(),
-        email: form.email.trim(),
-        whatsapp: form.whatsapp.trim(),
-        delivery_address: p.product_type === "physical" ? form.delivery_address.trim() : null,
-        delivery_city: p.product_type === "physical" ? form.delivery_city.trim() : null,
-        delivery_state: p.product_type === "physical" ? form.delivery_state.trim() : null,
-        delivery_postal_code: p.product_type === "physical" ? form.delivery_postal_code.trim() : null,
-        delivery_country: p.product_type === "physical" ? form.delivery_country.trim() : null,
-        amount: paid,
-        coupon_code: appliedCoupon?.code ?? null,
-        coupon_discount: appliedCoupon?.discountAmount ?? 0,
-        payment_method: "UPI",
-        transaction_id: form.transaction_id.trim(),
-        screenshot_path: screenshotPath,
-        payment_status: "submitted" as const,
-        order_status: "payment_submitted" as const,
+        if (script.dataset.loaded==="true" || (window as Window & {Razorpay?:unknown}).Razorpay) return;
+        await new Promise<void>((resolve,reject)=>{script!.addEventListener("load",()=>{script!.dataset.loaded="true";resolve()},{once:true});script!.addEventListener("error",()=>reject(new Error("Could not load Razorpay Checkout. Check your connection and retry.")),{once:true});});
       };
-      const orderWriter = supabase as unknown as { from: (table: "orders") => { insert: (values: Record<string, unknown>) => Promise<{ error: { message: string } | null }> } };
-      const { error: insertError } = await orderWriter.from("orders").insert(order);
-      if (insertError) throw insertError;
-      setSubmitted(true);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "";
-      if (message.includes("COUPON_") || message.includes("NOT_ELIGIBLE_FOR_CART")) {
-        setAppliedCoupon(null);
-        setError("The coupon is no longer eligible. Please reapply it and confirm the updated payment amount.");
-      } else {
-        setError("We couldn't submit your confirmation. Please try again or contact support.");
-      }
-    } finally {
-      setSaving(false);
-    }
+      await loadRazorpay();
+      type Success={razorpay_order_id:string;razorpay_payment_id:string;razorpay_signature:string};
+      type Options={key:string;amount:number;currency:string;name:string;description:string;order_id:string;prefill:{name:string;email:string;contact:string};theme:{color:string};handler:(r:Success)=>void;modal:{ondismiss:()=>void}};
+      type Instance={open:()=>void;on:(event:string,callback:(r:{error?:{description?:string}})=>void)=>void};
+      const RazorpayCtor=(window as Window & {Razorpay?:new(options:Options)=>Instance}).Razorpay;
+      if(!RazorpayCtor) throw new Error("Razorpay Checkout did not initialize. Please retry.");
+      const razorpay=new RazorpayCtor({key:checkout.keyId,amount:checkout.amount,currency:checkout.currency||"INR",name:"EduWallet",description:p.title.slice(0,200),order_id:checkout.razorpayOrderId,prefill:checkout.prefill,theme:{color:"#2563eb"},
+        handler:async(response)=>{
+          try {
+            const {data:verified,error:verifyError}=await supabase.functions.invoke("verify-razorpay-payment",{body:{orderId:checkout.orderId,razorpay_order_id:response.razorpay_order_id,razorpay_payment_id:response.razorpay_payment_id,razorpay_signature:response.razorpay_signature}});
+            if(verifyError||!verified?.ok){
+              const context=(verifyError as {context?:{json?:()=>Promise<{error?:string}>}}|null)?.context;
+              const payload=await context?.json?.().catch(()=>null);
+              setError(payload?.error||"Payment may have completed, but verification is pending. Do not pay again; contact support with your Razorpay payment ID.");setSaving(false);return;
+            }
+            setSubmitted(true);
+          } catch { setError("Payment may have completed, but verification could not finish. Do not pay again; contact support with your Razorpay payment ID."); }
+          finally {setSaving(false);}
+        },modal:{ondismiss:()=>setSaving(false)}});
+      razorpay.on("payment.failed",(response)=>{setError(response.error?.description||"Payment was not completed. You can retry checkout.");setSaving(false);});
+      razorpay.open();
+    } catch(err){setError(err instanceof Error?err.message:"Could not start checkout. Please retry.");setSaving(false);}
   };
 
   return (
@@ -326,61 +249,22 @@ function Checkout() {
 
         <div className="mt-6 grid gap-8 lg:grid-cols-2">
           <section className="rounded-lg border border-border bg-card p-6">
-            <h2 className="text-lg font-semibold">Payment instructions</h2>
+            <h2 className="text-lg font-semibold">Secure payment</h2>
             <div className="mt-4 rounded-md border border-border bg-surface p-4 text-sm">
               <p className="font-medium">{p.title}</p>
-              <p className="mt-1 text-muted-foreground">
-                Amount payable: <span className="font-semibold text-foreground">{formatPrice(payableAmount)}</span>{appliedCoupon && <span className="ml-2 text-xs text-success">({formatPrice(appliedCoupon.discountAmount)} saved)</span>}
-              </p>
+              <p className="mt-1 text-muted-foreground">Amount payable: <span className="font-semibold text-foreground">{formatPrice(payableAmount)}</span>{appliedCoupon && <span className="ml-2 text-xs text-success">({formatPrice(appliedCoupon.discountAmount)} saved)</span>}</p>
             </div>
-
-            <ol className="mt-5 space-y-2 text-sm text-muted-foreground">
-              <li>1. Scan the QR code below with any UPI app, or pay to the UPI ID.</li>
-              <li>2. Pay exactly {formatPrice(payableAmount)}.</li>
-              <li>3. Return here and submit the payment confirmation form.</li>
-            </ol>
-
-            <div className="mt-5 flex flex-col items-center gap-4 rounded-md border border-border bg-background p-5">
-              {siteSettings.qrCodeUrl ? (
-                <img
-                  src={siteSettings.qrCodeUrl}
-                  alt="UPI QR code for Edu Wallet"
-                  className="h-56 w-56"
-                />
-              ) : (
-                <QRCodeSVG
-                  value={upiLink(
-  siteSettings.upiId,
-  siteSettings.upiPayeeName,
-  payableAmount,
-  p.title.slice(0, 40)
-)}
-                />
-              )}
-              <div className="flex w-full items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
-                <span className="truncate text-sm font-medium">{siteSettings.upiId}</span>
-                <Button type="button" variant="ghost" size="sm" onClick={copyUpi}>
-                  <Copy className="mr-1.5 h-4 w-4" /> Copy
-                </Button>
-              </div>
-              <a
-               href={upiLink(
-  siteSettings.upiId,
-  siteSettings.upiPayeeName,
-  amount,
-  p.title.slice(0, 40)
-)}
-                className="text-sm font-medium text-primary hover:underline sm:hidden"
-              >
-                Open UPI app
-              </a>
+            <div className="mt-5 rounded-md border border-border p-4">
+              <p className="font-medium">Pay securely with Razorpay</p>
+              <p className="mt-2 text-sm text-muted-foreground">Continue to Razorpay to choose an available payment method. The final amount and eligible coupon discount are recalculated on our server before a payment session is created.</p>
+              <p className="mt-3 text-sm text-muted-foreground">Your order is marked paid only after our server verifies the payment with Razorpay.</p>
             </div>
           </section>
 
           <section className="rounded-lg border border-border bg-card p-6">
             <h2 className="text-lg font-semibold">Delivery & payment details</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {p.product_type === "physical" ? "Enter the shipping address for your physical book or printed notes, then submit payment details." : "Submit your payment details to order this digital PDF."}
+              {p.product_type === "physical" ? "Enter the shipping address for your physical book or printed notes, then continue to secure payment." : "Confirm your customer details and continue to secure payment."}
             </p>
 
             <form className="mt-5 space-y-4" onSubmit={onSubmit} noValidate>
@@ -456,66 +340,14 @@ function Checkout() {
                   </div>
                 </div>
               </>}
-              <div>
-                <Label htmlFor="amount">Amount paid (₹)</Label>
-                <Input
-                  id="amount"
-                  inputMode="decimal"
-                  value={form.amount}
-                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
-                  className="mt-1.5 h-11"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="txn">UPI transaction ID / UTR</Label>
-                <Input
-                  id="txn"
-                  value={form.transaction_id}
-                  onChange={(e) => setForm({ ...form, transaction_id: e.target.value })}
-                  className="mt-1.5 h-11"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="proof">Payment screenshot (optional)</Label>
-                <Input
-                  id="proof"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                  className="mt-1.5"
-                />
-              </div>
-
-              <div className="flex items-start gap-2.5">
-                <Checkbox
-                  id="confirm"
-                  checked={form.confirm}
-                  onCheckedChange={(v) => setForm({ ...form, confirm: v === true })}
-                />
-                <Label htmlFor="confirm" className="text-sm leading-snug font-normal">
-                  I confirm that I have completed this UPI payment, the details above are correct,
-                  and I agree to the{" "}
-                  <Link to="/terms" target="_blank" className="font-medium text-primary hover:underline">
-                    Terms & Conditions
-                  </Link>.
-                </Label>
-              </div>
-
               {error && (
                 <p role="alert" className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
                   {error}
                 </p>
               )}
 
-              <Button type="submit" size="lg" className="w-full" disabled={saving}>
-                {saving ? "Submitting..." : "Submit Payment Confirmation"}
-              </Button>
-              <p className="text-xs text-muted-foreground">
-                Submitting this form does not confirm payment. Your order is marked as verified
-                only after our team checks the transaction.
-              </p>
+              <Button type="submit" size="lg" className="w-full" disabled={saving}>{saving ? "Preparing secure checkout…" : `Pay ${formatPrice(payableAmount)} with Razorpay`}</Button>
+              <p className="text-xs text-muted-foreground">If your bank shows a debit while verification is pending, do not pay again. Contact support with your payment reference.</p>
             </form>
           </section>
         </div>
