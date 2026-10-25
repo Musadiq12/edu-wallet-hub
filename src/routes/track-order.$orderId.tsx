@@ -137,7 +137,6 @@ function TrackOrderPage() {
           </div>
           <div className="mt-6 grid gap-4 border-t border-border pt-5 sm:grid-cols-2">
             <div><p className="text-xs text-muted-foreground">Quantity</p><p className="mt-1 font-semibold">{order.quantity ?? 1}</p></div>
-            <div><p className="text-xs text-muted-foreground">Quantity</p><p className="mt-1 font-semibold">{order.quantity ?? 1}</p></div>
             <div><p className="text-xs text-muted-foreground">Amount paid</p><p className="mt-1 font-semibold">{formatPrice(Number(order.amount))}</p></div>
             <div><p className="text-xs text-muted-foreground">Order date</p><p className="mt-1 font-semibold">{formatTimestamp(order.created_at) ?? "—"}</p></div>
             <div className="sm:col-span-2"><p className="text-xs text-muted-foreground">Shipping address</p><p className="mt-1 font-medium">{order.delivery_address || "Address unavailable"}</p></div>
