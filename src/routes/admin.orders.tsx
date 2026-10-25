@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { TablesUpdate } from "@/integrations/supabase/types";
 import type { PostgrestClient } from "@supabase/supabase-js";
 
-export const Route = createFileRoute("/admin/orders")({ component: AdminOrders });
+export const Route = createFileRoute("/admin/orders")({ component: AdminOrders });\n\nconst physicalTrackingRpc = supabase as unknown as {\n  rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;\n};
 
 type OrderStatus = AdminOrder["status"];
 type HistoryItem = { id: string; status: OrderStatus; changed_at: string };
@@ -193,14 +193,14 @@ function AdminOrders() {
 
     setBusyId(order.id);
     try {
-      const { data, error } = await supabase.rpc("admin_update_physical_order_tracking", {
+      const { data, error } = await physicalTrackingRpc.rpc("admin_update_physical_order_tracking", {
         p_order_id: order.id,
         p_status: status,
         p_courier_name: details?.courierName || null,
         p_tracking_id: details?.trackingId || null,
         p_tracking_link: details?.trackingLink || null,
         p_estimated_delivery: details?.estimatedDelivery || null,
-      } as never);
+      });
       if (error) throw error;
       const result = data as { ok?: boolean; status?: string };
       if (!result?.ok) throw new Error("The order status could not be updated.");
