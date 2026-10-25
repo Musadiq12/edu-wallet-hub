@@ -193,6 +193,9 @@ export type AdminOrder = {
   courier_tracking_url: string | null;
   amount: number | string;
   payment_method: string;
+  payment_gateway: "manual_upi" | "razorpay";
+  razorpay_payment_id: string | null;
+  razorpay_status: string;
   transaction_id: string | null;
   screenshot_path: string | null;
   payment_status: string;

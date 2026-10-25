@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { CheckCircle2, Circle, ExternalLink, PackageCheck, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Circle, ExternalLink, PackageCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/lib/auth";
@@ -19,6 +19,10 @@ export const Route = createFileRoute("/track-order/$orderId")({
 });
 
 type TrackingStatus = "Payment Verified" | "Preparing Order" | "Dispatched";
+const trackingRpc = supabase as unknown as {
+  rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+};
+
 type TrackingResponse = {
   order: {
     id: string;
@@ -62,7 +66,7 @@ function TrackOrderPage() {
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
     queryFn: async (): Promise<TrackingResponse["order"]> => {
-      const { data, error } = await supabase.rpc("get_physical_order_tracking", { p_order_id: orderId });
+      const { data, error } = await trackingRpc.rpc("get_physical_order_tracking", { p_order_id: orderId });
       if (error) throw error;
       const payload = data as unknown as TrackingResponse;
       if (!payload?.order?.id) throw new Error("We couldn't find this verified physical order.");
@@ -132,7 +136,8 @@ function TrackOrderPage() {
             <span className="shrink-0 rounded-full border border-success/30 bg-success/10 px-3 py-1 text-xs font-semibold text-success">{LABELS[(order.status as TrackingStatus)] ?? "Payment Confirmed"}</span>
           </div>
           <div className="mt-6 grid gap-4 border-t border-border pt-5 sm:grid-cols-2">
-            <div><p className="text-xs text-muted-foreground">Quantity</p><p className="mt-1 font-semibold">{order.quantity ?? 1}</p></div>\n            <div><p className="text-xs text-muted-foreground">Quantity</p><p className="mt-1 font-semibold">{order.quantity ?? 1}</p></div>\n            <div><p className="text-xs text-muted-foreground">Amount paid</p><p className="mt-1 font-semibold">{formatPrice(Number(order.amount))}</p></div>
+            <div><p className="text-xs text-muted-foreground">Quantity</p><p className="mt-1 font-semibold">{order.quantity ?? 1}</p></div>
+            <div><p className="text-xs text-muted-foreground">Amount paid</p><p className="mt-1 font-semibold">{formatPrice(Number(order.amount))}</p></div>
             <div><p className="text-xs text-muted-foreground">Order date</p><p className="mt-1 font-semibold">{formatTimestamp(order.created_at) ?? "—"}</p></div>
             <div className="sm:col-span-2"><p className="text-xs text-muted-foreground">Shipping address</p><p className="mt-1 font-medium">{order.delivery_address || "Address unavailable"}</p></div>
             {order.estimated_delivery && <div className="sm:col-span-2"><p className="text-xs text-muted-foreground">Estimated delivery</p><p className="mt-1 font-semibold">{order.estimated_delivery}</p></div>}

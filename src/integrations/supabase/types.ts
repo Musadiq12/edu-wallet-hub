@@ -986,6 +986,10 @@ export type Database = {
         Row: {
           admin_note: string | null
           amount: number
+          checkout_idempotency_key: string | null
+          razorpay_creation_started_at: string | null
+          estimated_delivery: string | null
+          quantity: number
           courier_name: string | null
           courier_tracking_id: string | null
           courier_tracking_url: string | null
@@ -1018,6 +1022,10 @@ export type Database = {
         Insert: {
           admin_note?: string | null
           amount: number
+          checkout_idempotency_key?: string | null
+          razorpay_creation_started_at?: string | null
+          estimated_delivery?: string | null
+          quantity?: number
           courier_name?: string | null
           courier_tracking_id?: string | null
           courier_tracking_url?: string | null
@@ -1050,6 +1058,10 @@ export type Database = {
         Update: {
           admin_note?: string | null
           amount?: number
+          checkout_idempotency_key?: string | null
+          razorpay_creation_started_at?: string | null
+          estimated_delivery?: string | null
+          quantity?: number
           courier_name?: string | null
           courier_tracking_id?: string | null
           courier_tracking_url?: string | null

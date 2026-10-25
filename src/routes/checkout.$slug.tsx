@@ -32,6 +32,17 @@ function Checkout() {
   const siteSettings = useSiteSettings();
   const [submitted, setSubmitted] = useState(false);
   const [submittedOrderId, setSubmittedOrderId] = useState<string | null>(null);
+
+  // Keep the same checkout request ID across refreshes/retries; changing any checkout value starts a new attempt.
+  const checkoutAttemptKey = user ? `eduwallet:checkout-attempt:${user.id}:${slug}` : null;
+  const clearCheckoutAttempt = () => {
+    if (!checkoutAttemptKey) return;
+    try {
+      window.sessionStorage.removeItem(checkoutAttemptKey);
+    } catch {
+      // A blocked sessionStorage must not interrupt checkout.
+    }
+  };
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,6 +82,7 @@ function Checkout() {
       }
       const total = Number(quote.total ?? amount);
       if (total <= 0) throw new Error("This checkout requires a payment; this coupon cannot reduce the order to zero.");
+      clearCheckoutAttempt();
       setAppliedCoupon({ code: quote.code ?? couponCode.trim().toUpperCase(), discountAmount: Number(quote.discountAmount ?? 0), total, label: quote.label ?? null });
       toast.success("Coupon applied.");
     } catch (err) {
@@ -78,6 +90,7 @@ function Checkout() {
     } finally { setCouponLoading(false); }
   };
   const removeCoupon = () => {
+    clearCheckoutAttempt();
     setAppliedCoupon(null); setCouponCode("");
     toast.message("Coupon removed.");
   };
@@ -199,10 +212,20 @@ function Checkout() {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) throw new Error("Your session expired. Please sign in again.");
+      let idempotencyKey: string;
+      try {
+        const saved = checkoutAttemptKey ? window.sessionStorage.getItem(checkoutAttemptKey) : null;
+        idempotencyKey = saved && /^[0-9a-f-]{36}$/i.test(saved) ? saved : crypto.randomUUID();
+        if (checkoutAttemptKey) window.sessionStorage.setItem(checkoutAttemptKey, idempotencyKey);
+      } catch {
+        idempotencyKey = crypto.randomUUID();
+      }
       const { data: checkout, error: createError } = await supabase.functions.invoke("create-razorpay-order", { body: {
+        idempotencyKey,
         productId:p.id, fullName:form.full_name.trim(), email:form.email.trim(), whatsapp:form.whatsapp.trim(),
         couponCode:appliedCoupon?.code ?? null, deliveryAddress:form.delivery_address.trim(), deliveryCity:form.delivery_city.trim(),
         deliveryState:form.delivery_state.trim(), deliveryPostalCode:form.delivery_postal_code.trim(), deliveryCountry:form.delivery_country.trim() || "India",
+        estimatedDelivery: p.product_type === "physical" ? siteSettings.deliveryEstimate : null,
       }});
       if (createError) {
         const context=(createError as {context?:{json?:()=>Promise<{error?:string}>}}).context;
@@ -234,7 +257,9 @@ function Checkout() {
               const payload=await context?.json?.().catch(()=>null);
               setError(`${payload?.error || "Payment may have completed, but verification is pending."} Payment reference: ${response.razorpay_payment_id}. Do not pay again; contact support if verification remains pending.`);setSaving(false);return;
             }
-            setSubmittedOrderId(String(verified.orderId || checkout.orderId));\n            setSubmitted(true);
+            clearCheckoutAttempt();
+            setSubmittedOrderId(String(verified.orderId || checkout.orderId));
+            setSubmitted(true);
           } catch { setError(`Payment may have completed, but verification could not finish. Payment reference: ${response.razorpay_payment_id}. Do not pay again; contact support if verification remains pending.`); }
           finally {setSaving(false);}
         },modal:{ondismiss:()=>setSaving(false)}});
@@ -290,7 +315,7 @@ function Checkout() {
                   id="full_name"
                   value={form.full_name}
                   maxLength={100}
-                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                  onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, full_name: e.target.value }); }}
                   className="mt-1.5 h-11"
                   required
                 />
@@ -302,7 +327,7 @@ function Checkout() {
                   type="email"
                   inputMode="email"
                   value={form.email}
-                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, email: e.target.value }); }}
                   className="mt-1.5 h-11"
                   required
                 />
@@ -313,7 +338,7 @@ function Checkout() {
                   id="whatsapp"
                   inputMode="tel"
                   value={form.whatsapp}
-                  onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
+                  onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, whatsapp: e.target.value }); }}
                   className="mt-1.5 h-11"
                   required
                 />
@@ -325,26 +350,26 @@ function Checkout() {
                 </div>
                 <div>
                   <Label htmlFor="delivery_address">House / street / locality</Label>
-                  <Input id="delivery_address" value={form.delivery_address} maxLength={300} onChange={(e) => setForm({ ...form, delivery_address: e.target.value })} className="mt-1.5 h-11" autoComplete="street-address" required />
+                  <Input id="delivery_address" value={form.delivery_address} maxLength={300} onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, delivery_address: e.target.value }); }} className="mt-1.5 h-11" autoComplete="street-address" required />
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="delivery_city">City / town</Label>
-                    <Input id="delivery_city" value={form.delivery_city} onChange={(e) => setForm({ ...form, delivery_city: e.target.value })} className="mt-1.5 h-11" autoComplete="address-level2" required />
+                    <Input id="delivery_city" value={form.delivery_city} onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, delivery_city: e.target.value }); }} className="mt-1.5 h-11" autoComplete="address-level2" required />
                   </div>
                   <div>
                     <Label htmlFor="delivery_state">State</Label>
-                    <Input id="delivery_state" value={form.delivery_state} onChange={(e) => setForm({ ...form, delivery_state: e.target.value })} className="mt-1.5 h-11" autoComplete="address-level1" required />
+                    <Input id="delivery_state" value={form.delivery_state} onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, delivery_state: e.target.value }); }} className="mt-1.5 h-11" autoComplete="address-level1" required />
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="delivery_postal_code">PIN code</Label>
-                    <Input id="delivery_postal_code" inputMode="numeric" value={form.delivery_postal_code} maxLength={10} onChange={(e) => setForm({ ...form, delivery_postal_code: e.target.value })} className="mt-1.5 h-11" autoComplete="postal-code" required />
+                    <Input id="delivery_postal_code" inputMode="numeric" value={form.delivery_postal_code} maxLength={10} onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, delivery_postal_code: e.target.value }); }} className="mt-1.5 h-11" autoComplete="postal-code" required />
                   </div>
                   <div>
                     <Label htmlFor="delivery_country">Country</Label>
-                    <Input id="delivery_country" value={form.delivery_country} onChange={(e) => setForm({ ...form, delivery_country: e.target.value })} className="mt-1.5 h-11" autoComplete="country-name" required />
+                    <Input id="delivery_country" value={form.delivery_country} onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, delivery_country: e.target.value }); }} className="mt-1.5 h-11" autoComplete="country-name" required />
                   </div>
                 </div>
               </>}
