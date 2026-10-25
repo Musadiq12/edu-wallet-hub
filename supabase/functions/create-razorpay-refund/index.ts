@@ -1,5 +1,5 @@
 import { withSupabase } from "npm:@supabase/server";
-import { jsonResponse, razorpayRequest, validText } from "../_shared/razorpay.ts";
+import { jsonResponse, razorpayRequest } from "../_shared/razorpay.ts";
 
 type RefundResponse = { id: string; status: string; amount: number; payment_id: string };
 
