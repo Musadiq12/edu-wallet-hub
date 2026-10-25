@@ -565,24 +565,36 @@ Thank you for shopping with us!`;
                         </div>
                       )}
 
-                      {/* Courier/tracking controls must never render for digital PDF orders. */}
-                      {order.product_type === "physical" && order.status === "Payment Verified" && (
-                        <form className="grid gap-3 sm:grid-cols-2" onSubmit={(event) => { event.preventDefault(); void dispatchOrder(order, event.currentTarget); }}>
-                          <div className="sm:col-span-2 flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300"><PackageCheck className="h-4 w-4" />Payment verified. Add courier details to dispatch.</div>
+                      {/* Courier controls are physical-only and require the next sequential status. */}
+                      {order.product_type === "physical" && order.payment_gateway === "razorpay" && order.payment_status === "verified" && order.status === "Payment Verified" && (
+                        <div className="space-y-3 rounded-lg border border-border p-4">
+                          <p className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300"><PackageCheck className="h-4 w-4" />Payment confirmed by Razorpay. Start preparing this order before dispatch.</p>
+                          <Button size="sm" disabled={busy} onClick={() => void transitionPhysicalOrder(order, "Preparing Order")}>
+                            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <PackageCheck className="mr-1.5 h-4 w-4" />Mark Preparing Order
+                          </Button>
+                          <Button size="sm" variant="destructive" disabled={busy} onClick={() => void cancelOrder(order)}>Cancel Order</Button>
+                        </div>
+                      )}
+
+                      {order.product_type === "physical" && order.payment_gateway === "razorpay" && order.payment_status === "verified" && order.status === "Preparing Order" && (
+                        <form className="grid gap-3 rounded-lg border border-border p-4 sm:grid-cols-2" onSubmit={(event) => { event.preventDefault(); void dispatchOrder(order, event.currentTarget); }}>
+                          <div className="sm:col-span-2 flex items-center gap-2 text-sm text-violet-700 dark:text-violet-300"><PackageCheck className="h-4 w-4" />Order is being prepared. Add all shipment details to dispatch it.</div>
                           <label className="grid gap-1.5 text-sm">
                             <span>Courier company</span>
-                            <select name="courier_name" defaultValue={order.courier_name || ""} className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm" required>
-                              <option value="" disabled>Select courier</option>
-                              <option>India Post</option><option>DTDC</option><option>Delhi</option><option>Blue Dart</option><option>Other</option>
-                            </select>
+                            <Input name="courier_name" defaultValue={order.courier_name || ""} placeholder="e.g. India Post, DTDC, Blue Dart" required maxLength={120} />
                           </label>
                           <label className="grid gap-1.5 text-sm">
-                            <span>Tracking ID / courier number</span>
-                            <Input name="courier_tracking_id" defaultValue={order.courier_tracking_id || ""} placeholder="Enter tracking ID" required maxLength={150} />
+                            <span>Tracking ID / AWB number</span>
+                            <Input name="courier_tracking_id" defaultValue={order.courier_tracking_id || ""} placeholder="Enter tracking ID" required maxLength={120} />
                           </label>
                           <label className="grid gap-1.5 text-sm sm:col-span-2">
-                            <span>Tracking URL <span className="text-muted-foreground">(required for Other)</span></span>
-                            <Input name="courier_tracking_url" type="url" defaultValue={order.courier_tracking_url || ""} placeholder="https://..." maxLength={500} />
+                            <span>Courier tracking URL (HTTPS required)</span>
+                            <Input name="courier_tracking_url" type="url" defaultValue={order.courier_tracking_url || ""} placeholder="https://courier.example/track/..." required maxLength={500} />
+                          </label>
+                          <label className="grid gap-1.5 text-sm sm:col-span-2">
+                            <span>Estimated delivery (optional)</span>
+                            <Input name="estimated_delivery" defaultValue={order.estimated_delivery || ""} placeholder="e.g. 3–5 business days" maxLength={120} />
                           </label>
                           <div className="flex flex-wrap gap-2 sm:col-span-2">
                             <Button type="submit" disabled={busy}>{busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}<Truck className="mr-1.5 h-4 w-4" />Dispatch Order</Button>
@@ -615,7 +627,7 @@ Thank you for shopping with us!`;
                       )}
 
                       {order.status === "Cancelled" && <p className="text-sm text-muted-foreground">This order has been cancelled.</p>}
-                      {order.status !== "Cancelled" && order.status !== "Dispatched" && order.status !== "Payment Verified" && order.status !== "Pending" && <p className="text-sm text-muted-foreground">No actions available for this status.</p>}
+                      {order.status !== "Cancelled" && order.status !== "Dispatched" && order.status !== "Payment Verified" && order.status !== "Preparing Order" && order.status !== "Pending" && <p className="text-sm text-muted-foreground">No actions available for this status.</p>}
                     </section>
 
                     <section>
