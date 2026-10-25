@@ -75,7 +75,7 @@ function Checkout() {
       if (!quote?.valid) {
         const messages: Record<string, string> = {
           COUPON_NOT_FOUND: "That coupon code is not valid.", COUPON_EXPIRED: "This coupon is not currently active.",
-          MIN_SUBTOTAL_NOT_MET: "Your order does not meet this coupon’s minimum subtotal.", USAGE_LIMIT_REACHED: "This coupon has reached its usage limit.",
+          MIN_SUBTOTAL_NOT_MET: "Your order does not meet this coupon’s minimum subtotal.", USAGE_LIMIT_REACHED: "You have already used this coupon, or its usage limit has been reached.",
           NOT_ELIGIBLE_FOR_CART: "This coupon does not apply to this product.", COUPON_NOT_STACKABLE: "This coupon cannot be combined with another offer.",
         };
         throw new Error(messages[quote?.error ?? ""] ?? "This coupon cannot be applied.");
@@ -265,7 +265,17 @@ function Checkout() {
         },modal:{ondismiss:()=>setSaving(false)}});
       razorpay.on("payment.failed",(response)=>{setError(response.error?.description||"Payment was not completed. You can retry checkout.");setSaving(false);});
       razorpay.open();
-    } catch(err){setError(err instanceof Error?err.message:"Could not start checkout. Please retry.");setSaving(false);}
+    } catch(err){
+      const message = err instanceof Error ? err.message : "Could not start checkout. Please retry.";
+      // If the final server-side coupon check loses a race, do not leave a stale discount displayed.
+      if (/coupon/i.test(message)) {
+        clearCheckoutAttempt();
+        setAppliedCoupon(null);
+        setCouponCode("");
+      }
+      setError(message);
+      setSaving(false);
+    }
   };
 
   return (
