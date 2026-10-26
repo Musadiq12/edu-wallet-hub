@@ -18,6 +18,24 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
   }
 });
 
+// Normalize the retired site host, www, and HTTP to the canonical HTTPS origin
+// in a single redirect while preserving the full path and query string.
+const canonicalHostMiddleware = createMiddleware().server(async ({ next, request }) => {
+  const url = new URL(request.url);
+  const host = (request.headers.get("host") ?? url.host).split(":")[0].toLowerCase();
+  const needsRedirect =
+    host === "edu-wallet-hub.designeroutletmedia.workers.dev" ||
+    host === "www.eduwallethub.in" ||
+    url.protocol !== "https:";
+
+  if (!needsRedirect) return next();
+
+  url.protocol = "https:";
+  url.hostname = "eduwallethub.in";
+  url.port = "";
+  return new Response(null, { status: 301, headers: { Location: url.toString() } });
+});
+
 // Start installs this automatically when src/start.ts is absent; defining the
 // file opts out, so re-add it explicitly to keep server functions protected
 // from cross-site requests.
@@ -27,5 +45,5 @@ const csrfMiddleware = createCsrfMiddleware({
 
 export const startInstance = createStart(() => ({
   functionMiddleware: [attachSupabaseAuth],
-  requestMiddleware: [errorMiddleware, csrfMiddleware],
+  requestMiddleware: [canonicalHostMiddleware, errorMiddleware, csrfMiddleware],
 }));
