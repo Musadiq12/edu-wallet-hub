@@ -4,6 +4,7 @@ import { ProductCard } from "@/components/ProductCard";
 import { EmptyState, LoadingGrid } from "@/components/EmptyState";
 import { productsQuery } from "@/lib/catalog";
 import { siteConfig } from "@/config/site";
+import { SITE_URL, breadcrumbJson } from "@/lib/seo";
 
 export const Route = createFileRoute("/free-resources")({
   head: () => ({
@@ -20,7 +21,12 @@ export const Route = createFileRoute("/free-resources")({
         content: "Free samples and study material across exam categories from Edu Wallet.",
       },
     ],
-    links: [{ rel: "canonical", href: "/free-resources" }],
+      { property: "og:url", content: new URL("/free-resources", SITE_URL).toString() },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Free Study Resources" },
+      { name: "twitter:description", content: siteConfig.shortDescription },
+    ],
+    links: [{ rel: "canonical", href: new URL("/free-resources", SITE_URL).toString() }],
   }),
   component: FreeResources,
 });
@@ -30,6 +36,7 @@ function FreeResources() {
 
   return (
     <div className="section-y">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJson([{ name: "Home", path: "/" }, { name: "Free Resources", path: "/free-resources" }]) }} />
       <div className="page-container">
         <h1 className="text-3xl font-bold sm:text-4xl">Free Resources</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
