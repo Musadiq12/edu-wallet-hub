@@ -127,7 +127,8 @@ function ProductDetail() {
   const productSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Product",
-    name: p.title,\n    url: absoluteUrl(`/shop/${p.slug}`),
+    name: p.title,
+    url: absoluteUrl(`/shop/${p.slug}`),
     description: schemaDescription,
     ...(coverUrl ? { image: coverUrl } : {}),
     offers: { "@type": "Offer", price: String(effectivePrice(p)), priceCurrency: "INR", availability: "https://schema.org/InStock" },
