@@ -27,7 +27,7 @@ export function sanitizeText(s: string): string {
 export function buildTitle(parts: Array<string | undefined | null>, maxLen = 60): string {
   const segments = parts
     .filter((part): part is string => Boolean(part))
-    .map((part) => sanitizeText(part.replace(/\\s*\\|\\s*EduWallet(?:\\s+Hub)?\\s*$/i, "")))
+    .map((part) => sanitizeText(part.replace(/\s*\|\s*EduWallet(?:\s+Hub)?\s*$/i, "")))
     .filter(Boolean);
   if (!segments.length) return BRAND;
 
