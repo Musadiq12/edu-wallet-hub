@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { SITE_URL, breadcrumbJson } from "@/lib/seo";
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
@@ -8,7 +9,12 @@ export const Route = createFileRoute("/privacy")({
       { property: "og:title", content: "Privacy Policy — EduWallet" },
       { property: "og:description", content: "How EduWallet collects, uses, stores and protects information." },
     ],
-    links: [{ rel: "canonical", href: "/privacy" }],
+      { property: "og:url", content: new URL("/privacy", SITE_URL).toString() },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Privacy Policy — EduWallet" },
+      { name: "twitter:description", content: siteConfig.shortDescription },
+    ],
+    links: [{ rel: "canonical", href: new URL("/privacy", SITE_URL).toString() }],
   }),
   component: PrivacyPage,
 });
@@ -16,6 +22,7 @@ export const Route = createFileRoute("/privacy")({
 function PrivacyPage() {
   return (
     <main className="page-container section-y">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJson([{ name: "Home", path: "/" }, { name: "Privacy Policy", path: "/privacy" }]) }} />
       <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-10">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Legal</p>
         <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight sm:text-4xl">Privacy Policy</h1>
