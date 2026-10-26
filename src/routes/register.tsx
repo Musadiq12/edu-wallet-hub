@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { siteConfig } from "@/config/site";
+import { BRAND, buildTitle } from "@/lib/seo";
 import { friendlyError } from "@/lib/admin";
 
 type Search = { redirect?: string };
@@ -17,7 +18,7 @@ export const Route = createFileRoute("/register")({
   },
   head: () => ({
     meta: [
-      { title: `Create account — ${siteConfig.fallbackBrand.brandName}` },
+      { title: buildTitle(["Create account", BRAND]) },
       { name: "description", content: "Create your account." },
       { property: "og:title", content: `Create account — ${siteConfig.fallbackBrand.brandName}` },
       { property: "og:description", content: "Create your account." },
