@@ -6,6 +6,5 @@ Disallow: /login
 Disallow: /register
 Disallow: /forgot-password
 Disallow: /reset-password
-Disallow: /shop?q=
 
 Sitemap: https://edu-wallet-hub.designeroutletmedia.workers.dev/sitemap.xml
