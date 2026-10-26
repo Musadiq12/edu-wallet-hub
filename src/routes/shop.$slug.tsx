@@ -156,7 +156,7 @@ function ProductDetail() {
             Shop
           </Link>
           <span className="mx-1.5">/</span>
-          <span>{category?.name ?? "Resource"}</span>
+          <span aria-current="page">{p.title}</span>
         </nav>
 
         <div className="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(320px,0.82fr)_minmax(0,1.18fr)] lg:gap-12">
