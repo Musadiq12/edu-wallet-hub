@@ -20,6 +20,8 @@ export function CoverImage({
         <img
           src={url}
           alt={`Cover of ${title}`}
+          width={800}
+          height={600}
           loading="lazy"
           decoding="async"
           className="absolute inset-0 block h-full w-full object-cover object-center"

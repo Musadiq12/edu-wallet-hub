@@ -6,17 +6,25 @@ import { ProductCarousel } from "@/components/ProductCarousel";
 import { EmptyState } from "@/components/EmptyState";
 import { productsQuery, type Product } from "@/lib/catalog";
 import { siteConfig } from "@/config/site";
+import { SITE_URL, organizationJson } from "@/lib/seo";
 import { publishedPostsQuery, postUrl } from "@/lib/blog";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Exam Study Notes, PDFs & Solved Papers | EduWallet" },
-      { name: "description", content: siteConfig.shortDescription },
+      { name: "description", content: "Find exam study notes, solved papers, revision PDFs and free learning resources for NEET, JEE, UPSC, SSC and more at EduWallet." },
       { property: "og:title", content: "Exam Study Notes, PDFs & Solved Papers | EduWallet" },
-      { property: "og:description", content: siteConfig.shortDescription },
+      { property: "og:description", content: "Find exam study notes, solved papers, revision PDFs and free learning resources for NEET, JEE, UPSC, SSC and more at EduWallet." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: new URL("/", SITE_URL).toString() },
+      { property: "og:image", content: new URL("/og-image.svg", SITE_URL).toString() },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Exam Study Notes, PDFs & Solved Papers | EduWallet" },
+      { name: "twitter:description", content: "Find exam study notes, solved papers, revision PDFs and free learning resources for NEET, JEE, UPSC, SSC and more at EduWallet." },
+      { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
-    links: [{ rel: "canonical", href: "/" }],
+    links: [{ rel: "canonical", href: new URL("/", SITE_URL).toString() }],
   }),
   component: Home,
 });
@@ -64,6 +72,7 @@ function Home() {
 
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: organizationJson() }} />
       <StorefrontHero />
 
       <section className="py-7 sm:py-9">

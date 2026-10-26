@@ -1,14 +1,22 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { SITE_URL, breadcrumbJson } from "@/lib/seo";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About EduWallet" },
-      { name: "description", content: "Learn about EduWallet, its educational resources, access process, and student-focused mission." },
-      { property: "og:title", content: "About EduWallet" },
-      { property: "og:description", content: "Learn about EduWallet and how its digital study resources support students." },
+      { title: "About EduWallet | Affordable Exam Notes and Study Guides" },
+      { name: "description", content: "Learn about EduWallet and explore affordable exam notes, solved papers, revision PDFs and practical study guides for students preparing for exams." },
+      { property: "og:title", content: "About EduWallet | Affordable Exam Notes and Study Guides" },
+      { property: "og:description", content: "Learn about EduWallet and explore affordable exam notes, solved papers, revision PDFs and practical study guides for students preparing for exams." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: new URL("/about", SITE_URL).toString() },
+      { property: "og:image", content: new URL("/og-image.svg", SITE_URL).toString() },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "About EduWallet | Affordable Exam Notes and Study Guides" },
+      { name: "twitter:description", content: "Learn about EduWallet and explore affordable exam notes, solved papers, revision PDFs and practical study guides for students preparing for exams." },
+      { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
-    links: [{ rel: "canonical", href: "/about" }],
+    links: [{ rel: "canonical", href: new URL("/about", SITE_URL).toString() }],
   }),
   component: AboutPage,
 });
@@ -16,6 +24,7 @@ export const Route = createFileRoute("/about")({
 function AboutPage() {
   return (
     <main className="page-container section-y">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJson([{ name: "Home", path: "/" }, { name: "About", path: "/about" }]) }} />
       <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-10">
         <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
           About EduWallet

@@ -1,10 +1,6 @@
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /checkout/
 Disallow: /login
 Disallow: /register
-Disallow: /forgot-password
-Disallow: /reset-password
 
 Sitemap: https://edu-wallet-hub.designeroutletmedia.workers.dev/sitemap.xml

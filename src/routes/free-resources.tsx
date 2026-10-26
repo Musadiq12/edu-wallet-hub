@@ -4,23 +4,24 @@ import { ProductCard } from "@/components/ProductCard";
 import { EmptyState, LoadingGrid } from "@/components/EmptyState";
 import { productsQuery } from "@/lib/catalog";
 import { siteConfig } from "@/config/site";
+import { SITE_URL, breadcrumbJson } from "@/lib/seo";
 
 export const Route = createFileRoute("/free-resources")({
   head: () => ({
     meta: [
-      { title: "Free Study Resources" },
-      {
-        name: "description",
-        content:
-          "Free samples and study material across exam categories from Edu Wallet. Preview the format before buying paid resources.",
-      },
-      { property: "og:title", content: "Free Study Resources" },
-      {
-        property: "og:description",
-        content: "Free samples and study material across exam categories from Edu Wallet.",
-      },
+      { title: "Free Exam Notes and Study PDFs Online | EduWallet" },
+      { name: "description", content: "Explore free exam notes, practice questions, sample papers and revision PDFs from EduWallet to support your competitive exam preparation." },
+      { property: "og:title", content: "Free Exam Notes and Study PDFs Online | EduWallet" },
+      { property: "og:description", content: "Explore free exam notes, practice questions, sample papers and revision PDFs from EduWallet to support your competitive exam preparation." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: new URL("/free-resources", SITE_URL).toString() },
+      { property: "og:image", content: new URL("/og-image.svg", SITE_URL).toString() },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Free Exam Notes and Study PDFs Online | EduWallet" },
+      { name: "twitter:description", content: "Explore free exam notes, practice questions, sample papers and revision PDFs from EduWallet to support your competitive exam preparation." },
+      { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
-    links: [{ rel: "canonical", href: "/free-resources" }],
+    links: [{ rel: "canonical", href: new URL("/free-resources", SITE_URL).toString() }],
   }),
   component: FreeResources,
 });
@@ -30,6 +31,7 @@ function FreeResources() {
 
   return (
     <div className="section-y">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJson([{ name: "Home", path: "/" }, { name: "Free Resources", path: "/free-resources" }]) }} />
       <div className="page-container">
         <h1 className="text-3xl font-bold sm:text-4xl">Free Resources</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">

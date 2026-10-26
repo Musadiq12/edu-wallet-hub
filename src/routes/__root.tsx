@@ -14,6 +14,7 @@ import { defaultSettings, settingsQuery, useSiteSettings } from "@/lib/settings"
 import { supabase } from "@/integrations/supabase/client";
 import { CookieConsent } from "@/components/CookieConsent";
 import { Banner } from "@/components/ui/banner";
+import { SITE_URL } from "@/lib/seo";
 
 const RECOVERY_FLAG = "edu-wallet-password-recovery";
 
@@ -37,8 +38,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: siteConfig.shortDescription },
       { property: "og:site_name", content: matches[0]?.loaderData?.brandName ?? defaultSettings.brandName },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "https://edu-wallet-hub.designeroutletmedia.workers.dev/og-image.svg" },
-      { property: "og:url", content: "https://edu-wallet-hub.designeroutletmedia.workers.dev/" },
+      { property: "og:image", content: new URL("/og-image.svg", SITE_URL).toString() },
+      { property: "og:url", content: SITE_URL + "/" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: matches[0]?.loaderData?.brandName ?? defaultSettings.brandName },
       { name: "twitter:description", content: siteConfig.shortDescription },

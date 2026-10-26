@@ -1,20 +1,22 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { SITE_URL, breadcrumbJson } from "@/lib/seo";
 
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms & Conditions — EduWallet" },
-      {
-        name: "description",
-        content: "Terms and conditions for using EduWallet and purchasing its digital educational resources.",
-      },
-      { property: "og:title", content: "Terms & Conditions — EduWallet" },
-      {
-        property: "og:description",
-        content: "Terms and conditions for EduWallet accounts, purchases, payments, delivery, and digital resources.",
-      },
+      { title: "EduWallet Terms and Conditions for Study Resources" },
+      { name: "description", content: "Read EduWallet terms for student accounts, educational products, orders, payment verification, digital delivery, permitted use and customer support." },
+      { property: "og:title", content: "EduWallet Terms and Conditions for Study Resources" },
+      { property: "og:description", content: "Read EduWallet terms for student accounts, educational products, orders, payment verification, digital delivery, permitted use and customer support." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: new URL("/terms", SITE_URL).toString() },
+      { property: "og:image", content: new URL("/og-image.svg", SITE_URL).toString() },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "EduWallet Terms and Conditions for Study Resources" },
+      { name: "twitter:description", content: "Read EduWallet terms for student accounts, educational products, orders, payment verification, digital delivery, permitted use and customer support." },
+      { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
-    links: [{ rel: "canonical", href: "/terms" }],
+    links: [{ rel: "canonical", href: new URL("/terms", SITE_URL).toString() }],
   }),
   component: TermsPage,
 });
@@ -22,6 +24,7 @@ export const Route = createFileRoute("/terms")({
 function TermsPage() {
   return (
     <main className="page-container section-y">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJson([{ name: "Home", path: "/" }, { name: "Terms and Conditions", path: "/terms" }]) }} />
       <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-10">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Legal</p>
         <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
