@@ -1,11 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
+import { SITE_URL } from "@/lib/seo";
 
-const BASE = (
-  process.env["SITE_URL"] ??
-  import.meta.env["VITE_SITE_URL"] ??
-  "https://edu-wallet-hub.designeroutletmedia.workers.dev"
-).replace(/\/+$/, "");
+const BASE = SITE_URL;
 const STATIC = ["/", "/shop", "/free-resources", "/about", "/contact", "/terms", "/privacy", "/blog"];
 
 function xmlEscape(value: string) {
