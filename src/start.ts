@@ -26,7 +26,7 @@ const canonicalHostMiddleware = createMiddleware().server(async ({ next, request
   const needsRedirect =
     host === "edu-wallet-hub.designeroutletmedia.workers.dev" ||
     host === "www.eduwallethub.in" ||
-    url.protocol !== "https:";
+    (host === "eduwallethub.in" && url.protocol !== "https:");
 
   if (!needsRedirect) return next();
 
