@@ -133,7 +133,7 @@ function ProductDetail() {
         toast.success("Review updated.");
       } else {
         await submitReview(payload);
-        toast.success("Thanks! Your review will appear after approval.");
+        toast.success("Thanks for sharing your feedback.");
       }
       setEditingReview(false); setReviewTitle(""); setReviewComment(""); setReviewRating(0);
       await Promise.all([
