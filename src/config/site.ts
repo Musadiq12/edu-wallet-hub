@@ -1,5 +1,5 @@
 /**
- * Static, non-editable copy for Edu Wallet.
+ * Static, non-editable copy for EduWallet.
  *
  * Editable branding/contact/payment values (website name, tagline, emails,
  * WhatsApp, social links, UPI, delivery estimate, website URL) live ONLY in the
@@ -8,7 +8,7 @@
  * `fallbackBrand` is used solely if the settings cannot be loaded at all.
  */
 export const siteConfig = {
-  fallbackBrand: { brandName: "Edu Wallet", tagline: "Study Smart. Score Better." },
+  fallbackBrand: { brandName: "EduWallet", tagline: "Study Smart. Score Better." },
   shortDescription:
     "Exam-focused notes, guess papers, solved papers, assignment guidance and study resources for competitive, board and entrance exams.",
   copyrightYear: 2026,
