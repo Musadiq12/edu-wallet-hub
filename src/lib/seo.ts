@@ -40,12 +40,12 @@ export function buildTitle(parts: Array<string | undefined | null>, maxLen = 60)
   if (compose().length > maxLen && titleParts.length >= 2) {
     titleParts = titleParts.filter((_, index) => index !== titleParts.length - 1);
   }
-  if (compose().length > maxLen && titleParts.length) {
+  if (compose().length > maxLen && titleParts.length > 1) {
     titleParts = titleParts.slice(1);
   }
-  if (compose().length > maxLen) {
+  if (compose().length > maxLen && titleParts.length === 1) {
     const available = Math.max(1, maxLen - brand.length - 3);
-    const shortened = titleParts[0]?.slice(0, available).trimEnd();
+    const shortened = titleParts[0].slice(0, available).trimEnd();
     titleParts = shortened ? [shortened] : [];
   }
 
