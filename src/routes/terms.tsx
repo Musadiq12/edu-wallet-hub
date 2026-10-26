@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { SITE_URL, breadcrumbJson } from "@/lib/seo";
 
 export const Route = createFileRoute("/terms")({
   head: () => ({
@@ -14,7 +15,12 @@ export const Route = createFileRoute("/terms")({
         content: "Terms and conditions for EduWallet accounts, purchases, payments, delivery, and digital resources.",
       },
     ],
-    links: [{ rel: "canonical", href: "/terms" }],
+      { property: "og:url", content: new URL("/terms", SITE_URL).toString() },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Terms & Conditions — EduWallet" },
+      { name: "twitter:description", content: siteConfig.shortDescription },
+    ],
+    links: [{ rel: "canonical", href: new URL("/terms", SITE_URL).toString() }],
   }),
   component: TermsPage,
 });
@@ -22,6 +28,7 @@ export const Route = createFileRoute("/terms")({
 function TermsPage() {
   return (
     <main className="page-container section-y">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJson([{ name: "Home", path: "/" }, { name: "Terms and Conditions", path: "/terms" }]) }} />
       <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-10">
         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">Legal</p>
         <h1 className="mt-2 font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
