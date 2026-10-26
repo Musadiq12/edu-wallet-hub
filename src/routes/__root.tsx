@@ -74,7 +74,7 @@ function Analytics() {
 }
 
 function RootShell({ children }: { children: ReactNode }) {
-  return <html lang="en"><head><HeadContent /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "Organization", name: "EduWallet", url: absoluteUrl("/"), logo: absoluteUrl("/eduwallet-logo.svg"), description: "Independent educational resource platform offering exam notes, solved papers and study resources." }).replace(/</g, "\\u003c") }} /></head><body>{children}<Scripts /></body></html>;
+  return <html lang="en"><head><HeadContent /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": [{ "@type": "Organization", "@id": absoluteUrl("/#organization"), name: "EduWallet", url: absoluteUrl("/"), logo: absoluteUrl("/eduwallet-logo.svg"), description: "Independent educational resource platform offering exam notes, solved papers and study resources." }, { "@type": "WebSite", "@id": absoluteUrl("/#website"), url: absoluteUrl("/"), name: "EduWallet", publisher: { "@id": absoluteUrl("/#organization") } }] }).replace(/</g, "\\u003c") }} /></head><body>{children}<Scripts /></body></html>;
 }
 
 function BrandTitleSync() {
