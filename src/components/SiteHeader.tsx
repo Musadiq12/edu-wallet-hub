@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   BarChart3, BookOpen, FileText, Gift, Globe2, HelpCircle, Layers3,
-  Menu, RotateCcw, Search, Shield, Target, UserPlus, Users, X, ChevronRight,
+  Menu, RotateCcw, Search, Shield, Target, UserPlus, Users, X, ChevronRight, ChevronDown, LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
@@ -63,7 +63,11 @@ function useScroll(threshold: number) {
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [exploreOpen, setExploreOpen] = useState(false);
   const [term, setTerm] = useState("");
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const wasOpen = useRef(false);
   const scrolled = useScroll(10);
   const navigate = useNavigate();
   const location = useLocation();
@@ -78,8 +82,15 @@ export function SiteHeader() {
   }, [open]);
 
   useEffect(() => {
+    if (open) closeButtonRef.current?.focus();
+    else if (wasOpen.current) menuButtonRef.current?.focus();
+    wasOpen.current = open;
+  }, [open]);
+
+  useEffect(() => {
     setOpen(false);
     setSearchOpen(false);
+    setExploreOpen(false);
   }, [location.pathname]);
 
   const submitSearch = (event: React.FormEvent) => {
@@ -88,6 +99,30 @@ export function SiteHeader() {
     setOpen(false);
     navigate({ to: "/shop", search: { q: term || undefined, category: undefined } });
   };
+
+  const handleMenuKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setOpen(false);
+      return;
+    }
+    if (event.key !== "Tab") return;
+    const focusable = event.currentTarget.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    );
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  };
+
+  const closeMenu = () => setOpen(false);
 
   return (
     <header className={cn("sticky top-0 z-50 w-full border-b border-transparent transition-colors", scrolled && "border-border bg-background/95 shadow-sm backdrop-blur-lg supports-[backdrop-filter]:bg-background/70")}>
@@ -135,8 +170,8 @@ export function SiteHeader() {
               </>
             )}
           </div>
-          <Button variant="outline" size="icon" className="lg:hidden" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} aria-controls="site-mobile-menu" onClick={() => setOpen((v) => !v)}>
-            {open ? <X className="size-5" /> : <Menu className="size-5" />}
+          <Button ref={menuButtonRef} variant="ghost" size="icon" className="lg:hidden" aria-label="Open navigation menu" aria-expanded={open} aria-controls="site-mobile-menu" onClick={() => setOpen(true)}>
+            <Menu className="size-5" />
           </Button>
         </div>
       </nav>
@@ -150,71 +185,111 @@ export function SiteHeader() {
         </div>
       )}
 
-      {open && (
-        <div id="site-mobile-menu" className="fixed inset-x-0 bottom-0 top-16 z-40 overflow-y-auto border-t border-border bg-background lg:hidden">
-          <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-5 pb-8 pt-5 sm:px-6">
-            <section aria-labelledby="mobile-account-heading" className="space-y-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p id="mobile-account-heading" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Your account</p>
-                  <p className="mt-1 text-sm text-muted-foreground">{user ? "Quick access to your account" : "Sign in to keep your resources together"}</p>
-                </div>
-              </div>
-              {user ? (
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" asChild><Link to="/library" onClick={() => setOpen(false)}><Layers3 className="mr-2 size-4" />My Library</Link></Button>
-                  {isAdmin && <Button variant="outline" size="sm" asChild><Link to="/admin" onClick={() => setOpen(false)}><Shield className="mr-2 size-4" />Admin</Link></Button>}
-                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" type="button" onClick={() => { setOpen(false); void signOutCleanly(); }}>Logout</Button>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <Button variant="outline" className="flex-1" asChild><Link to="/login" onClick={() => setOpen(false)}>Log in</Link></Button>
-                  <Button className="flex-1" asChild><Link to="/register" onClick={() => setOpen(false)}>Create account</Link></Button>
-                </div>
-              )}
-            </section>
-
-            <section aria-label="Main links" className="grid grid-cols-2 gap-2">
-              <Link to="/shop" onClick={() => setOpen(false)} className="col-span-2 flex min-h-14 items-center justify-between rounded-lg bg-primary px-4 py-3 text-primary-foreground transition-colors hover:bg-primary/90">
-                <span className="flex items-center gap-3 font-semibold"><BookOpen className="size-5" />Browse the shop</span><ChevronRight className="size-5" />
-              </Link>
-              <Link to="/free-resources" onClick={() => setOpen(false)} className="flex min-h-12 items-center gap-2 rounded-lg border border-border px-3 py-3 text-sm font-medium transition-colors hover:bg-accent">
-                <Gift className="size-4 shrink-0 text-muted-foreground" />Free resources
-              </Link>
-              <Link to="/blog" onClick={() => setOpen(false)} aria-current={isBlogActive ? "page" : undefined} className={cn("flex min-h-12 items-center gap-2 rounded-lg border border-border px-3 py-3 text-sm font-medium transition-colors hover:bg-accent", isBlogActive && "border-primary/30 bg-accent")}>
-                <BookOpen className="size-4 shrink-0 text-muted-foreground" />Blog
-              </Link>
-            </section>
-
-            <MobileSection title="Explore resources" items={productLinks.filter((item) => item.title !== "Free Resources")} onNavigate={() => setOpen(false)} />
-            <MobileSection title="About EduWallet" items={[...companyLinks, ...companyLinks2]} onNavigate={() => setOpen(false)} compact />
-            <p className="border-t border-border pt-4 text-xs text-muted-foreground">Study resources for your next step.</p>
+      <div
+        id="site-mobile-menu"
+        className={cn("fixed inset-0 z-[60] bg-background transition-opacity duration-200 ease-out motion-reduce:transition-none lg:hidden", open ? "opacity-100" : "pointer-events-none opacity-0")}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Mobile navigation"
+        aria-hidden={!open}
+        inert={!open}
+        onKeyDown={handleMenuKeyDown}
+      >
+        <div className={cn("flex h-[100dvh] flex-col transition-transform duration-200 ease-out motion-reduce:transition-none", open ? "translate-x-0" : "translate-x-full")}>
+          <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4 sm:px-6">
+            <Link to="/" aria-label={brandName + " home"} onClick={closeMenu} className="rounded-md p-1"><Logo compact /></Link>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" aria-label="Search resources" className="size-11" onClick={() => { setOpen(false); setSearchOpen(true); }}><Search className="size-5" /></Button>
+              <Button ref={closeButtonRef} variant="ghost" size="icon" aria-label="Close navigation menu" className="size-11" onClick={closeMenu}><X className="size-5" /></Button>
+            </div>
           </div>
-        </div>
-      )}
-    </header>
-  );
-}
 
-function MobileSection({ title, items, onNavigate, compact = false }: { title: string; items: LinkItem[]; onNavigate: () => void; compact?: boolean }) {
-  return (
-    <section aria-label={title}>
-      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h2>
-      <div className={compact ? "divide-y divide-border rounded-lg border border-border" : "grid grid-cols-2 gap-2"}>
-        {items.map((item) => (
-          <Link key={item.title} to={item.href as "/"} onClick={onNavigate} className={cn(
-            "group flex min-w-0 items-center gap-3 transition-colors hover:bg-accent",
-            compact ? "px-3 py-3" : "rounded-lg border border-border px-3 py-3",
-          )}>
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground"><item.icon className="size-4" /></span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-sm font-medium leading-5">{item.title}</span>
-              {!compact && item.description && <span className="mt-0.5 block line-clamp-2 text-xs leading-4 text-muted-foreground">{item.description}</span>}
-            </span>
-            {compact && <ChevronRight className="size-4 shrink-0 text-muted-foreground" />}
-          </Link>
-        ))}
+          <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 pt-4 sm:px-6">
+            <div className="mx-auto flex w-full max-w-lg flex-col gap-3">
+              <Link
+                to={user ? "/library" : "/login"}
+                onClick={closeMenu}
+                className="flex min-h-[84px] items-center gap-4 rounded-md bg-emerald-800 px-4 py-4 text-white transition-colors hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2"
+              >
+                <Layers3 aria-hidden="true" className="size-6 shrink-0" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-lg font-semibold leading-6">My Library</span>
+                  <span className="mt-1 block text-sm text-emerald-50">{user ? "Your purchased resources" : "Sign in to access your resources"}</span>
+                </span>
+                <ChevronRight aria-hidden="true" className="size-5 shrink-0" />
+              </Link>
+
+              <Link
+                to="/blog"
+                onClick={closeMenu}
+                aria-current={isBlogActive ? "page" : undefined}
+                className={cn("flex min-h-14 items-center justify-between border-b border-border px-1 py-3 text-base font-semibold transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2", isBlogActive && "text-primary")}
+              >
+                <span className="flex items-center gap-3"><BookOpen aria-hidden="true" className="size-5" />Blog & study advice</span>
+                <ChevronRight aria-hidden="true" className="size-5 text-muted-foreground" />
+              </Link>
+
+              <Link
+                to="/shop"
+                onClick={closeMenu}
+                className="flex min-h-12 items-center justify-between rounded-md bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              >
+                <span>Browse the shop</span><ChevronRight aria-hidden="true" className="size-4" />
+              </Link>
+
+              <section className="border-t border-border pt-3" aria-labelledby="mobile-explore-heading">
+                <button
+                  id="mobile-explore-heading"
+                  type="button"
+                  className="flex min-h-12 w-full items-center justify-between py-2 text-left text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                  aria-expanded={exploreOpen}
+                  aria-controls="mobile-explore-links"
+                  onClick={() => setExploreOpen((value) => !value)}
+                >
+                  <span className="uppercase tracking-wide">Explore resources</span>
+                  <ChevronDown aria-hidden="true" className={cn("size-4 transition-transform duration-200", exploreOpen && "rotate-180")} />
+                </button>
+                <div id="mobile-explore-links" hidden={!exploreOpen} className="grid grid-cols-2 gap-x-5 gap-y-0 border-t border-border pb-2 pt-1">
+                  {productLinks.map((item) => (
+                    <Link key={item.title} to={item.href as "/"} onClick={closeMenu} className="flex min-h-12 items-center border-b border-border/70 py-2 text-sm font-medium leading-5 text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                      {item.title}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+
+              <section className="border-t border-border pt-3" aria-labelledby="mobile-company-heading">
+                <h2 id="mobile-company-heading" className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">About EduWallet</h2>
+                <div className="grid grid-cols-2 gap-x-5">
+                  {[...companyLinks, ...companyLinks2].map((item) => (
+                    <Link key={item.title} to={item.href as "/"} onClick={closeMenu} className="flex min-h-11 items-center border-b border-border/70 py-2 text-sm text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                      {item.title}
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            </div>
+          </main>
+
+          <footer className="shrink-0 border-t border-border bg-background px-5 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-6">
+            <div className="mx-auto flex w-full max-w-lg items-center gap-3">
+              {user ? (
+                <>
+                  {isAdmin && <Link to="/admin" onClick={closeMenu} className="flex min-h-12 items-center px-2 text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Admin</Link>}
+                  <Button variant="outline" className="ml-auto min-h-12 border-red-700 bg-transparent px-4 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-400 dark:text-red-300 dark:hover:bg-red-950" onClick={() => { closeMenu(); void signOutCleanly(); }}>
+                    <LogOut aria-hidden="true" className="mr-2 size-4" />Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" className="min-h-12 flex-1" asChild><Link to="/login" onClick={closeMenu}>Log in</Link></Button>
+                  <Button className="min-h-12 flex-1" asChild><Link to="/register" onClick={closeMenu}>Create account</Link></Button>
+                </>
+              )}
+            </div>
+          </footer>
+        </div>
       </div>
-    </section>
+    </header>
   );
 }
