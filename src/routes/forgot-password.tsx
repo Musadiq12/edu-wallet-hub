@@ -6,15 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { siteConfig } from "@/config/site";
+import { BRAND, buildMeta, buildTitle } from "@/lib/seo";
 import { friendlyError } from "@/lib/admin";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({
     meta: [
-      { title: `Reset password — ${siteConfig.fallbackBrand.brandName}` },
-      { name: "description", content: "Reset the password for your EduWallet account." },
+      { title: buildTitle(["Reset password", BRAND]) },
+      { name: "description", content: buildMeta("Reset the password for your EduWallet account.") },
       { property: "og:title", content: `Reset password — ${siteConfig.fallbackBrand.brandName}` },
-      { property: "og:description", content: "Reset your EduWallet password." },
+      { property: "og:description", content: buildMeta("Reset your EduWallet password.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },
