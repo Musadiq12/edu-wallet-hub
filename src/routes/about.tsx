@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { SITE_URL, breadcrumbJson, jsonLd } from "@/lib/seo";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
@@ -8,7 +9,12 @@ export const Route = createFileRoute("/about")({
       { property: "og:title", content: "About EduWallet" },
       { property: "og:description", content: "Learn about EduWallet and how its digital study resources support students." },
     ],
-    links: [{ rel: "canonical", href: "/about" }],
+      { property: "og:url", content: new URL("/about", SITE_URL).toString() },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "About EduWallet" },
+      { name: "twitter:description", content: siteConfig.shortDescription },
+    ],
+    links: [{ rel: "canonical", href: new URL("/about", SITE_URL).toString() }],
   }),
   component: AboutPage,
 });
@@ -16,6 +22,7 @@ export const Route = createFileRoute("/about")({
 function AboutPage() {
   return (
     <main className="page-container section-y">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJson([{ name: "Home", path: "/" }, { name: "About", path: "/about" }]) }} />
       <div className="mx-auto max-w-3xl rounded-2xl border border-border bg-card p-6 shadow-sm sm:p-10">
         <h1 className="font-serif text-3xl font-semibold tracking-tight sm:text-4xl">
           About EduWallet
