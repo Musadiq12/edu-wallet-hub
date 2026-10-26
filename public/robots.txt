@@ -1,9 +1,11 @@
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /checkout/
 Disallow: /login
 Disallow: /register
+Disallow: /admin
+Disallow: /library
+Disallow: /checkout
+Disallow: /track-order
 Disallow: /forgot-password
 Disallow: /reset-password
 
