@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { siteConfig } from "@/config/site";
+import { BRAND, buildTitle } from "@/lib/seo";
 import { friendlyError } from "@/lib/admin";
 
 const requirements = [
@@ -18,7 +19,7 @@ const requirements = [
 export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
-      { title: `Set a new password — ${siteConfig.fallbackBrand.brandName}` },
+      { title: buildTitle(["Set a new password", BRAND]) },
       { name: "description", content: "Choose a new password for your account." },
       { name: "robots", content: "noindex" },
     ],
