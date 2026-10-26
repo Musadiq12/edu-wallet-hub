@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { BRAND, buildMeta, buildTitle, sanitizeText } from "./seo";
 
 describe("SEO text sanitizers", () => {
