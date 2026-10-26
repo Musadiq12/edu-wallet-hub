@@ -7,6 +7,7 @@ export type Product = {
   product_type: "pdf" | "physical";
   title: string;
   seo_title: string | null;
+  seo_description: string | null;
   slug: string;
   description: string | null;
   whats_included: string | null;
@@ -37,7 +38,7 @@ export type Category = {
 };
 
 const PRODUCT_FIELDS =
-  "id,product_type,title,seo_title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,created_at";
+  "id,product_type,title,seo_title,seo_description,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,created_at";
 
 export const categoriesQuery = () =>
   queryOptions({
