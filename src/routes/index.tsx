@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { productsQuery, type Product } from "@/lib/catalog";
 import { siteConfig } from "@/config/site";
 import { publishedPostsQuery, postUrl } from "@/lib/blog";
+import { absoluteUrl } from "@/lib/seo";
 
 export const Route = createFileRoute("/")({
   loader: async ({ context }) => {
@@ -23,8 +24,12 @@ export const Route = createFileRoute("/")({
       { name: "description", content: siteConfig.shortDescription },
       { property: "og:title", content: "Exam Study Notes, PDFs & Solved Papers | EduWallet" },
       { property: "og:description", content: siteConfig.shortDescription },
+      { property: "og:url", content: absoluteUrl("/") },
+      { property: "og:image", content: absoluteUrl("/og-image.svg") },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: absoluteUrl("/og-image.svg") },
     ],
-    links: [{ rel: "canonical", href: "/" }],
+    links: [{ rel: "canonical", href: absoluteUrl("/") }],
   }),
   component: Home,
 });
