@@ -4,11 +4,10 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/EmptyState";
 import { coverImageUrl, postCategoriesQuery, postUrl, publishedPostsQuery, readingTimeMinutes } from "@/lib/blog";
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl, BRAND, buildMeta, buildTitle } from "@/lib/seo";
 
-const BLOG_TITLE = "Blog | Exam Tips, Strategies & Study Guides | EduWallet";
-const BLOG_DESCRIPTION =
-  "Exam preparation tips, strategies and study guides for NEET, JEE, UPSC, SSC and Banking from the EduWallet team.";
+const BLOG_TITLE = buildTitle(["Blog", "Exam Tips, Strategies & Study Guides", BRAND]);
+const BLOG_DESCRIPTION = buildMeta("Exam preparation tips, strategies and study guides for NEET, JEE, UPSC, SSC and Banking from the EduWallet team.");
 
 export const Route = createFileRoute("/blog/")({
   loader: async ({ context }) => {
