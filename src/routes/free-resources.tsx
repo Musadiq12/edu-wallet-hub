@@ -6,6 +6,9 @@ import { productsQuery } from "@/lib/catalog";
 import { siteConfig } from "@/config/site";
 
 export const Route = createFileRoute("/free-resources")({
+  loader: async ({ context }) => ({
+    free: await context.queryClient.ensureQueryData(productsQuery({ free: true })),
+  }),
   head: () => ({
     meta: [
       { title: "Free Study Resources" },
