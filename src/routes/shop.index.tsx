@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/ProductCard";
 import { EmptyState, LoadingGrid } from "@/components/EmptyState";
 import { categoriesQuery, matchesSearch, productsQuery } from "@/lib/catalog";
-import { siteConfig } from "@/config/site";
 
 type ShopSearch = { q?: string | undefined; category?: string | undefined };
 
@@ -19,7 +18,7 @@ export const Route = createFileRoute("/shop/")({
     const search = match.search as ShopSearch;
     const term = search.q?.trim();
     const category = search.category?.trim();
-    const label = term ? term.toUpperCase() : category ? category.replace(/-/g, " ").replace(/\\b\\w/g, (c) => c.toUpperCase()) : "";
+    const label = term ? term.toUpperCase() : category ? category.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "";
     const title = label ? `${label} Study Resources | EduWallet` : "Exam Study Resources | EduWallet";
     const description = label
       ? `Browse ${label} study notes, solved papers, exam guides and digital learning resources on EduWallet.`
