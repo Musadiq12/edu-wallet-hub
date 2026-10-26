@@ -117,7 +117,7 @@ export function StorefrontHero() {
                 />
                 <img
                   src={slide.mobileImageUrl}
-                  alt={`EduWallet banner slide ${active + 1}`}
+                  alt={`Mobile banner for ${slide.title}`}
                   className="block h-auto w-full max-w-full object-contain sm:hidden"
                   fetchPriority={active === 0 ? "high" : "auto"}
                 />
