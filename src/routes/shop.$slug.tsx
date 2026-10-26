@@ -71,9 +71,9 @@ function ProductDetail() {
   const s = useSiteSettings();
   const queryClient = useQueryClient();
   const { user } = useSession();
-  const { product: initialProduct, categories: initialCategories } = Route.useLoaderData();
+  const { product: p, categories: initialCategories } = Route.useLoaderData();
   const { slug } = Route.useParams();
-  const product = useQuery({ ...productBySlugQuery(slug), initialData: initialProduct });
+  const product = useQuery({ ...productBySlugQuery(slug), initialData: p });
   const categories = useQuery({ ...categoriesQuery(), initialData: initialCategories });
   const reviews = useQuery(productReviewsQuery(product.data?.id ?? ""));
   const reviewSummary = useQuery(reviewSummaryQuery(product.data?.id ?? ""));
@@ -85,7 +85,6 @@ function ProductDetail() {
   const [reviewSaving, setReviewSaving] = useState(false);
   const [editingReview, setEditingReview] = useState(false);
 
-  const p = initialProduct;
   const preview = useQuery({
     queryKey: ["preview", p?.preview_file],
     enabled: !!p?.preview_file,
