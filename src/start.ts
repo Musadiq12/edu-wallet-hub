@@ -18,11 +18,14 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
   }
 });
 
-// Normalize the retired site host, www, and HTTP to the canonical HTTPS origin
-// in a single redirect while preserving the full path and query string.
+// Redirect browser navigations to the canonical HTTPS origin. Leave non-GET
+// methods untouched so POST server functions and API requests are never rewritten
+// by a 301 into a GET. URL-based checks avoid relying on a non-guaranteed Host header.
 const canonicalHostMiddleware = createMiddleware().server(async ({ next, request }) => {
+  if (request.method !== "GET" && request.method !== "HEAD") return next();
+
   const url = new URL(request.url);
-  const host = (request.headers.get("host") ?? url.host).split(":")[0].toLowerCase();
+  const host = url.hostname.toLowerCase();
   const needsRedirect =
     host === "edu-wallet-hub.designeroutletmedia.workers.dev" ||
     host === "www.eduwallethub.in" ||
@@ -33,7 +36,10 @@ const canonicalHostMiddleware = createMiddleware().server(async ({ next, request
   url.protocol = "https:";
   url.hostname = "eduwallethub.in";
   url.port = "";
-  return new Response(null, { status: 301, headers: { Location: url.toString() } });
+  return new Response(null, {
+    status: 301,
+    headers: { Location: url.toString(), "Cache-Control": "public, max-age=3600" },
+  });
 });
 
 // Start installs this automatically when src/start.ts is absent; defining the
