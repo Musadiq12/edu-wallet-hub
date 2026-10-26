@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { isEmail, safeUrl, useSiteSettings, waLink } from "@/lib/settings";
+import { SITE_URL, breadcrumbJson } from "@/lib/seo";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/contact")({
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
-    links: [{ rel: "canonical", href: "/contact" }],
+    links: [{ rel: "canonical", href: new URL("/contact", SITE_URL).toString() }],
   }),
   component: ContactPage,
 });
@@ -55,6 +56,7 @@ function ContactPage() {
 
   return (
     <div className="page-container section-y">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJson([{ name: "Home", path: "/" }, { name: "Contact", path: "/contact" }]) }} />
       <h1 className="font-serif text-3xl font-semibold">Contact {s.brandName}</h1>
       <p className="mt-2 max-w-xl text-muted-foreground">Questions about a resource or your order? Reach us below.</p>
       <div className="mt-8 grid gap-10 md:grid-cols-[1fr_1.3fr]">
