@@ -12,8 +12,9 @@ function xmlEscape(value: string) {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 }
 
-function urlEntry(path: string, lastmod: string) {
-  return `<url><loc>${xmlEscape(`${BASE}${path}`)}</loc><lastmod>${lastmod}</lastmod></url>`;
+function urlEntry(path: string, lastmod?: string | null) {
+  const modified = lastmod ? `<lastmod>${xmlEscape(lastmod)}</lastmod>` : "";
+  return `<url><loc>${xmlEscape(`${BASE}${path}`)}</loc>${modified}</url>`;
 }
 
 export const Route = createFileRoute("/sitemap.xml")({
@@ -31,12 +32,10 @@ export const Route = createFileRoute("/sitemap.xml")({
         ]);
         if (productError || blogError) return new Response("Sitemap unavailable", { status: 500 });
 
-        // Static pages do not currently expose per-page timestamps.
-        const today = new Date().toISOString().slice(0, 10);
         const urls = [
-          ...STATIC.map((path) => urlEntry(path, today)),
-          ...(products ?? []).map((product) => urlEntry(`/shop/${encodeURIComponent(product.slug)}`, product.updated_at ? new Date(product.updated_at).toISOString().slice(0, 10) : today)),
-          ...(posts ?? []).map((post) => urlEntry(`/blog/${encodeURIComponent(post.slug)}`, post.updated_at ? new Date(post.updated_at).toISOString().slice(0, 10) : today)),
+          ...STATIC.map((path) => urlEntry(path)),
+          ...(products ?? []).map((product) => urlEntry(`/shop/${encodeURIComponent(product.slug)}`, product.updated_at ? new Date(product.updated_at).toISOString().slice(0, 10) : null)),
+          ...(posts ?? []).map((post) => urlEntry(`/blog/${encodeURIComponent(post.slug)}`, post.updated_at ? new Date(post.updated_at).toISOString().slice(0, 10) : null)),
         ];
         const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join("")}</urlset>`;
         return new Response(xml, {
