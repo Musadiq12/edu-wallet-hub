@@ -311,13 +311,16 @@ function ProductDetail() {
                   (reviews.data ?? []).map((review) => <article key={review.id} className="block w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-border p-4">
                     <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <div className="flex text-amber-500" aria-label={`${review.rating} out of 5 stars`}>{Array.from({ length: 5 }, (_, i) => <Star key={i} className="h-4 w-4" fill={i < review.rating ? "currentColor" : "none"} />)}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex text-amber-500" aria-label={`${review.rating} out of 5 stars`}>{Array.from({ length: 5 }, (_, i) => <Star key={i} className="h-4 w-4" fill={i < review.rating ? "currentColor" : "none"} />)}</div>
+                          {review.is_sample && <Badge variant="outline">Sample review</Badge>}
+                        </div>
                         {review.title && <h3 className="mt-2 break-words font-semibold [overflow-wrap:anywhere]">{review.title}</h3>}
                       </div>
                       <time className="max-w-full shrink-0 text-xs text-muted-foreground" dateTime={review.created_at}>{new Date(review.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</time>
                     </div>
                     <p className="mt-2 block w-full min-w-0 max-w-full whitespace-pre-wrap break-all text-sm leading-6 text-muted-foreground [overflow-wrap:anywhere]">{review.comment}</p>
-                    <p className="mt-3 text-xs font-medium text-foreground">{review.display_name || "Student"}</p>
+                    <p className="mt-3 text-xs font-medium text-foreground">{review.is_sample ? "Illustrative sample — not customer feedback" : review.display_name || "Student"}</p>
                   </article>)}
               </div>
               {user && myReview.data && !editingReview ? <div className="mt-6 rounded-xl border border-border bg-surface p-4">
