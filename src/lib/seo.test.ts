@@ -20,6 +20,10 @@ describe("SEO text sanitizers", () => {
     expect(buildTitle(["X", "Y", BRAND], 60)).not.toMatch(/ {2,}/);
   });
 
+  it("replaces legacy brand suffixes with the canonical brand", () => {
+    expect(buildTitle(["Prepare for Competitive Exams | EduWallet Hub", BRAND])).toBe("Prepare for Competitive Exams | EduWallet");
+  });
+
   it("keeps the brand and respects the title length", () => {
     const title = buildTitle(["X".repeat(105), "EduWallet"], 60);
     expect(title.length).toBeLessThanOrEqual(60);
