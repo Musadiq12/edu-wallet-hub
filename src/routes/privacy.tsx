@@ -17,7 +17,8 @@ export const Route = createFileRoute("/privacy")({
       { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
     links: [{ rel: "canonical", href: new URL("/privacy", SITE_URL).toString() }],
-  }),  component: PrivacyPage,
+  }),
+  component: PrivacyPage,
 });
 
 function PrivacyPage() {
