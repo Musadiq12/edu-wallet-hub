@@ -15,22 +15,26 @@ export const Route = createFileRoute("/shop/")({
     category:
       typeof search['category'] === "string" && search['category'] ? search['category'] : undefined,
   }),
-  head: () => ({
-    meta: [
-      { title: "Exam Study Resources" },
-      {
-        name: "description",
-        content:
-          "Browse exam-focused notes, guess papers, solved papers, assignment guidance and digital study resources across popular Indian exams.",
-      },
-      { property: "og:title", content: "Exam Study Resources" },
-      {
-        property: "og:description",
-        content: "Browse exam-focused notes, guess papers, solved papers, assignment guidance and digital study resources across popular Indian exams.",
-      },
-    ],
-    links: [{ rel: "canonical", href: "/shop" }],
-  }),
+  head: ({ match }) => {
+    const search = match.search as ShopSearch;
+    const term = search.q?.trim();
+    const category = search.category?.trim();
+    const label = term ? term.toUpperCase() : category ? category.replace(/-/g, " ").replace(/\\b\\w/g, (c) => c.toUpperCase()) : "";
+    const title = label ? `${label} Study Resources | EduWallet` : "Exam Study Resources | EduWallet";
+    const description = label
+      ? `Browse ${label} study notes, solved papers, exam guides and digital learning resources on EduWallet.`
+      : "Browse exam-focused notes, guess papers, solved papers, assignment guidance and digital study resources across popular Indian exams.";
+    return {
+      meta: [
+        { title },
+        { name: "description", content: description },
+        { property: "og:title", content: title },
+        { property: "og:description", content: description },
+        ...((term || category) ? [{ name: "robots", content: "noindex,follow" }] : []),
+      ],
+      links: [{ rel: "canonical", href: "/shop" }],
+    };
+  },
   component: Shop,
 });
 
