@@ -127,7 +127,7 @@ function ProductDetail() {
 
   const ratingData = reviewSummary.data ?? { average: 0, count: 0, distribution: [0, 0, 0, 0, 0] };
   const schemaDescription = (p.description || p.whats_included || "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 300);
-  const coverUrl = p.cover_image ? (typeof window === "undefined" ? undefined : publicImageUrl("product-covers", p.cover_image) ?? undefined) : undefined;
+  const coverUrl = p.cover_image ? (publicImageUrl("product-covers", p.cover_image) ?? undefined) : undefined;
   const canonicalUrl = new URL(`/shop/${encodeURIComponent(p.slug)}`, SITE_URL).toString();
   const productSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -175,11 +175,11 @@ function ProductDetail() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: productBreadcrumb }} />
       <div className="page-container py-8 sm:py-12">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-          <Link to="/shop" className="hover:text-foreground">
-            Shop
-          </Link>
-          <span className="mx-1.5">/</span>
-          <span>{category?.name ?? "Resource"}</span>
+          <Link to="/" className="hover:text-foreground">Home</Link>
+          <span aria-hidden="true">/</span>
+          <Link to="/shop" className="hover:text-foreground">Shop</Link>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">{p.title}</span>
         </nav>
 
         <div className="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(320px,0.82fr)_minmax(0,1.18fr)] lg:gap-12">
