@@ -55,6 +55,7 @@ export const Route = createFileRoute("/shop/$slug")({
       { property: "og:title", content: title },
       { property: "og:description", content: desc },
       { property: "og:type", content: "product" },
+      { property: "og:url", content: absoluteUrl(`/shop/${params.slug}`) },
       { name: "twitter:card", content: loaderData?.ogImage ? "summary_large_image" : "summary" },
     ];
     if (loaderData?.ogImage) {
