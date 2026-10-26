@@ -8,6 +8,10 @@ const BASE = (
 ).replace(/\/+$/, "");
 const STATIC = ["/", "/shop", "/blog", "/free-resources", "/about", "/contact", "/terms", "/privacy"];
 
+function xmlEscape(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/\x27/g, "&apos;");
+}
+
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
@@ -32,12 +36,12 @@ export const Route = createFileRoute("/sitemap.xml")({
           .range(0, 4999);
         if (blogError) return new Response("Sitemap unavailable", { status: 500 });
         const urls = [
-          ...STATIC.map((p) => `<url><loc>${BASE}${p}</loc></url>`),
+          ...STATIC.map((p) => `<url><loc>${xmlEscape(`${BASE}${p}`)}</loc></url>`),
           ...(data ?? []).map((r) =>
-            `<url><loc>${BASE}/shop/${encodeURIComponent(r.slug)}</loc>${r.updated_at ? `<lastmod>${new Date(r.updated_at).toISOString()}</lastmod>` : ""}</url>`,
+            `<url><loc>${xmlEscape(`${BASE}/shop/${encodeURIComponent(r.slug)}`)}</loc>${r.updated_at ? `<lastmod>${new Date(r.updated_at).toISOString()}</lastmod>` : ""}</url>`,
           ),
           ...(posts ?? []).map((r) =>
-            `<url><loc>${BASE}/blog/${encodeURIComponent(r.slug)}</loc>${r.updated_at ? `<lastmod>${new Date(r.updated_at).toISOString()}</lastmod>` : ""}</url>`,
+            `<url><loc>${xmlEscape(`${BASE}/blog/${encodeURIComponent(r.slug)}`)}</loc>${r.updated_at ? `<lastmod>${new Date(r.updated_at).toISOString()}</lastmod>` : ""}</url>`,
           ),
         ];
         const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.join("")}</urlset>`;
