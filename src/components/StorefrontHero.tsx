@@ -111,7 +111,7 @@ export function StorefrontHero() {
               <>
                 <img
                   src={slide.imageUrl}
-                  alt={`EduWallet banner slide ${active + 1}`}
+                  alt={`EduWallet exam study resources banner, slide ${active + 1}`}
                   className="hidden h-auto w-full max-w-full object-contain sm:block"
                   fetchPriority={active === 0 ? "high" : "auto"}
                 />
