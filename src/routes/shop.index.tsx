@@ -10,6 +10,13 @@ import { absoluteUrl } from "@/lib/seo";
 type ShopSearch = { q?: string | undefined; category?: string | undefined };
 
 export const Route = createFileRoute("/shop/")({
+  loader: async ({ context }) => {
+    const [products, categories] = await Promise.all([
+      context.queryClient.ensureQueryData(productsQuery()),
+      context.queryClient.ensureQueryData(categoriesQuery()),
+    ]);
+    return { products, categories };
+  },
   validateSearch: (search: Record<string, unknown>): ShopSearch => ({
     q: typeof search["q"] === "string" && search["q"] ? search["q"] : undefined,
     category:
