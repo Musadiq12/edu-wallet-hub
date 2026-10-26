@@ -186,17 +186,31 @@
   }
 
   html {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100%;
+    overflow-x: clip;
     -webkit-text-size-adjust: 100%;
     font-family: var(--font-sans);
   }
 
   body {
+    width: 100%;
+    max-width: 100%;
     min-height: 100vh;
+    min-height: 100dvh;
+    margin: 0;
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
     letter-spacing: var(--letter-spacing);
-    overflow-x: hidden;
+    overflow-x: clip;
+    overscroll-behavior-x: none;
+  }
+
+  /* Keep media inside the phone viewport; don't disable user pinch-zoom. */
+  img, video, canvas, iframe {
+    max-width: 100%;
   }
 
   a, button, input, textarea, select { -webkit-tap-highlight-color: transparent; }
