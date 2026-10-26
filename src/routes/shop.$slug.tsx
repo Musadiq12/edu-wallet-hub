@@ -18,6 +18,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { categoriesQuery, productBySlugQuery, signedUrl } from "@/lib/catalog";
 import { discountPercent, effectivePrice, formatPrice, hasDiscount } from "@/lib/format";
 import { siteConfig } from "@/config/site";
+import { SITE_URL, breadcrumbJson, jsonLd } from "@/lib/seo";
 import { toast } from "sonner";
 
 function trimDesc(text: string, max = 155) {
@@ -39,7 +40,7 @@ export const Route = createFileRoute("/shop/$slug")({
   },
   head: ({ params, loaderData }) => {
     const p = loaderData?.product;
-    const title = p ? `${p.title} — Edu Wallet` : "Study resource — Edu Wallet";
+    const title = p ? `${p.title} | EduWallet Study Resource` : "Study Resource Details | EduWallet";
     const desc = p
       ? trimDesc(
           p.description ||
@@ -47,20 +48,24 @@ export const Route = createFileRoute("/shop/$slug")({
             `${p.title}: ${p.product_type === "physical" ? "physical study book or printed notes" : "digital exam study resource"} from Edu Wallet.`,
         )
       : "Digital exam study resource from Edu Wallet. See what's included, format and pricing before you buy.";
+    const canonical = new URL(`/shop/${encodeURIComponent(params.slug)}`, SITE_URL).toString();
     const meta: Array<Record<string, string>> = [
       { title },
       { name: "description", content: desc },
       { property: "og:title", content: title },
       { property: "og:description", content: desc },
       { property: "og:type", content: "product" },
+      { property: "og:url", content: canonical },
       { name: "twitter:card", content: loaderData?.ogImage ? "summary_large_image" : "summary" },
+      { name: "twitter:title", content: title },
+      { name: "twitter:description", content: desc },
     ];
     if (loaderData?.ogImage) {
       meta.push({ property: "og:image", content: loaderData.ogImage });
       meta.push({ name: "twitter:image", content: loaderData.ogImage });
     }
-    if (!p) meta.push({ name: "robots", content: "noindex" });
-    return { meta, links: [{ rel: "canonical", href: `/shop/${params.slug}` }] };
+    if (!p) meta.push({ name: "robots", content: "noindex, follow" });
+    return { meta, links: [{ rel: "canonical", href: canonical }] };
   },
   component: ProductDetail,
 });
@@ -123,10 +128,13 @@ function ProductDetail() {
   const ratingData = reviewSummary.data ?? { average: 0, count: 0, distribution: [0, 0, 0, 0, 0] };
   const schemaDescription = (p.description || p.whats_included || "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 300);
   const coverUrl = p.cover_image ? (typeof window === "undefined" ? undefined : publicImageUrl("product-covers", p.cover_image) ?? undefined) : undefined;
+  const canonicalUrl = new URL(`/shop/${encodeURIComponent(p.slug)}`, SITE_URL).toString();
   const productSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Product",
+    "@id": `${canonicalUrl}#product`,
     name: p.title,
+    url: canonicalUrl,
     description: schemaDescription,
     ...(coverUrl ? { image: coverUrl } : {}),
     offers: { "@type": "Offer", price: String(effectivePrice(p)), priceCurrency: "INR", availability: "https://schema.org/InStock" },
@@ -156,9 +164,15 @@ function ProductDetail() {
     } finally { setReviewSaving(false); }
   };
 
+  const productBreadcrumb = breadcrumbJson([
+    { name: "Home", path: "/" },
+    { name: "Shop", path: "/shop" },
+    { name: p.title, path: `/shop/${p.slug}` },
+  ]);
   return (
     <div className="min-h-screen bg-background">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema).replace(/</g, "\\u003c") }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd(productSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: productBreadcrumb }} />
       <div className="page-container py-8 sm:py-12">
         <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
           <Link to="/shop" className="hover:text-foreground">
