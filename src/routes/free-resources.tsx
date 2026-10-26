@@ -22,7 +22,8 @@ export const Route = createFileRoute("/free-resources")({
       { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
     links: [{ rel: "canonical", href: new URL("/free-resources", SITE_URL).toString() }],
-  }),  component: FreeResources,
+  }),
+  component: FreeResources,
 });
 
 function FreeResources() {
