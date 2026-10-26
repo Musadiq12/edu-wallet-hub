@@ -1,16 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
 import { BRAND, buildMeta, buildTitle } from "@/lib/seo";
 
 export const Route = createFileRoute("/about")({
-  head: () => ({
+  loader: async () => {
+    const { data } = await supabase.from("site_settings").select("value").eq("key", "seo_title_about").maybeSingle();
+    return { seoTitle: data?.value?.trim() || null };
+  },
+  head: ({ loaderData }) => {
+    const title = loaderData?.seoTitle || buildTitle(["About", BRAND]);
+    return ({
     meta: [
-      { title: buildTitle(["About", BRAND]) },
+      { title },
       { name: "description", content: buildMeta("Learn about EduWallet, its educational resources, access process, and student-focused mission.") },
-      { property: "og:title", content: buildTitle(["About", BRAND]) },
+      { property: "og:title", content: title },
       { property: "og:description", content: buildMeta("Learn about EduWallet and how its digital study resources support students.") },
     ],
     links: [{ rel: "canonical", href: "/about" }],
-  }),
+  });
+  },
   component: AboutPage,
 });
 
