@@ -12,6 +12,13 @@ const BLOG_DESCRIPTION =
   "Exam preparation tips, strategies and study guides for NEET, JEE, UPSC, SSC and Banking from the EduWallet team.";
 
 export const Route = createFileRoute("/blog/")({
+  loader: async ({ context }) => {
+    const [posts, categories] = await Promise.all([
+      context.queryClient.ensureQueryData(publishedPostsQuery()),
+      context.queryClient.ensureQueryData(postCategoriesQuery()),
+    ]);
+    return { posts, categories };
+  },
   head: () => ({
     meta: [
       { title: BLOG_TITLE },
