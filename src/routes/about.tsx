@@ -1,22 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { SITE_URL, breadcrumbJson, jsonLd } from "@/lib/seo";
+import { SITE_URL, breadcrumbJson } from "@/lib/seo";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About EduWallet" },
-      { name: "description", content: "Learn about EduWallet, its educational resources, access process, and student-focused mission." },
-      { property: "og:title", content: "About EduWallet" },
-      { property: "og:description", content: "Learn about EduWallet and how its digital study resources support students." },
-    ],
+      { title: "About EduWallet | Affordable Exam Study Resources" },
+      { name: "description", content: "Learn how EduWallet helps students find affordable exam notes, solved papers and practical study resources for competitive exams." },
+      { property: "og:title", content: "About EduWallet | Affordable Exam Study Resources" },
+      { property: "og:description", content: "Learn how EduWallet helps students find affordable exam notes, solved papers and practical study resources for competitive exams." },
+      { property: "og:type", content: "website" },
       { property: "og:url", content: new URL("/about", SITE_URL).toString() },
+      { property: "og:image", content: new URL("/og-image.svg", SITE_URL).toString() },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "About EduWallet" },
-      { name: "twitter:description", content: siteConfig.shortDescription },
+      { name: "twitter:title", content: "About EduWallet | Affordable Exam Study Resources" },
+      { name: "twitter:description", content: "Learn how EduWallet helps students find affordable exam notes, solved papers and practical study resources for competitive exams." },
+      { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
     links: [{ rel: "canonical", href: new URL("/about", SITE_URL).toString() }],
-  }),
-  component: AboutPage,
+  }),  component: AboutPage,
 });
 
 function AboutPage() {
