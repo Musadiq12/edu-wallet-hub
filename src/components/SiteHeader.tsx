@@ -107,9 +107,9 @@ export function SiteHeader() {
       return;
     }
     if (event.key !== "Tab") return;
-    const focusable = event.currentTarget.querySelectorAll<HTMLElement>(
+    const focusable = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(
       'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    );
+    )).filter((element) => !element.closest("[hidden]"));
     if (!focusable.length) return;
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
