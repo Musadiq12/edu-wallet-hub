@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, BriefcaseBusiness, Building2, FileText, GraduationCap, Landmark, Scale, Sparkles } from "lucide-react";
+import { ArrowRight, BookOpen, BriefcaseBusiness, Building2, FileText, GraduationCap, Landmark, Scale, Search } from "lucide-react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { StorefrontHero } from "@/components/StorefrontHero";
@@ -99,13 +99,13 @@ function Home() {
                 key={title}
                 to="/shop"
                 search={{ q: query, category: undefined }}
-                className="group rounded-xl border border-border bg-card p-4 transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-md"
+                className="group rounded-xl border border-border/80 bg-card p-4 transition-colors hover:border-primary/40 hover:bg-primary/[0.025]"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                   <Icon className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <p className="mt-3 text-sm font-semibold">{title}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">Study resources</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">Browse materials</p>
               </Link>
             ))}
           </div>
@@ -177,12 +177,12 @@ function Home() {
 
       <section className="section-y">
         <div className="page-container">
-          <div className="rounded-2xl border border-border bg-card p-6 sm:p-8">
+          <div className="rounded-2xl border border-border bg-card p-6 sm:p-8 lg:p-10">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex items-center gap-2 text-primary">
-                  <Sparkles className="h-5 w-5" aria-hidden="true" />
-                  <span className="text-sm font-semibold">Need something specific?</span>
+                  <Search className="h-5 w-5" aria-hidden="true" />
+                  <span className="text-sm font-semibold">Looking for something specific?</span>
                 </div>
                 <h2 className="mt-2 text-2xl font-semibold tracking-tight">Browse the complete EduWallet catalog.</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
@@ -208,7 +208,7 @@ function Home() {
             <div><p className="font-semibold">Digital-first</p><p className="mt-1 text-muted-foreground">Resources are delivered digitally after successful purchase verification.</p></div>
           </div>
           <div className="flex gap-3">
-            <Sparkles className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            <GraduationCap className="mt-0.5 h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
             <div><p className="font-semibold">Exam-focused</p><p className="mt-1 text-muted-foreground">Organized around practical study and revision needs.</p></div>
           </div>
           <div className="flex gap-3">

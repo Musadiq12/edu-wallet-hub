@@ -1,10 +1,29 @@
 import { readFile, writeFile } from "node:fs/promises";
 
-const configPath = ".output/server/wrangler.json";
-const config = JSON.parse(await readFile(configPath, "utf8"));
+const configPaths = [".output/server/wrangler.json", "dist/_worker.js/wrangler.json"];
+let configPath;
+let rawConfig;
 
-// Wrangler preview requires an explicit previews block. Nitro generates this
-// file and currently omits the block, so add the empty default after each build.
+for (const candidate of configPaths) {
+  try {
+    rawConfig = await readFile(candidate, "utf8");
+    configPath = candidate;
+    break;
+  } catch (error) {
+    if (!error || typeof error !== "object" || !("code" in error) || error.code !== "ENOENT") {
+      throw error;
+    }
+  }
+}
+
+if (!configPath || !rawConfig) {
+  throw new Error("Could not find generated Wrangler config in .output/server or dist/_worker.js.");
+}
+
+const config = JSON.parse(rawConfig);
+
+// Wrangler preview requires an explicit previews block.
+// Nitro output location differs between Worker and Pages build environments.
 if (!config.previews || typeof config.previews !== "object" || Array.isArray(config.previews)) {
   config.previews = {};
   await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
