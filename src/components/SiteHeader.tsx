@@ -206,36 +206,40 @@ export function SiteHeader() {
 
           <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5 pt-4 sm:px-6">
             <div className="mx-auto flex w-full max-w-lg flex-col gap-3">
-              <Link
-                to={user ? "/library" : "/login"}
-                onClick={closeMenu}
-                className="flex min-h-[84px] items-center gap-4 rounded-md bg-emerald-800 px-4 py-4 text-white transition-colors hover:bg-emerald-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2"
-              >
-                <Layers3 aria-hidden="true" className="size-6 shrink-0" />
-                <span className="min-w-0 flex-1">
-                  <span className="block text-lg font-semibold leading-6">My Library</span>
-                  <span className="mt-1 block text-sm text-emerald-50">{user ? "Your purchased resources" : "Sign in to access your resources"}</span>
-                </span>
-                <ChevronRight aria-hidden="true" className="size-5 shrink-0" />
-              </Link>
+              <nav aria-label="Primary menu links" className="divide-y divide-border/80">
+                <Link
+                  to={user ? "/library" : "/login"}
+                  onClick={closeMenu}
+                  className="flex min-h-14 items-center gap-3 rounded-md px-3 py-3 text-base font-semibold transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                >
+                  <Layers3 aria-hidden="true" className="size-5 shrink-0 text-emerald-800 dark:text-emerald-300" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block leading-5">My Library</span>
+                    <span className="mt-0.5 block text-xs font-normal text-muted-foreground">{user ? "Your purchased resources" : "Sign in to access your resources"}</span>
+                  </span>
+                  <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
+                </Link>
 
-              <Link
-                to="/blog"
-                onClick={closeMenu}
-                aria-current={isBlogActive ? "page" : undefined}
-                className={cn("flex min-h-14 items-center justify-between border-b border-border px-1 py-3 text-base font-semibold transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2", isBlogActive && "text-primary")}
-              >
-                <span className="flex items-center gap-3"><BookOpen aria-hidden="true" className="size-5" />Blog & study advice</span>
-                <ChevronRight aria-hidden="true" className="size-5 text-muted-foreground" />
-              </Link>
+                <Link
+                  to="/blog"
+                  onClick={closeMenu}
+                  aria-current={isBlogActive ? "page" : undefined}
+                  className={cn("flex min-h-14 items-center gap-3 rounded-md px-3 py-3 text-base font-semibold transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset", isBlogActive && "text-primary")}
+                >
+                  <BookOpen aria-hidden="true" className="size-5 shrink-0" />
+                  <span className="flex-1">Blog &amp; study advice</span>
+                  <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
+                </Link>
 
-              <Link
-                to="/shop"
-                onClick={closeMenu}
-                className="flex min-h-12 items-center justify-between rounded-md bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-              >
-                <span>Browse the shop</span><ChevronRight aria-hidden="true" className="size-4" />
-              </Link>
+                <Link
+                  to="/shop"
+                  onClick={closeMenu}
+                  className="flex min-h-14 items-center gap-3 rounded-md px-3 py-3 text-base font-semibold transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+                >
+                  <span className="flex-1">Browse the shop</span>
+                  <ChevronRight aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
+                </Link>
+              </nav>
 
               <section className="border-t border-border pt-3" aria-labelledby="mobile-explore-heading">
                 <button
@@ -260,10 +264,11 @@ export function SiteHeader() {
 
               <section className="border-t border-border pt-3" aria-labelledby="mobile-company-heading">
                 <h2 id="mobile-company-heading" className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">About EduWallet</h2>
-                <div className="grid grid-cols-2 gap-x-5">
+                <div className="divide-y divide-border/70">
                   {[...companyLinks, ...companyLinks2].map((item) => (
-                    <Link key={item.title} to={item.href as "/"} onClick={closeMenu} className="flex min-h-11 items-center border-b border-border/70 py-2 text-sm text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                      {item.title}
+                    <Link key={item.title} to={item.href as "/"} onClick={closeMenu} className="flex min-h-12 items-center justify-between gap-3 rounded-md px-3 py-3 text-sm text-foreground transition-colors hover:bg-muted/70 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset">
+                      <span>{item.title}</span>
+                      <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
                     </Link>
                   ))}
                 </div>
@@ -272,19 +277,19 @@ export function SiteHeader() {
           </main>
 
           <footer className="shrink-0 border-t border-border bg-background px-5 pb-[max(12px,env(safe-area-inset-bottom))] pt-3 sm:px-6">
-            <div className="mx-auto flex w-full max-w-lg items-center gap-3">
+            <div className="mx-auto flex w-full max-w-lg flex-col gap-2">
               {user ? (
                 <>
-                  {isAdmin && <Link to="/admin" onClick={closeMenu} className="flex min-h-12 items-center px-2 text-sm font-medium text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">Admin</Link>}
-                  <Button variant="outline" className="ml-auto min-h-12 border-red-700 bg-transparent px-4 text-red-700 hover:bg-red-50 hover:text-red-800 dark:border-red-400 dark:text-red-300 dark:hover:bg-red-950" onClick={() => { closeMenu(); void signOutCleanly(); }}>
+                  {isAdmin && <Link to="/admin" onClick={closeMenu} className="flex min-h-12 items-center justify-between rounded-md px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset">Admin <ChevronRight aria-hidden="true" className="size-4" /></Link>}
+                  <Button className="min-h-12 w-full justify-center border border-red-200 bg-[#FEE2E2] px-4 text-red-900 shadow-none hover:bg-[#FECACA] hover:text-red-950 focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2 dark:border-red-900 dark:bg-red-950 dark:text-red-100 dark:hover:bg-red-900" onClick={() => { closeMenu(); void signOutCleanly(); }}>
                     <LogOut aria-hidden="true" className="mr-2 size-4" />Logout
                   </Button>
                 </>
               ) : (
-                <>
+                <div className="flex gap-2">
                   <Button variant="outline" className="min-h-12 flex-1" asChild><Link to="/login" onClick={closeMenu}>Log in</Link></Button>
                   <Button className="min-h-12 flex-1" asChild><Link to="/register" onClick={closeMenu}>Create account</Link></Button>
-                </>
+                </div>
               )}
             </div>
           </footer>
