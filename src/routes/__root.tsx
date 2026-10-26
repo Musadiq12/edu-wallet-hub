@@ -10,7 +10,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config/site";
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl, BRAND, buildMeta, buildTitle } from "@/lib/seo";
 import { defaultSettings, settingsQuery, useSiteSettings } from "@/lib/settings";
 import { supabase } from "@/integrations/supabase/client";
 import { CookieConsent } from "@/components/CookieConsent";
@@ -34,15 +34,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: ({ matches }) => ({
     meta: [
       { charSet: "utf-8" }, { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Study Resources | EduWallet" },
-      { name: "description", content: siteConfig.shortDescription },
-      { property: "og:site_name", content: "EduWallet" },
+      { title: buildTitle(["Study Resources", BRAND]) },
+      { name: "description", content: buildMeta(siteConfig.shortDescription) },
+      { property: "og:site_name", content: BRAND },
       { property: "og:type", content: "website" },
       { property: "og:image", content: absoluteUrl("/og-image.svg") },
       { property: "og:url", content: absoluteUrl("/") },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "EduWallet" },
-      { name: "twitter:description", content: siteConfig.shortDescription },
+      { name: "twitter:title", content: BRAND },
+      { name: "twitter:description", content: buildMeta(siteConfig.shortDescription) },
       { name: "twitter:image", content: absoluteUrl("/og-image.svg") },
     ],
     links: [
@@ -74,21 +74,9 @@ function Analytics() {
 }
 
 function RootShell({ children }: { children: ReactNode }) {
-  return <html lang="en"><head><HeadContent /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": [{ "@type": "Organization", "@id": absoluteUrl("/#organization"), name: "EduWallet", url: absoluteUrl("/"), logo: absoluteUrl("/eduwallet-logo.svg"), description: "Independent educational resource platform offering exam notes, solved papers and study resources." }, { "@type": "WebSite", "@id": absoluteUrl("/#website"), url: absoluteUrl("/"), name: "EduWallet", publisher: { "@id": absoluteUrl("/#organization") } }] }).replace(/</g, "\\u003c") }} /></head><body>{children}<Scripts /></body></html>;
+  return <html lang="en"><head><HeadContent /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": [{ "@type": "Organization", "@id": absoluteUrl("/#organization"), name: BRAND, url: absoluteUrl("/"), logo: absoluteUrl("/eduwallet-logo.svg"), description: "Independent educational resource platform offering exam notes, solved papers and study resources." }, { "@type": "WebSite", "@id": absoluteUrl("/#website"), url: absoluteUrl("/"), name: BRAND, publisher: { "@id": absoluteUrl("/#organization") } }] }).replace(/</g, "\\u003c") }} /></head><body>{children}<Scripts /></body></html>;
 }
 
-function BrandTitleSync() {
-  const { brandName, tagline } = useSiteSettings();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  useEffect(() => {
-    const fb = siteConfig.fallbackBrand;
-    let t = document.title;
-    if (tagline && fb.tagline !== tagline) t = t.split(fb.tagline).join(tagline);
-    if (brandName && fb.brandName !== brandName) t = t.split(fb.brandName).join(brandName);
-    if (t !== document.title) document.title = t;
-  }, [brandName, tagline, pathname]);
-  return null;
-}
 
 function RecoveryRedirectHandler() {
   useEffect(() => {
@@ -115,7 +103,6 @@ function RootComponent() {
 
   return <QueryClientProvider client={queryClient}>
     <RecoveryRedirectHandler />
-    <BrandTitleSync />
     <Analytics />
     <div className={isAdminRoute ? "min-h-screen" : isAuthPage ? "min-h-screen" : "flex min-h-screen flex-col"}>
       {!isAuthPage && !isAdminRoute && <SiteHeader />}
