@@ -27,13 +27,14 @@ export function sanitizeText(s: string): string {
 export function buildTitle(parts: Array<string | undefined | null>, maxLen = 60): string {
   const segments = parts
     .filter((part): part is string => Boolean(part))
-    .map(sanitizeText)
+    .map((part) => sanitizeText(part.replace(/\\s*\\|\\s*EduWallet(?:\\s+Hub)?\\s*$/i, "")))
     .filter(Boolean);
   if (!segments.length) return BRAND;
 
   // The final segment is always the brand; trim other context in the requested
   // order, then shorten an unusually long remaining segment as a last resort.
-  const brand = segments.pop() || BRAND;
+  const requestedBrand = segments.pop() || BRAND;
+  const brand = /eduwallet/i.test(requestedBrand) ? BRAND : requestedBrand;
   let titleParts = segments;
   const compose = () => [...titleParts, brand].filter(Boolean).join(" | ");
 
