@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -40,16 +40,10 @@ export const Route = createFileRoute("/blog/")({
 function Page() {
   const { posts: initialPosts, categories: initialCategories } = Route.useLoaderData();
   const [rawSearch, setRawSearch] = useState("");
-  const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
 
-  useEffect(() => {
-    const timer = setTimeout(() => setSearch(rawSearch), 300);
-    return () => clearTimeout(timer);
-  }, [rawSearch]);
-
   const filteredPosts = (initialPosts ?? []).filter((post) => {
-    const term = search.trim().toLowerCase();
+    const term = rawSearch.trim().toLowerCase();
     return (!term || [post.title, post.excerpt].some((value) => value?.toLowerCase().includes(term))) &&
       (!category || post.category === category);
   });
@@ -87,7 +81,7 @@ function Page() {
               <div className="p-5">
                 <p className="text-xs uppercase text-primary">{post.category}</p>
                 <h2 className="mt-2 text-lg font-semibold">
-                  <Link to={postUrl(post.slug) as "/blog/$slug"} params={{ slug: post.slug }}>{post.title}</Link>
+                  <a href={postUrl(post.slug)}>{post.title}</a>
                 </h2>
                 <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{post.excerpt}</p>
                 <p className="mt-4 text-xs text-muted-foreground">{readingTimeMinutes(post.excerpt)} min read</p>
