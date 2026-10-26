@@ -9,15 +9,15 @@ export const Route = createFileRoute("/about")({
   },
   head: ({ loaderData }) => {
     const title = loaderData?.seoTitle || buildTitle(["About", BRAND]);
-    return ({
-    meta: [
+    return {
+      meta: [
       { title },
       { name: "description", content: buildMeta("Learn about EduWallet, its educational resources, access process, and student-focused mission.") },
       { property: "og:title", content: title },
       { property: "og:description", content: buildMeta("Learn about EduWallet and how its digital study resources support students.") },
     ],
-    links: [{ rel: "canonical", href: "/about" }],
-  });
+      links: [{ rel: "canonical", href: "/about" }],
+    };
   },
   component: AboutPage,
 });
