@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
 export const SITE_URL = (
   import.meta.env["VITE_SITE_URL"] || "https://edu-wallet-hub.designeroutletmedia.workers.dev"
 ).replace(/\/+$/, "");
