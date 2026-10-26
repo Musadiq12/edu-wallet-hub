@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { siteConfig } from "@/config/site";
 import { BRAND, buildTitle } from "@/lib/seo";
 import { friendlyError } from "@/lib/admin";
 
