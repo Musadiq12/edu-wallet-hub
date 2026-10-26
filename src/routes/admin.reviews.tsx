@@ -13,9 +13,10 @@ import {
 import { friendlyError } from "@/lib/admin";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin, useSession } from "@/lib/auth";
+import { BRAND, buildTitle } from "@/lib/seo";
 
 export const Route = createFileRoute("/admin/reviews")({
-  head: () => ({ meta: [{ title: "Reviews — EduWallet Admin" }, { name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({ meta: [{ title: buildTitle(["Reviews", "Admin", BRAND]) }, { name: "robots", content: "noindex, nofollow" }] }),
   component: AdminReviews,
 });
 
