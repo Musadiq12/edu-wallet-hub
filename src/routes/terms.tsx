@@ -4,25 +4,20 @@ import { SITE_URL, breadcrumbJson } from "@/lib/seo";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms & Conditions — EduWallet" },
-      {
-        name: "description",
-        content: "Terms and conditions for using EduWallet and purchasing its digital educational resources.",
-      },
-      { property: "og:title", content: "Terms & Conditions — EduWallet" },
-      {
-        property: "og:description",
-        content: "Terms and conditions for EduWallet accounts, purchases, payments, delivery, and digital resources.",
-      },
-    ],
+      { title: "Terms and Conditions for EduWallet Study Resources" },
+      { name: "description", content: "Read EduWallet terms for accounts, educational resources, orders, payment verification, digital delivery, permitted use and support." },
+      { property: "og:title", content: "Terms and Conditions for EduWallet Study Resources" },
+      { property: "og:description", content: "Read EduWallet terms for accounts, educational resources, orders, payment verification, digital delivery, permitted use and support." },
+      { property: "og:type", content: "website" },
       { property: "og:url", content: new URL("/terms", SITE_URL).toString() },
+      { property: "og:image", content: new URL("/og-image.svg", SITE_URL).toString() },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Terms & Conditions — EduWallet" },
-      { name: "twitter:description", content: siteConfig.shortDescription },
+      { name: "twitter:title", content: "Terms and Conditions for EduWallet Study Resources" },
+      { name: "twitter:description", content: "Read EduWallet terms for accounts, educational resources, orders, payment verification, digital delivery, permitted use and support." },
+      { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
     links: [{ rel: "canonical", href: new URL("/terms", SITE_URL).toString() }],
-  }),
-  component: TermsPage,
+  }),  component: TermsPage,
 });
 
 function TermsPage() {
