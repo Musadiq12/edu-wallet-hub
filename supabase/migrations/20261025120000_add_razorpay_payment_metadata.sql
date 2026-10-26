@@ -1,4 +1,4 @@
--- Razorpay payment metadata for existing EduWallet Hub orders.
+-- Razorpay payment metadata for existing EduWallet orders.
 -- This migration is additive: it preserves the current manual-UPI workflow.
 begin;
 

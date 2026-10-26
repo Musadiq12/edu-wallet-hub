@@ -5,33 +5,55 @@ import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/ProductCard";
 import { EmptyState, LoadingGrid } from "@/components/EmptyState";
 import { categoriesQuery, matchesSearch, productsQuery } from "@/lib/catalog";
+import { absoluteUrl } from "@/lib/seo";
 
 type ShopSearch = { q?: string | undefined; category?: string | undefined };
 
 export const Route = createFileRoute("/shop/")({
+  loader: async ({ context }) => {
+    const [products, categories] = await Promise.all([
+      context.queryClient.ensureQueryData(productsQuery()),
+      context.queryClient.ensureQueryData(categoriesQuery()),
+    ]);
+    return { products, categories };
+  },
   validateSearch: (search: Record<string, unknown>): ShopSearch => ({
-    q: typeof search['q'] === "string" && search['q'] ? search['q'] : undefined,
+    q: typeof search["q"] === "string" && search["q"] ? search["q"] : undefined,
     category:
-      typeof search['category'] === "string" && search['category'] ? search['category'] : undefined,
+      typeof search["category"] === "string" && search["category"] ? search["category"] : undefined,
   }),
   head: ({ match }) => {
     const search = match.search as ShopSearch;
     const term = search.q?.trim();
     const category = search.category?.trim();
-    const label = term ? term.toUpperCase() : category ? category.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "";
-    const title = label ? `${label} Study Resources | EduWallet` : "Exam Study Resources | EduWallet";
+    const label = term
+      ? term.toUpperCase()
+      : category
+        ? category.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
+        : "";
+    const title = label
+      ? `${label} Study Resources | EduWallet`
+      : "Buy Exam Notes, Solved Papers & Study Material | EduWallet";
     const description = label
       ? `Browse ${label} study notes, solved papers, exam guides and digital learning resources on EduWallet.`
-      : "Browse exam-focused notes, guess papers, solved papers, assignment guidance and digital study resources across popular Indian exams.";
+      : "Buy exam notes, solved papers, guess papers and study material for NEET, JEE, UPSC, SSC CGL, Banking and CLAT. Compare formats and product details.";
+    const isFiltered = Boolean(term || category);
     return {
       meta: [
         { title },
         { name: "description", content: description },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
-        ...((term || category) ? [{ name: "robots", content: "noindex,follow" }] : []),
+        { property: "og:type", content: "website" },
+        { property: "og:url", content: absoluteUrl("/shop") },
+        { property: "og:image", content: absoluteUrl("/og-image.svg") },
+        { name: "twitter:card", content: "summary_large_image" },
+        { name: "twitter:title", content: title },
+        { name: "twitter:description", content: description },
+        { name: "twitter:image", content: absoluteUrl("/og-image.svg") },
+        ...(isFiltered ? [{ name: "robots", content: "noindex, follow" }] : []),
       ],
-      links: [{ rel: "canonical", href: "/shop" }],
+      links: isFiltered ? [] : [{ rel: "canonical", href: absoluteUrl("/shop") }],
     };
   },
   component: Shop,
@@ -71,9 +93,9 @@ function Shop() {
   return (
     <div className="section-y">
       <div className="page-container">
-        <h1 className="text-3xl font-bold sm:text-4xl">Exam Study Resources</h1>
+        <h1 className="text-3xl font-bold sm:text-4xl">Buy Exam Notes, Solved Papers and Study Material</h1>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Browse exam-focused notes, guess papers, solved papers, revision guides, assignment guidance and other learning resources for popular Indian exams. Each listing includes product details and pricing; delivery depends on whether the item is a digital PDF or a physical product.
+          Buy exam notes, solved papers, guess papers, revision guides and other study resources for NEET, JEE, UPSC, SSC CGL, Banking and CLAT. Review each listing for its actual contents, format, price and delivery details before ordering.
         </p>
         <section className="mt-4 max-w-3xl space-y-2 text-sm leading-6 text-muted-foreground" aria-labelledby="shop-guide">
           <h2 id="shop-guide" className="text-base font-semibold text-foreground">Find the right preparation resource</h2>
@@ -82,9 +104,7 @@ function Shop() {
         </section>
 
         <div className="mt-6">
-          <label htmlFor="shop-search" className="sr-only">
-            Search resources
-          </label>
+          <label htmlFor="shop-search" className="sr-only">Search resources</label>
           <Input
             id="shop-search"
             value={term}
@@ -94,22 +114,14 @@ function Shop() {
           />
         </div>
 
-        <div
-          className="hidden"
-          role="group"
-          aria-label="Filter resources by category"
-        >
+        <div className="hidden" role="group" aria-label="Filter resources by category">
           {tabs.map((t) => (
             <button
               key={t.slug}
               type="button"
               onClick={() => setCategory(t.slug)}
               aria-pressed={activeCategory === t.slug}
-              className={`rounded-full border px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-                activeCategory === t.slug
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-border bg-card text-muted-foreground hover:text-foreground"
-              }`}
+              className={`rounded-full border px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${activeCategory === t.slug ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
             >
               {t.name}
             </button>
@@ -120,15 +132,10 @@ function Shop() {
           {products.isLoading ? (
             <LoadingGrid count={8} />
           ) : products.isError ? (
-            <EmptyState
-              title="We couldn't load resources"
-              description="Please refresh the page and try again."
-            />
+            <EmptyState title="We couldn't load resources" description="Please refresh the page and try again." />
           ) : filtered.length > 0 ? (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-              {filtered.map((p) => (
-                <ProductCard key={p.id} product={p} />
-              ))}
+              {filtered.map((p) => <ProductCard key={p.id} product={p} />)}
             </div>
           ) : term ? (
             <EmptyState title="No resources found" description="Try another search term." />
@@ -136,11 +143,7 @@ function Shop() {
             <EmptyState
               title="Resources are being added soon"
               description="Check back shortly."
-              action={
-                <Link to="/free-resources" className="text-sm font-medium text-primary hover:underline">
-                  Browse free resources
-                </Link>
-              }
+              action={<Link to="/free-resources" className="text-sm font-medium text-primary hover:underline">Browse free resources</Link>}
             />
           )}
         </div>

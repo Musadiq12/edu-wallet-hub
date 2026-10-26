@@ -12,7 +12,7 @@ export function LogoMark({ className = "h-10 w-24" }: { className?: string }) {
         className="h-9 w-9 shrink-0 object-contain"
       />
       <span className="min-w-0 truncate text-sm font-bold tracking-tight text-foreground">
-        {brandName || "Edu Wallet"}
+        {brandName || "EduWallet"}
       </span>
     </span>
   );
@@ -31,7 +31,7 @@ export function Logo({ compact = false }: { compact?: boolean }) {
       />
       <span className="flex min-w-0 flex-col">
         <span className="truncate text-base font-bold tracking-tight text-foreground">
-          {brandName || "Edu Wallet"}
+          {brandName || "EduWallet"}
         </span>
         {!compact && tagline && (
           <span className="line-clamp-2 text-xs text-muted-foreground">{tagline}</span>

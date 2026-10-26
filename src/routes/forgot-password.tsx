@@ -12,9 +12,9 @@ export const Route = createFileRoute("/forgot-password")({
   head: () => ({
     meta: [
       { title: `Reset password — ${siteConfig.fallbackBrand.brandName}` },
-      { name: "description", content: "Reset the password for your Edu Wallet account." },
+      { name: "description", content: "Reset the password for your EduWallet account." },
       { property: "og:title", content: `Reset password — ${siteConfig.fallbackBrand.brandName}` },
-      { property: "og:description", content: "Reset your Edu Wallet password." },
+      { property: "og:description", content: "Reset your EduWallet password." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "robots", content: "noindex" },

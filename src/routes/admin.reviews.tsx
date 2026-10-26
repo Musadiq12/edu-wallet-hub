@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useIsAdmin, useSession } from "@/lib/auth";
 
 export const Route = createFileRoute("/admin/reviews")({
-  head: () => ({ meta: [{ title: "Reviews — Edu Wallet Admin" }, { name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({ meta: [{ title: "Reviews — EduWallet Admin" }, { name: "robots", content: "noindex, nofollow" }] }),
   component: AdminReviews,
 });
 

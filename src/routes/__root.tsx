@@ -73,7 +73,7 @@ function Analytics() {
 }
 
 function RootShell({ children }: { children: ReactNode }) {
-  return <html lang="en"><head><HeadContent /></head><body>{children}<Scripts /></body></html>;
+  return <html lang="en"><head><HeadContent /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "Organization", name: "EduWallet", url: "https://edu-wallet-hub.designeroutletmedia.workers.dev/", description: "Independent educational resource platform offering exam notes, solved papers and study resources." }).replace(/</g, "\\u003c") }} /></head><body>{children}<Scripts /></body></html>;
 }
 
 function BrandTitleSync() {

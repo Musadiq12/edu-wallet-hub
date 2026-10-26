@@ -6,18 +6,21 @@ import { productsQuery } from "@/lib/catalog";
 import { siteConfig } from "@/config/site";
 
 export const Route = createFileRoute("/free-resources")({
+  loader: async ({ context }) => ({
+    free: await context.queryClient.ensureQueryData(productsQuery({ free: true })),
+  }),
   head: () => ({
     meta: [
-      { title: "Free Study Resources" },
+      { title: "Free Exam Study Resources & Notes | EduWallet" },
       {
         name: "description",
         content:
-          "Free samples and study material across exam categories from Edu Wallet. Preview the format before buying paid resources.",
+          "Explore free exam study resources, sample notes, practice questions and revision material from EduWallet for competitive and entrance exams.",
       },
-      { property: "og:title", content: "Free Study Resources" },
+      { property: "og:title", content: "Free Exam Study Resources & Notes | EduWallet" },
       {
         property: "og:description",
-        content: "Free samples and study material across exam categories from Edu Wallet.",
+        content: "Free exam study resources, sample notes and revision material from EduWallet.",
       },
     ],
     links: [{ rel: "canonical", href: "/free-resources" }],

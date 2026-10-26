@@ -251,7 +251,7 @@ export default {
         body: JSON.stringify({
           from: fromEmail,
         to: [order.email],
-        subject: `Your Edu Wallet purchase is ready — ${product.title}`,
+        subject: `Your EduWallet purchase is ready — ${product.title}`,
         html: `<!doctype html>
 <html>
   <body style="margin:0;background:#f6f8fb;font-family:Arial,sans-serif;color:#172033;">
@@ -275,7 +275,7 @@ export default {
           This secure download link expires in 48 hours. If it expires, contact support or ask the administrator to resend your document.
         </p>
         <p style="font-size:14px;line-height:1.6;margin-top:24px;">
-          Thank you for using Edu Wallet.
+          Thank you for using EduWallet.
         </p>
       </div>
     </div>

@@ -1,4 +1,4 @@
-name: Deploy Edu Wallet to Cloudflare
+name: Deploy EduWallet to Cloudflare
 
 on:
   push:

@@ -34,7 +34,7 @@ export const Route = createFileRoute("/admin")({
   head: () => ({
     meta: [
       { title: `Admin — ${siteConfig.fallbackBrand.brandName}` },
-      { name: "description", content: "Edu Wallet administration area." },
+      { name: "description", content: "EduWallet administration area." },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -119,7 +119,7 @@ function AdminLayout() {
       <div className="mx-auto max-w-md px-6 py-16">
         <h1 className="text-2xl font-semibold tracking-tight">Access denied</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          This area is restricted to Edu Wallet administrators.
+          This area is restricted to EduWallet administrators.
         </p>
         <div className="mt-4 flex gap-2">
           <Button variant="outline" asChild><Link to="/">Back to website</Link></Button>

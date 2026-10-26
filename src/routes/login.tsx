@@ -15,7 +15,7 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: `Login — ${siteConfig.fallbackBrand.brandName}` },
-      { name: "description", content: "Log in to your Edu Wallet account and access your purchased study resources." },
+      { name: "description", content: "Log in to your EduWallet account and access your purchased study resources." },
       { name: "robots", content: "noindex" },
     ],
   }),

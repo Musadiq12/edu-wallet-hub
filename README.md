@@ -1,10 +1,10 @@
-# Edu Wallet Hub
+# EduWallet
 
-Build a complete, modern, responsive educational digital-product website called Edu Wallet.
+Build a complete, modern, responsive educational digital-product website called EduWallet.
 
 1. PROJECT PURPOSE
 
-Edu Wallet is an independent educational resource platform initially focused exclusively on IGNOU students.
+EduWallet is an independent educational resource platform initially focused exclusively on IGNOU students.
 
 The platform will sell and provide downloadable digital educational resources, primarily:
 
@@ -24,7 +24,7 @@ Free Study Resources / Samples
 
 The platform may expand to other examinations such as CA Foundation/CA Intermediate in the future, so the architecture must be designed to support additional categories and examinations without requiring a complete rebuild.
 
-Edu Wallet is not affiliated with, endorsed by, or officially connected to IGNOU. This must be clearly stated in the website footer and relevant legal/about sections.
+EduWallet is not affiliated with, endorsed by, or officially connected to IGNOU. This must be clearly stated in the website footer and relevant legal/about sections.
 
 The website should feel like a legitimate, professional educational platform—not a generic template, flashy startup landing page, or unofficial government website.
 
@@ -32,7 +32,7 @@ The website should feel like a legitimate, professional educational platform—n
 
 Brand name
 
-Edu Wallet
+EduWallet
 
 Suggested tagline
 
@@ -62,7 +62,7 @@ Visual direction
 
 Use a visual language inspired by serious academic and institutional websites, but DO NOT copy IGNOU's logo, emblem, typography, exact color palette, or visual identity.
 
-Create an original logo concept for Edu Wallet.
+Create an original logo concept for EduWallet.
 
 The logo should combine an educational concept with the "wallet" idea, for example:
 
@@ -228,7 +228,7 @@ Header
 
 Logo:
 
-Edu Wallet
+EduWallet
 
 Navigation:
 
@@ -284,7 +284,7 @@ Do NOT use fake student photos or stock imagery that makes the platform look gen
 
 6. TRUST / VALUE SECTION
 
-Create a simple section explaining why students use Edu Wallet.
+Create a simple section explaining why students use EduWallet.
 
 Possible cards:
 
@@ -312,7 +312,7 @@ Never invent statistics, testimonials, ratings, reviews, customers, sales number
 
 Create a section titled:
 
-Explore Edu Wallet
+Explore EduWallet
 
 Cards:
 
@@ -484,7 +484,7 @@ This is a digital product. No physical item will be shipped.
 
 For assignment resources, clearly state:
 
-Edu Wallet provides original educational reference and guidance material. Students are responsible for understanding and submitting their own academic work in accordance with their institution's rules.
+EduWallet provides original educational reference and guidance material. Students are responsible for understanding and submitting their own academic work in accordance with their institution's rules.
 
 11. PURCHASE FLOW — VERSION 1
 
@@ -504,13 +504,13 @@ Clicks Buy Now
 
 Sees the order/payment page
 
-Sees Edu Wallet's UPI payment instructions
+Sees EduWallet's UPI payment instructions
 
 Sees a UPI QR code
 
 Pays using their UPI application
 
-Returns to Edu Wallet
+Returns to EduWallet
 
 Completes a payment confirmation form
 
@@ -666,7 +666,7 @@ Download/View button
 
 Make this section useful as a marketing channel.
 
-Use it to introduce students to Edu Wallet before they purchase paid resources.
+Use it to introduce students to EduWallet before they purchase paid resources.
 
 16. ACCOUNT SYSTEM
 
@@ -824,7 +824,7 @@ Do not pretend that the website has automated secure delivery if it does not.
 
 Include:
 
-Contact Edu Wallet
+Contact EduWallet
 
 Fields:
 
@@ -850,9 +850,9 @@ Create placeholders that can easily be replaced in one configuration area.
 
 Include useful questions such as:
 
-What does Edu Wallet sell?
+What does EduWallet sell?
 
-Edu Wallet provides digital educational resources such as notes, guess papers, exam guides and assignment reference material.
+EduWallet provides digital educational resources such as notes, guess papers, exam guides and assignment reference material.
 
 Are the products physical?
 
@@ -870,9 +870,9 @@ How long does delivery take?
 
 Payment verification and delivery are handled manually. Display the actual estimated delivery time configured by the admin rather than making an unsupported promise.
 
-Is Edu Wallet affiliated with IGNOU?
+Is EduWallet affiliated with IGNOU?
 
-No. Edu Wallet is an independent educational resource platform and is not affiliated with or endorsed by IGNOU.
+No. EduWallet is an independent educational resource platform and is not affiliated with or endorsed by IGNOU.
 
 21. LEGAL PAGES
 
@@ -900,11 +900,11 @@ Create a reasonable refund policy that can be edited by the site owner.
 
 Academic disclaimer
 
-State that Edu Wallet is an independent educational resource platform.
+State that EduWallet is an independent educational resource platform.
 
 IGNOU disclaimer
 
-Clearly state that Edu Wallet is not affiliated with, endorsed by, or officially connected to IGNOU.
+Clearly state that EduWallet is not affiliated with, endorsed by, or officially connected to IGNOU.
 
 Assignment disclaimer
 
@@ -916,7 +916,7 @@ Do not make legal claims that require jurisdiction-specific legal advice. Keep t
 
 Create a professional footer containing:
 
-Edu Wallet
+EduWallet
 
 Study Smart. Score Better.
 
@@ -948,11 +948,11 @@ Social/contact icons where actual links are configured.
 
 Include:
 
-© 2026 Edu Wallet. All rights reserved.
+© 2026 EduWallet. All rights reserved.
 
 And prominently:
 
-Edu Wallet is an independent educational resource platform and is not affiliated with or endorsed by IGNOU.
+EduWallet is an independent educational resource platform and is not affiliated with or endorsed by IGNOU.
 
 23. SEARCH
 

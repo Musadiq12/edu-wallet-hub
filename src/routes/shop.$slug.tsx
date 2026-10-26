@@ -18,6 +18,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { categoriesQuery, productBySlugQuery, signedUrl } from "@/lib/catalog";
 import { discountPercent, effectivePrice, formatPrice, hasDiscount } from "@/lib/format";
 import { siteConfig } from "@/config/site";
+import { absoluteUrl } from "@/lib/seo";
 import { toast } from "sonner";
 
 function trimDesc(text: string, max = 155) {
@@ -39,14 +40,14 @@ export const Route = createFileRoute("/shop/$slug")({
   },
   head: ({ params, loaderData }) => {
     const p = loaderData?.product;
-    const title = p ? `${p.title} — Edu Wallet` : "Study resource — Edu Wallet";
+    const title = p ? `${p.title} | EduWallet` : "Study resource | EduWallet";
     const desc = p
       ? trimDesc(
           p.description ||
             p.whats_included ||
-            `${p.title}: ${p.product_type === "physical" ? "physical study book or printed notes" : "digital exam study resource"} from Edu Wallet.`,
+            `${p.title}: ${p.product_type === "physical" ? "physical study book or printed notes" : "digital exam study resource"} from EduWallet.`,
         )
-      : "Digital exam study resource from Edu Wallet. See what's included, format and pricing before you buy.";
+      : "Digital exam study resource from EduWallet. See what's included, format and pricing before you buy.";
     const meta: Array<Record<string, string>> = [
       { title },
       { name: "description", content: desc },
@@ -60,7 +61,7 @@ export const Route = createFileRoute("/shop/$slug")({
       meta.push({ name: "twitter:image", content: loaderData.ogImage });
     }
     if (!p) meta.push({ name: "robots", content: "noindex" });
-    return { meta, links: [{ rel: "canonical", href: `/shop/${params.slug}` }] };
+    return { meta, links: [{ rel: "canonical", href: absoluteUrl(`/shop/${params.slug}`) }] };
   },
   component: ProductDetail,
 });
@@ -127,6 +128,7 @@ function ProductDetail() {
     "@context": "https://schema.org",
     "@type": "Product",
     name: p.title,
+    url: absoluteUrl(`/shop/${p.slug}`),
     description: schemaDescription,
     ...(coverUrl ? { image: coverUrl } : {}),
     offers: { "@type": "Offer", price: String(effectivePrice(p)), priceCurrency: "INR", availability: "https://schema.org/InStock" },

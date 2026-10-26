@@ -6,7 +6,7 @@ import { salesStatsQuery } from "@/lib/analytics";
 import { friendlyError } from "@/lib/admin";
 
 export const Route = createFileRoute("/admin/analytics")({
-  head: () => ({ meta: [{ title: "Sales Analytics — Edu Wallet" }, { name: "robots", content: "noindex, nofollow" }] }),
+  head: () => ({ meta: [{ title: "Sales Analytics — EduWallet" }, { name: "robots", content: "noindex, nofollow" }] }),
   component: SalesAnalytics,
 });
 
