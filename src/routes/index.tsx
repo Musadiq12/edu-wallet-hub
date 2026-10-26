@@ -11,9 +11,9 @@ import { publishedPostsQuery, postUrl } from "@/lib/blog";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Exam Study Resources" },
+      { title: "Exam Study Notes, PDFs & Solved Papers | EduWallet" },
       { name: "description", content: siteConfig.shortDescription },
-      { property: "og:title", content: "Exam Study Resources" },
+      { property: "og:title", content: "Exam Study Notes, PDFs & Solved Papers | EduWallet" },
       { property: "og:description", content: siteConfig.shortDescription },
     ],
     links: [{ rel: "canonical", href: "/" }],
