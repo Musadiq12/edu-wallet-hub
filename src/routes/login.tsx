@@ -3,7 +3,6 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Eye, EyeOff, ArrowRight, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { siteConfig } from "@/config/site";
 import { BRAND, buildMeta, buildTitle } from "@/lib/seo";
 import { friendlyError } from "@/lib/admin";
 
