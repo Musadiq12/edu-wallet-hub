@@ -26,7 +26,8 @@ export const Route = createFileRoute("/contact")({
       { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
     links: [{ rel: "canonical", href: new URL("/contact", SITE_URL).toString() }],
-  }),  component: ContactPage,
+  }),
+  component: ContactPage,
 });
 
 function ContactPage() {
