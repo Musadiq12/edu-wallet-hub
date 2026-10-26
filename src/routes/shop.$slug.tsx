@@ -284,7 +284,7 @@ function ProductDetail() {
 
             <section className="mt-10 w-full min-w-0 max-w-full border-t border-border pt-8" aria-labelledby="reviews-heading">
               <h2 id="reviews-heading" className="font-serif text-2xl font-semibold">Reviews</h2>
-              {ratingData.count === 0 ? <p className="mt-3 text-sm text-muted-foreground">{(reviews.data ?? []).some((review) => review.is_sample) ? "No verified customer ratings yet. Illustrative sample reviews are shown below." : "No reviews yet"}</p> : (
+              {ratingData.count === 0 ? <p className="mt-3 text-sm text-muted-foreground">No reviews yet</p> : (
                 <div className="mt-4 grid min-w-0 max-w-full gap-5 rounded-xl border border-border p-5 sm:grid-cols-[auto_minmax(0,1fr)]">
                   <div>
                     <p className="text-4xl font-semibold tabular-nums">{ratingData.average.toFixed(1)}</p>
@@ -313,14 +313,13 @@ function ProductDetail() {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <div className="flex text-amber-500" aria-label={`${review.rating} out of 5 stars`}>{Array.from({ length: 5 }, (_, i) => <Star key={i} className="h-4 w-4" fill={i < review.rating ? "currentColor" : "none"} />)}</div>
-                          {review.is_sample && <Badge variant="outline">Sample review</Badge>}
                         </div>
                         {review.title && <h3 className="mt-2 break-words font-semibold [overflow-wrap:anywhere]">{review.title}</h3>}
                       </div>
                       <time className="max-w-full shrink-0 text-xs text-muted-foreground" dateTime={review.created_at}>{new Date(review.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</time>
                     </div>
                     <p className="mt-2 block w-full min-w-0 max-w-full whitespace-pre-wrap break-words text-sm leading-6 text-muted-foreground [overflow-wrap:anywhere]">{review.comment}</p>
-                    <p className="mt-3 text-xs font-medium text-foreground">{review.is_sample ? "Illustrative sample — not customer feedback" : review.display_name || "Student"}</p>
+                    <p className="mt-3 text-xs font-medium text-foreground">{review.display_name || "Student"}</p>
                   </article>)}
               </div>
               {user && myReview.data && !editingReview ? <div className="mt-6 rounded-xl border border-border bg-surface p-4">
