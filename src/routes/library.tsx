@@ -61,9 +61,9 @@ const physicalOrdersRpc = supabase as unknown as {
 export const Route = createFileRoute("/library")({
   head: () => ({
     meta: [
-      { title: "My Library — Edu Wallet" },
-      { name: "description", content: "Manage your purchased Edu Wallet resources and track physical deliveries." },
-      { property: "og:title", content: "My Library — Edu Wallet" },
+      { title: "My Library — EduWallet" },
+      { name: "description", content: "Manage your purchased EduWallet resources and track physical deliveries." },
+      { property: "og:title", content: "My Library — EduWallet" },
       { property: "og:description", content: "Manage your purchased resources and track physical deliveries." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
