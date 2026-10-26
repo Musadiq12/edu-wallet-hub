@@ -17,7 +17,8 @@ export const Route = createFileRoute("/terms")({
       { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
     links: [{ rel: "canonical", href: new URL("/terms", SITE_URL).toString() }],
-  }),  component: TermsPage,
+  }),
+  component: TermsPage,
 });
 
 function TermsPage() {
