@@ -328,7 +328,7 @@ function ProductDetail() {
                 {myReview.data.title && <p className="mt-2 font-medium">{myReview.data.title}</p>}
                 <p className="mt-1 block w-full min-w-0 max-w-full whitespace-pre-wrap break-all text-sm text-muted-foreground [overflow-wrap:anywhere]">{myReview.data.comment}</p>
                 {myReview.data.status === "pending" && <Button className="mt-3" variant="outline" size="sm" onClick={() => { setReviewRating(myReview.data!.rating); setReviewTitle(myReview.data!.title); setReviewComment(myReview.data!.comment); setEditingReview(true); }}>Edit review</Button>}
-              </div> : user && (editingReview || (!myReview.data && canReview.data === true)) ? <div className="mt-6 rounded-xl border border-border p-5">
+              </div> : user && (editingReview || (!myReview.data && (p.is_free || canReview.data === true))) ? <div className="mt-6 rounded-xl border border-border p-5">
                 <h3 className="font-semibold">{editingReview ? "Edit your review" : "Write a review"}</h3>
                 <div className="mt-4"><span className="text-sm font-medium">Rating (required)</span><div className="mt-2 flex gap-1" role="radiogroup" aria-label="Rating">
                   {Array.from({ length: 5 }, (_, i) => i + 1).map((star) => <button type="button" key={star} role="radio" aria-checked={reviewRating === star} aria-label={`${star} star${star === 1 ? "" : "s"}`} onClick={() => setReviewRating(star)} className="rounded p-1 text-amber-500 focus-visible:outline focus-visible:outline-2"><Star className="h-6 w-6" fill={star <= reviewRating ? "currentColor" : "none"} /></button>)}
@@ -337,7 +337,7 @@ function ProductDetail() {
                 <label className="mt-4 block text-sm font-medium">Comment (required)<Textarea rows={4} maxLength={1000} value={reviewComment} onChange={(e) => setReviewComment(e.target.value)} className="mt-1" placeholder="What did you think of this resource?" /><span className="mt-1 block text-xs font-normal text-muted-foreground">{reviewComment.length}/1000</span></label>
                 <Button className="mt-4" disabled={reviewSaving || !reviewRating || !reviewComment.trim()} onClick={() => void handleSubmitReview()}>{reviewSaving ? "Submitting…" : editingReview ? "Save changes" : "Submit review"}</Button>
                 <p className="mt-3 text-xs text-muted-foreground">Thank you for sharing your feedback.</p>
-              </div> : user && canReview.data === false ? <p className="mt-6 text-sm text-muted-foreground">Reviews open after your purchase is verified.</p> : null}
+              </div> : user && !p.is_free && canReview.data === false ? <p className="mt-6 text-sm text-muted-foreground">Reviews open after your purchase is verified.</p> : null}
             </section>
             <div className="mt-6 space-y-3 rounded-2xl border border-border bg-surface p-5 text-sm text-muted-foreground">
               <p className="flex gap-2">
