@@ -9,15 +9,15 @@ import { SITE_URL, breadcrumbJson } from "@/lib/seo";
 export const Route = createFileRoute("/free-resources")({
   head: () => ({
     meta: [
-      { title: "Free Exam Notes and Study PDFs | EduWallet Store" },
+      { title: "Free Exam Notes and Study PDFs Online | EduWallet" },
       { name: "description", content: "Explore free exam notes, practice questions, sample papers and revision PDFs from EduWallet to support your competitive exam preparation." },
-      { property: "og:title", content: "Free Exam Notes and Study PDFs | EduWallet Store" },
+      { property: "og:title", content: "Free Exam Notes and Study PDFs Online | EduWallet" },
       { property: "og:description", content: "Explore free exam notes, practice questions, sample papers and revision PDFs from EduWallet to support your competitive exam preparation." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: new URL("/free-resources", SITE_URL).toString() },
       { property: "og:image", content: new URL("/og-image.svg", SITE_URL).toString() },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Free Exam Notes and Study PDFs | EduWallet Store" },
+      { name: "twitter:title", content: "Free Exam Notes and Study PDFs Online | EduWallet" },
       { name: "twitter:description", content: "Explore free exam notes, practice questions, sample papers and revision PDFs from EduWallet to support your competitive exam preparation." },
       { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
