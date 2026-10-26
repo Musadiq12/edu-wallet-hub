@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const Route = createFileRoute("/checkout/$slug")({
   head: () => ({
     meta: [
-      { title: "Checkout" },
+      { title: buildTitle(["Checkout", BRAND]) },
       { name: "description", content: "Securely complete your order using Razorpay." },
       { name: "robots", content: "noindex" },
     ],

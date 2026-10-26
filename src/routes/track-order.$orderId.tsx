@@ -6,12 +6,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { formatPrice } from "@/lib/format";
+import { BRAND, buildMeta, buildTitle } from "@/lib/seo";
 
 export const Route = createFileRoute("/track-order/$orderId")({
   head: () => ({
     meta: [
-      { title: "Track order — EduWallet" },
-      { name: "description", content: "Securely track your physical EduWallet order." },
+      { title: buildTitle(["Track order", BRAND]) },
+      { name: "description", content: buildMeta("Securely track your physical EduWallet order.") },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),

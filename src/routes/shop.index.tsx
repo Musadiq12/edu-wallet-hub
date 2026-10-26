@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/ProductCard";
 import { EmptyState } from "@/components/EmptyState";
 import { categoriesQuery, matchesSearch, productsQuery } from "@/lib/catalog";
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl, BRAND, buildMeta, buildTitle } from "@/lib/seo";
 
 type ShopSearch = { q?: string | undefined; category?: string | undefined };
 
@@ -31,10 +31,10 @@ export const Route = createFileRoute("/shop/")({
         ? category.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
         : "";
     const title = label
-      ? `${label} Study Resources | EduWallet`
-      : "Buy Exam Notes, Solved Papers & Study Material | EduWallet";
+      ? buildTitle([label, "Study Resources", BRAND])
+      : buildTitle(["Buy Exam Notes, Solved Papers & Study Material", BRAND]);
     const description = label
-      ? `Browse ${label} study notes, solved papers, exam guides and digital learning resources on EduWallet.`
+      ? buildMeta(`Browse ${label} study notes, solved papers, exam guides and digital learning resources on ${BRAND}.`)
       : "Buy exam notes, solved papers, guess papers and study material for NEET, JEE, UPSC, SSC CGL, Banking and CLAT. Compare formats and product details.";
     const isFiltered = Boolean(term || category);
     return {

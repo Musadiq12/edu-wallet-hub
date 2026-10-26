@@ -3,10 +3,10 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy Policy — EduWallet" },
-      { name: "description", content: "Privacy Policy explaining how EduWallet handles account, order, contact, payment and website data." },
-      { property: "og:title", content: "Privacy Policy — EduWallet" },
-      { property: "og:description", content: "How EduWallet collects, uses, stores and protects information." },
+      { title: buildTitle(["Privacy Policy", BRAND]) },
+      { name: "description", content: buildMeta("Privacy Policy explaining how EduWallet handles account, order, contact, payment and website data.") },
+      { property: "og:title", content: buildTitle(["Privacy Policy", BRAND]) },
+      { property: "og:description", content: buildMeta("How EduWallet collects, uses, stores and protects information.") },
     ],
     links: [{ rel: "canonical", href: "/privacy" }],
   }),

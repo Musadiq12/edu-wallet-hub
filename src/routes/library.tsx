@@ -25,6 +25,7 @@ import { CoverImage } from "@/components/CoverImage";
 import { useSession } from "@/lib/auth";
 import { signedUrl } from "@/lib/catalog";
 import { formatPrice } from "@/lib/format";
+import { BRAND, buildMeta, buildTitle } from "@/lib/seo";
 import { supabase } from "@/integrations/supabase/client";
 
 type LibraryItem = {
@@ -61,10 +62,10 @@ const physicalOrdersRpc = supabase as unknown as {
 export const Route = createFileRoute("/library")({
   head: () => ({
     meta: [
-      { title: "My Library — EduWallet" },
-      { name: "description", content: "Manage your purchased EduWallet resources and track physical deliveries." },
-      { property: "og:title", content: "My Library — EduWallet" },
-      { property: "og:description", content: "Manage your purchased resources and track physical deliveries." },
+      { title: buildTitle(["My Library", BRAND]) },
+      { name: "description", content: buildMeta("Manage your purchased EduWallet resources and track physical deliveries.") },
+      { property: "og:title", content: buildTitle(["My Library", BRAND]) },
+      { property: "og:description", content: buildMeta("Manage your purchased resources and track physical deliveries.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

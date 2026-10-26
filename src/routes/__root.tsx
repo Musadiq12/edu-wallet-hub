@@ -10,7 +10,8 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config/site";
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl, BRAND, buildMeta, buildTitle } from "@/lib/seo";
+import { getBreadcrumbLd, getOrganizationLd, getWebsiteLd } from "@/lib/structured-data";
 import { defaultSettings, settingsQuery, useSiteSettings } from "@/lib/settings";
 import { supabase } from "@/integrations/supabase/client";
 import { CookieConsent } from "@/components/CookieConsent";
@@ -31,20 +32,26 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: async ({ context }) => { try { return await context.queryClient.ensureQueryData(settingsQuery()); } catch { return defaultSettings; } },
-  head: ({ matches }) => ({
+  head: ({ matches }) => {
+    const currentMatch = matches[matches.length - 1] as (typeof matches)[number] & { pathname?: string; loaderData?: { product?: { title?: string }; title?: string } };
+    const routePath = currentMatch?.pathname || "/";
+    const pageName = currentMatch?.loaderData?.product?.title || currentMatch?.loaderData?.title;
+    const structuredData = [getOrganizationLd(), getWebsiteLd(), getBreadcrumbLd(routePath, pageName)].filter(Boolean);
+    return ({
     meta: [
       { charSet: "utf-8" }, { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Study Resources | EduWallet" },
-      { name: "description", content: siteConfig.shortDescription },
-      { property: "og:site_name", content: "EduWallet" },
+      { title: buildTitle(["Study Resources", BRAND]) },
+      { name: "description", content: buildMeta(siteConfig.shortDescription) },
+      { property: "og:site_name", content: BRAND },
       { property: "og:type", content: "website" },
       { property: "og:image", content: absoluteUrl("/og-image.svg") },
       { property: "og:url", content: absoluteUrl("/") },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "EduWallet" },
-      { name: "twitter:description", content: siteConfig.shortDescription },
+      { name: "twitter:title", content: BRAND },
+      { name: "twitter:description", content: buildMeta(siteConfig.shortDescription) },
       { name: "twitter:image", content: absoluteUrl("/og-image.svg") },
     ],
+    scripts: structuredData.map((data) => ({ type: "application/ld+json", children: JSON.stringify(data).replace(/</g, "\\u003c") })),
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -52,7 +59,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" },
       { rel: "icon", href: absoluteUrl("/edu-wallet-icon.svg"), type: "image/svg+xml" },
     ],
-  }),
+  });
+  },
   shellComponent: RootShell, component: RootComponent, notFoundComponent: NotFoundComponent, errorComponent: ErrorComponent,
 });
 
@@ -74,21 +82,9 @@ function Analytics() {
 }
 
 function RootShell({ children }: { children: ReactNode }) {
-  return <html lang="en"><head><HeadContent /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@graph": [{ "@type": "Organization", "@id": absoluteUrl("/#organization"), name: "EduWallet", url: absoluteUrl("/"), logo: absoluteUrl("/eduwallet-logo.svg"), description: "Independent educational resource platform offering exam notes, solved papers and study resources." }, { "@type": "WebSite", "@id": absoluteUrl("/#website"), url: absoluteUrl("/"), name: "EduWallet", publisher: { "@id": absoluteUrl("/#organization") } }] }).replace(/</g, "\\u003c") }} /></head><body>{children}<Scripts /></body></html>;
+  return <html lang="en"><head><HeadContent /></head><body>{children}<Scripts /></body></html>;
 }
 
-function BrandTitleSync() {
-  const { brandName, tagline } = useSiteSettings();
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
-  useEffect(() => {
-    const fb = siteConfig.fallbackBrand;
-    let t = document.title;
-    if (tagline && fb.tagline !== tagline) t = t.split(fb.tagline).join(tagline);
-    if (brandName && fb.brandName !== brandName) t = t.split(fb.brandName).join(brandName);
-    if (t !== document.title) document.title = t;
-  }, [brandName, tagline, pathname]);
-  return null;
-}
 
 function RecoveryRedirectHandler() {
   useEffect(() => {
@@ -115,7 +111,6 @@ function RootComponent() {
 
   return <QueryClientProvider client={queryClient}>
     <RecoveryRedirectHandler />
-    <BrandTitleSync />
     <Analytics />
     <div className={isAdminRoute ? "min-h-screen" : isAuthPage ? "min-h-screen" : "flex min-h-screen flex-col"}>
       {!isAuthPage && !isAdminRoute && <SiteHeader />}

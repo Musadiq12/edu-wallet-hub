@@ -3,7 +3,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { Eye, EyeOff, ArrowRight, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { siteConfig } from "@/config/site";
+import { BRAND, buildMeta, buildTitle } from "@/lib/seo";
 import { friendlyError } from "@/lib/admin";
 
 type Search = { redirect?: string };
@@ -14,8 +14,8 @@ export const Route = createFileRoute("/login")({
   }),
   head: () => ({
     meta: [
-      { title: `Login — ${siteConfig.fallbackBrand.brandName}` },
-      { name: "description", content: "Log in to your EduWallet account and access your purchased study resources." },
+      { title: buildTitle(["Login", BRAND]) },
+      { name: "description", content: buildMeta("Log in to your EduWallet account and access your purchased study resources.") },
       { name: "robots", content: "noindex" },
     ],
   }),

@@ -18,13 +18,8 @@ import { EmptyState } from "@/components/EmptyState";
 import { categoriesQuery, productBySlugQuery, signedUrl } from "@/lib/catalog";
 import { discountPercent, effectivePrice, formatPrice, hasDiscount } from "@/lib/format";
 import { siteConfig } from "@/config/site";
-import { absoluteUrl } from "@/lib/seo";
+import { absoluteUrl, BRAND, buildMeta, buildTitle } from "@/lib/seo";
 import { toast } from "sonner";
-
-function trimDesc(text: string, max = 155) {
-  const t = text.replace(/\s+/g, " ").trim();
-  return t.length <= max ? t : `${t.slice(0, max - 1).replace(/\s+\S*$/, "")}…`;
-}
 
 export const Route = createFileRoute("/shop/$slug")({
   loader: async ({ context, params }) => {
@@ -41,7 +36,7 @@ export const Route = createFileRoute("/shop/$slug")({
   },
   head: ({ params, loaderData }) => {
     const p = loaderData?.product;
-    const title = p ? `${p.title} | EduWallet` : "Study resource | EduWallet";
+    const title = p?.seo_title?.trim() || (p ? buildTitle([p.title, p.format, BRAND]) : buildTitle(["Study resource", BRAND]));
     const desc = p
       ? trimDesc(
           p.description ||
@@ -116,7 +111,7 @@ function ProductDetail() {
   const isAssignment = category?.slug === "assignment-guidance";
 
   const ratingData = reviewSummary.data ?? { average: 0, count: 0, distribution: [0, 0, 0, 0, 0] };
-  const schemaDescription = (p.description || p.whats_included || "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 300);
+  const schemaDescription = buildMeta((p.description || p.whats_included || "").replace(/<[^>]*>/g, ""), 300);
   const coverUrl = p.cover_image ? publicImageUrl("product-covers", p.cover_image) ?? undefined : undefined;
   const productSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
@@ -161,7 +156,7 @@ function ProductDetail() {
             Shop
           </Link>
           <span className="mx-1.5">/</span>
-          <span>{category?.name ?? "Resource"}</span>
+          <span aria-current="page">{p.title}</span>
         </nav>
 
         <div className="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(320px,0.82fr)_minmax(0,1.18fr)] lg:gap-12">
