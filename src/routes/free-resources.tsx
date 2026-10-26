@@ -32,10 +32,14 @@ function FreeResources() {
     <div className="section-y">
       <div className="page-container">
         <h1 className="text-3xl font-bold sm:text-4xl">Free Resources</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Free samples and study material so you can see the format and quality of Edu Wallet
-          resources before purchasing anything.
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+          Explore free samples and study material to understand the format, level of detail, and usefulness of EduWallet resources before purchasing. Resources may include revision notes, practice questions, sample papers, and exam-preparation guides where available.
         </p>
+        <section className="mt-6 max-w-3xl space-y-2 text-sm leading-6 text-muted-foreground" aria-labelledby="free-resources-guide">
+          <h2 id="free-resources-guide" className="text-base font-semibold text-foreground">How to use these free study materials</h2>
+          <p>Choose a resource that matches your exam and current topic. Use it alongside the latest official syllabus and instructions, and check the product details before relying on any material for a specific exam attempt.</p>
+          <p>Free resources are provided as study aids. Availability can change as new materials are added, and some subjects or exams may not have a free sample yet.</p>
+        </section>
 
         <div className="mt-8">
           {free.isLoading ? (
