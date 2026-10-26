@@ -13,16 +13,16 @@ import { SITE_URL, breadcrumbJson } from "@/lib/seo";
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact EduWallet | Study Resource and Order Help" },
-      { name: "description", content: "Contact EduWallet for help with study resources, digital orders, payment status, account access and questions about our educational materials." },
-      { property: "og:title", content: "Contact EduWallet | Study Resource and Order Help" },
-      { property: "og:description", content: "Contact EduWallet for help with study resources, digital orders, payment status, account access and questions about our educational materials." },
+      { title: "Contact EduWallet | Study Resource Help and Order Support" },
+      { name: "description", content: "Contact EduWallet for help with study resources, digital orders, payment status, account access and questions about educational materials." },
+      { property: "og:title", content: "Contact EduWallet | Study Resource Help and Order Support" },
+      { property: "og:description", content: "Contact EduWallet for help with study resources, digital orders, payment status, account access and questions about educational materials." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: new URL("/contact", SITE_URL).toString() },
       { property: "og:image", content: new URL("/og-image.svg", SITE_URL).toString() },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Contact EduWallet | Study Resource and Order Help" },
-      { name: "twitter:description", content: "Contact EduWallet for help with study resources, digital orders, payment status, account access and questions about our educational materials." },
+      { name: "twitter:title", content: "Contact EduWallet | Study Resource Help and Order Support" },
+      { name: "twitter:description", content: "Contact EduWallet for help with study resources, digital orders, payment status, account access and questions about educational materials." },
       { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
     links: [{ rel: "canonical", href: new URL("/contact", SITE_URL).toString() }],
