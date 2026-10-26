@@ -4,16 +4,16 @@ import { SITE_URL, breadcrumbJson } from "@/lib/seo";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About EduWallet | Affordable Exam Study Resources" },
-      { name: "description", content: "Learn how EduWallet helps students find affordable exam notes, solved papers and practical study resources for competitive exams." },
-      { property: "og:title", content: "About EduWallet | Affordable Exam Study Resources" },
-      { property: "og:description", content: "Learn how EduWallet helps students find affordable exam notes, solved papers and practical study resources for competitive exams." },
+      { title: "About EduWallet | Affordable Exam Notes and Study Guides" },
+      { name: "description", content: "Learn about EduWallet and explore affordable exam notes, solved papers, revision PDFs and practical study guides for students preparing for exams." },
+      { property: "og:title", content: "About EduWallet | Affordable Exam Notes and Study Guides" },
+      { property: "og:description", content: "Learn about EduWallet and explore affordable exam notes, solved papers, revision PDFs and practical study guides for students preparing for exams." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: new URL("/about", SITE_URL).toString() },
       { property: "og:image", content: new URL("/og-image.svg", SITE_URL).toString() },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "About EduWallet | Affordable Exam Study Resources" },
-      { name: "twitter:description", content: "Learn how EduWallet helps students find affordable exam notes, solved papers and practical study resources for competitive exams." },
+      { name: "twitter:title", content: "About EduWallet | Affordable Exam Notes and Study Guides" },
+      { name: "twitter:description", content: "Learn about EduWallet and explore affordable exam notes, solved papers, revision PDFs and practical study guides for students preparing for exams." },
       { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
     links: [{ rel: "canonical", href: new URL("/about", SITE_URL).toString() }],
