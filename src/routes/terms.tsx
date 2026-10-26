@@ -4,16 +4,16 @@ import { SITE_URL, breadcrumbJson } from "@/lib/seo";
 export const Route = createFileRoute("/terms")({
   head: () => ({
     meta: [
-      { title: "Terms and Conditions for EduWallet Study Resources" },
-      { name: "description", content: "Read EduWallet terms for accounts, educational resources, orders, payment verification, digital delivery, permitted use and support." },
-      { property: "og:title", content: "Terms and Conditions for EduWallet Study Resources" },
-      { property: "og:description", content: "Read EduWallet terms for accounts, educational resources, orders, payment verification, digital delivery, permitted use and support." },
+      { title: "EduWallet Terms and Conditions for Study Resources" },
+      { name: "description", content: "Read EduWallet terms for student accounts, educational products, orders, payment verification, digital delivery, permitted use and customer support." },
+      { property: "og:title", content: "EduWallet Terms and Conditions for Study Resources" },
+      { property: "og:description", content: "Read EduWallet terms for student accounts, educational products, orders, payment verification, digital delivery, permitted use and customer support." },
       { property: "og:type", content: "website" },
       { property: "og:url", content: new URL("/terms", SITE_URL).toString() },
       { property: "og:image", content: new URL("/og-image.svg", SITE_URL).toString() },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Terms and Conditions for EduWallet Study Resources" },
-      { name: "twitter:description", content: "Read EduWallet terms for accounts, educational resources, orders, payment verification, digital delivery, permitted use and support." },
+      { name: "twitter:title", content: "EduWallet Terms and Conditions for Study Resources" },
+      { name: "twitter:description", content: "Read EduWallet terms for student accounts, educational products, orders, payment verification, digital delivery, permitted use and customer support." },
       { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
     links: [{ rel: "canonical", href: new URL("/terms", SITE_URL).toString() }],
