@@ -6,7 +6,7 @@ const BASE = (
   import.meta.env["VITE_SITE_URL"] ??
   "https://edu-wallet-hub.designeroutletmedia.workers.dev"
 ).replace(/\/+$/, "");
-const STATIC = ["/", "/shop", "/free-resources", "/about", "/contact", "/blog"];
+const STATIC = ["/", "/shop", "/blog", "/free-resources", "/about", "/contact", "/terms", "/privacy"];
 
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
