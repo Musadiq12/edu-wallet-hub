@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/EmptyState";
@@ -39,6 +38,7 @@ export const Route = createFileRoute("/blog/")({
 });
 
 function Page() {
+  const { posts: initialPosts, categories: initialCategories } = Route.useLoaderData();
   const [rawSearch, setRawSearch] = useState("");
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("");
@@ -48,8 +48,11 @@ function Page() {
     return () => clearTimeout(timer);
   }, [rawSearch]);
 
-  const categories = useQuery(postCategoriesQuery());
-  const posts = useQuery(publishedPostsQuery({ search, category }));
+  const filteredPosts = (initialPosts ?? []).filter((post) => {
+    const term = search.trim().toLowerCase();
+    return (!term || [post.title, post.excerpt].some((value) => value?.toLowerCase().includes(term))) &&
+      (!category || post.category === category);
+  });
 
   return (
     <main className="page-container py-12">
@@ -64,19 +67,17 @@ function Page() {
       </div>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
         <Button size="sm" variant={!category ? "default" : "outline"} onClick={() => setCategory("")}>All</Button>
-        {categories.data?.map((item) => (
+        {initialCategories?.map((item) => (
           <Button key={item.name} size="sm" variant={category === item.name ? "default" : "outline"} onClick={() => setCategory(item.name)}>
             {item.name} ({item.count})
           </Button>
         ))}
       </div>
-      {posts.isLoading ? (
-        <div className="mt-10 h-64 animate-pulse rounded bg-muted" />
-      ) : !posts.data?.length ? (
+      {!filteredPosts.length ? (
         <div className="py-12"><EmptyState title="No articles found" description="Try another search or category." /></div>
       ) : (
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {posts.data.map((post) => (
+          {filteredPosts.map((post) => (
             <article key={post.id} className="overflow-hidden rounded-xl border bg-card">
               {post.cover_image ? (
                 <img src={coverImageUrl(post.cover_image)} alt={post.title ? `Cover image for ${post.title}` : ""} className="aspect-video w-full object-cover" loading="lazy" decoding="async" width={800} height={450} />
