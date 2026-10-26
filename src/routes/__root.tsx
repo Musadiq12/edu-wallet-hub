@@ -10,6 +10,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Toaster } from "@/components/ui/sonner";
 import { siteConfig } from "@/config/site";
+import { absoluteUrl } from "@/lib/seo";
 import { defaultSettings, settingsQuery, useSiteSettings } from "@/lib/settings";
 import { supabase } from "@/integrations/supabase/client";
 import { CookieConsent } from "@/components/CookieConsent";
@@ -33,16 +34,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: ({ matches }) => ({
     meta: [
       { charSet: "utf-8" }, { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: `${matches[0]?.loaderData?.brandName ?? defaultSettings.brandName} — ${matches[0]?.loaderData?.tagline ?? defaultSettings.tagline}` },
+      { title: "EduWallet" },
       { name: "description", content: siteConfig.shortDescription },
-      { property: "og:site_name", content: matches[0]?.loaderData?.brandName ?? defaultSettings.brandName },
+      { property: "og:site_name", content: "EduWallet" },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "https://edu-wallet-hub.designeroutletmedia.workers.dev/og-image.svg" },
-      { property: "og:url", content: "https://edu-wallet-hub.designeroutletmedia.workers.dev/" },
+      { property: "og:image", content: absoluteUrl("/og-image.svg") },
+      { property: "og:url", content: absoluteUrl("/") },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: matches[0]?.loaderData?.brandName ?? defaultSettings.brandName },
+      { name: "twitter:title", content: "EduWallet" },
       { name: "twitter:description", content: siteConfig.shortDescription },
-      { name: "twitter:image", content: "https://edu-wallet-hub.designeroutletmedia.workers.dev/og-image.svg" },
+      { name: "twitter:image", content: absoluteUrl("/og-image.svg") },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -73,7 +74,7 @@ function Analytics() {
 }
 
 function RootShell({ children }: { children: ReactNode }) {
-  return <html lang="en"><head><HeadContent /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "Organization", name: "EduWallet", url: "https://edu-wallet-hub.designeroutletmedia.workers.dev/", description: "Independent educational resource platform offering exam notes, solved papers and study resources." }).replace(/</g, "\\u003c") }} /></head><body>{children}<Scripts /></body></html>;
+  return <html lang="en"><head><HeadContent /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "Organization", name: "EduWallet", url: absoluteUrl("/"), logo: absoluteUrl("/eduwallet-logo.svg"), description: "Independent educational resource platform offering exam notes, solved papers and study resources." }).replace(/</g, "\\u003c") }} /></head><body>{children}<Scripts /></body></html>;
 }
 
 function BrandTitleSync() {
