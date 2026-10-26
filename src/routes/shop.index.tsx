@@ -1,9 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { ProductCard } from "@/components/ProductCard";
-import { EmptyState, LoadingGrid } from "@/components/EmptyState";
+import { EmptyState } from "@/components/EmptyState";
 import { categoriesQuery, matchesSearch, productsQuery } from "@/lib/catalog";
 import { absoluteUrl } from "@/lib/seo";
 
@@ -60,17 +59,16 @@ export const Route = createFileRoute("/shop/")({
 });
 
 function Shop() {
+  const { products, categories } = Route.useLoaderData();
   const search = Route.useSearch();
   const navigate = useNavigate();
   const [term, setTerm] = useState(search.q ?? "");
 
-  const products = useQuery(productsQuery());
-  const categories = useQuery(categoriesQuery());
 
   const activeCategory = search.category ?? "all";
-  const categoryById = new Map((categories.data ?? []).map((c) => [c.id, c]));
+  const categoryById = new Map((categories ?? []).map((c) => [c.id, c]));
 
-  const filtered = (products.data ?? []).filter((p) => {
+  const filtered = (products ?? []).filter((p) => {
     const cat = p.category_id ? categoryById.get(p.category_id) : undefined;
     if (activeCategory === "free-resources" && !p.is_free) return false;
     if (activeCategory !== "all" && activeCategory !== "free-resources" && cat?.slug !== activeCategory)
@@ -86,7 +84,7 @@ function Shop() {
 
   const tabs = [
     { slug: "all", name: "All" },
-    ...(categories.data ?? []).map((c) => ({ slug: c.slug, name: c.name })),
+    ...(categories ?? []).map((c) => ({ slug: c.slug, name: c.name })),
     { slug: "free-resources", name: "Free Resources" },
   ];
 
@@ -129,11 +127,7 @@ function Shop() {
         </div>
 
         <div className="mt-8">
-          {products.isLoading ? (
-            <LoadingGrid count={8} />
-          ) : products.isError ? (
-            <EmptyState title="We couldn't load resources" description="Please refresh the page and try again." />
-          ) : filtered.length > 0 ? (
+          {filtered.length > 0 ? (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {filtered.map((p) => <ProductCard key={p.id} product={p} />)}
             </div>
