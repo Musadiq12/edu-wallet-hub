@@ -47,7 +47,7 @@ export const Route = createFileRoute("/shop/$slug")({
             p.whats_included ||
             `${p.title}: ${p.product_type === "physical" ? "physical study book or printed notes" : "digital exam study resource"} from EduWallet.`,
         )
-      : "Digital exam study resource from Edu Wallet. See what's included, format and pricing before you buy.";
+      : "Digital exam study resource from EduWallet. See what's included, format and pricing before you buy.";
     const meta: Array<Record<string, string>> = [
       { title },
       { name: "description", content: desc },
