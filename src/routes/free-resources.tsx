@@ -9,26 +9,20 @@ import { SITE_URL, breadcrumbJson } from "@/lib/seo";
 export const Route = createFileRoute("/free-resources")({
   head: () => ({
     meta: [
-      { title: "Free Study Resources" },
-      {
-        name: "description",
-        content:
-          "Free samples and study material across exam categories from Edu Wallet. Preview the format before buying paid resources.",
-      },
-      { property: "og:title", content: "Free Study Resources" },
-      {
-        property: "og:description",
-        content: "Free samples and study material across exam categories from Edu Wallet.",
-      },
-    ],
+      { title: "Free Study Resources and Exam PDFs | EduWallet" },
+      { name: "description", content: "Explore free exam notes, sample papers and revision resources from EduWallet. Preview study material and find resources for your preparation." },
+      { property: "og:title", content: "Free Study Resources and Exam PDFs | EduWallet" },
+      { property: "og:description", content: "Explore free exam notes, sample papers and revision resources from EduWallet. Preview study material and find resources for your preparation." },
+      { property: "og:type", content: "website" },
       { property: "og:url", content: new URL("/free-resources", SITE_URL).toString() },
+      { property: "og:image", content: new URL("/og-image.svg", SITE_URL).toString() },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Free Study Resources" },
-      { name: "twitter:description", content: siteConfig.shortDescription },
+      { name: "twitter:title", content: "Free Study Resources and Exam PDFs | EduWallet" },
+      { name: "twitter:description", content: "Explore free exam notes, sample papers and revision resources from EduWallet. Preview study material and find resources for your preparation." },
+      { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
     links: [{ rel: "canonical", href: new URL("/free-resources", SITE_URL).toString() }],
-  }),
-  component: FreeResources,
+  }),  component: FreeResources,
 });
 
 function FreeResources() {
