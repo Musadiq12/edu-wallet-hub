@@ -27,7 +27,6 @@ type AdminReview = {
   id: string; product_id: string; user_id: string; rating: number; title: string; comment: string;
   status: Status; is_sample: boolean; created_at: string; product_title: string; display_name: string;
 };
-type ProductOption = { id: string; title: string };
 
 const reviewsQuery = () => ({
   queryKey: ["admin", "reviews"] as const,
@@ -126,7 +125,6 @@ function AdminReviews() {
         const { error } = await supabase.from("reviews").delete().eq("id", target.id);
         if (error) throw error;
       } else {
-        if (target.is_sample) throw new Error("Sample reviews can only be deleted, not approved or rejected.");
         const status: Status = action === "approve" ? "approved" : "rejected";
         const { error } = await supabase.from("reviews").update({ status, updated_at: new Date().toISOString() }).eq("id", target.id).eq("is_sample", false);
         if (error) throw error;
