@@ -85,26 +85,26 @@
   --surface: hsl(210, 40%, 98%);
   --success: hsl(142, 71%, 45%);
   --success-foreground: hsl(0, 0%, 100%);
-  --ring: hsl(221, 83%, 53%);
+  --ring: hsl(222, 65%, 38%);
   --input: hsl(214.3, 31.8%, 91.4%);
   --muted: hsl(210, 40%, 96.1%);
-  --accent: hsl(162, 72%, 95%);
+  --accent: hsl(153, 45%, 94%);
   --border: hsl(214.3, 31.8%, 91.4%);
-  --radius: 0.5rem;
-  --chart-1: hsl(221, 83%, 53%);
-  --chart-2: hsl(162, 72%, 40%);
+  --radius: 0.75rem;
+  --chart-1: hsl(222, 65%, 38%);
+  --chart-2: hsl(158, 55%, 34%);
   --chart-3: hsl(199, 89%, 48%);
   --chart-4: hsl(142, 71%, 45%);
   --chart-5: hsl(217, 91%, 60%);
   --popover: hsl(0, 0%, 100%);
-  --primary: hsl(221, 83%, 53%);
+  --primary: hsl(222, 65%, 38%);
   --sidebar: hsl(222, 47%, 11%);
   --spacing: 0.22rem;
   --font-mono: JetBrains Mono, monospace;
   --font-sans: Inter, system-ui, sans-serif;
   --font-serif: Georgia, serif;
-  --secondary: hsl(162, 72%, 40%);
-  --background: hsl(210, 40%, 98%);
+  --secondary: hsl(158, 55%, 34%);
+  --background: hsl(210, 25%, 98%);
   --foreground: hsl(222, 47%, 11%);
   --destructive: hsl(0, 84.2%, 60.2%);
   --shadow-blur: 12px;
@@ -120,7 +120,7 @@
   --shadow-offset-y: 4px;
   --sidebar-primary: hsl(221, 83%, 53%);
   --muted-foreground: hsl(215.4, 16.3%, 46.9%);
-  --accent-foreground: hsl(221, 83%, 33%);
+  --accent-foreground: hsl(222, 65%, 30%);
   --popover-foreground: hsl(222, 47%, 11%);
   --primary-foreground: hsl(210, 40%, 98%);
   --sidebar-foreground: hsl(210, 40%, 98%);
@@ -198,6 +198,8 @@
     letter-spacing: var(--letter-spacing);
     overflow-x: hidden;
   }
+
+  a, button, input, textarea, select { -webkit-tap-highlight-color: transparent; }
 
   :focus-visible {
     outline: 2px solid var(--color-ring);
