@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { BRAND, buildMeta, buildTitle } from "@/lib/seo";
 import { useQuery } from "@tanstack/react-query";
 import { ProductCard } from "@/components/ProductCard";
 import { EmptyState, LoadingGrid } from "@/components/EmptyState";
@@ -11,16 +12,16 @@ export const Route = createFileRoute("/free-resources")({
   }),
   head: () => ({
     meta: [
-      { title: "Free Exam Study Resources & Notes | EduWallet" },
+      { title: buildTitle(["Free Exam Study Resources & Notes", BRAND]) },
       {
         name: "description",
         content:
-          "Explore free exam study resources, sample notes, practice questions and revision material from EduWallet for competitive and entrance exams.",
+          buildMeta("Explore free exam study resources, sample notes, practice questions and revision material from EduWallet for competitive and entrance exams."),
       },
-      { property: "og:title", content: "Free Exam Study Resources & Notes | EduWallet" },
+      { property: "og:title", content: buildTitle(["Free Exam Study Resources & Notes", BRAND]) },
       {
         property: "og:description",
-        content: "Free exam study resources, sample notes and revision material from EduWallet.",
+        content: buildMeta("Free exam study resources, sample notes and revision material from EduWallet."),
       },
     ],
     links: [{ rel: "canonical", href: "/free-resources" }],
