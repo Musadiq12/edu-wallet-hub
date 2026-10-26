@@ -36,7 +36,7 @@ export const Route = createFileRoute("/shop/$slug")({
   },
   head: ({ params, loaderData }) => {
     const p = loaderData?.product;
-    const title = p ? buildTitle([p.title, p.format, BRAND]) : buildTitle(["Study resource", BRAND]);
+    const title = p?.seo_title?.trim() || (p ? buildTitle([p.title, p.format, BRAND]) : buildTitle(["Study resource", BRAND]));
     const desc = p
       ? trimDesc(
           p.description ||
