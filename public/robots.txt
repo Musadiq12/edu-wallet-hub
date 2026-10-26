@@ -7,4 +7,4 @@ Disallow: /register
 Disallow: /forgot-password
 Disallow: /reset-password
 
-Sitemap: https://eduwallet.in/sitemap.xml
+Sitemap: https://edu-wallet-hub.designeroutletmedia.workers.dev/sitemap.xml
