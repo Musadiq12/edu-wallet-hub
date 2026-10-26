@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { BRAND, buildMeta, buildTitle } from "@/lib/seo";
 
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About EduWallet" },
-      { name: "description", content: "Learn about EduWallet, its educational resources, access process, and student-focused mission." },
-      { property: "og:title", content: "About EduWallet" },
-      { property: "og:description", content: "Learn about EduWallet and how its digital study resources support students." },
+      { title: buildTitle(["About", BRAND]) },
+      { name: "description", content: buildMeta("Learn about EduWallet, its educational resources, access process, and student-focused mission.") },
+      { property: "og:title", content: buildTitle(["About", BRAND]) },
+      { property: "og:description", content: buildMeta("Learn about EduWallet and how its digital study resources support students.") },
     ],
     links: [{ rel: "canonical", href: "/about" }],
   }),
