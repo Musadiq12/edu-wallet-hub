@@ -28,15 +28,16 @@ function trimDesc(text: string, max = 155) {
 
 export const Route = createFileRoute("/shop/$slug")({
   loader: async ({ context, params }) => {
-    try {
-      const product = await context.queryClient.ensureQueryData(productBySlugQuery(params.slug));
-      const ogImage = product?.cover_image
-        ? await signedUrl("product-covers", product.cover_image, 60 * 60 * 24 * 365)
-        : null;
-      return { product, ogImage };
-    } catch {
-      return { product: null, ogImage: null };
-    }
+    const [productResult, categoriesResult] = await Promise.allSettled([
+      context.queryClient.ensureQueryData(productBySlugQuery(params.slug)),
+      context.queryClient.ensureQueryData(categoriesQuery()),
+    ]);
+    const product = productResult.status === "fulfilled" ? productResult.value : null;
+    const categories = categoriesResult.status === "fulfilled" ? categoriesResult.value : [];
+    const ogImage = product?.cover_image
+      ? await signedUrl("product-covers", product.cover_image, 60 * 60 * 24 * 365)
+      : null;
+    return { product, categories, ogImage };
   },
   head: ({ params, loaderData }) => {
     const p = loaderData?.product;
@@ -70,9 +71,10 @@ function ProductDetail() {
   const s = useSiteSettings();
   const queryClient = useQueryClient();
   const { user } = useSession();
+  const { product: initialProduct, categories: initialCategories } = Route.useLoaderData();
   const { slug } = Route.useParams();
-  const product = useQuery(productBySlugQuery(slug));
-  const categories = useQuery(categoriesQuery());
+  const product = useQuery({ ...productBySlugQuery(slug), initialData: initialProduct });
+  const categories = useQuery({ ...categoriesQuery(), initialData: initialCategories });
   const reviews = useQuery(productReviewsQuery(product.data?.id ?? ""));
   const reviewSummary = useQuery(reviewSummaryQuery(product.data?.id ?? ""));
   const myReview = useQuery(myReviewQuery(product.data?.id ?? "", user?.id));
@@ -83,20 +85,12 @@ function ProductDetail() {
   const [reviewSaving, setReviewSaving] = useState(false);
   const [editingReview, setEditingReview] = useState(false);
 
-  const p = product.data;
+  const p = initialProduct;
   const preview = useQuery({
     queryKey: ["preview", p?.preview_file],
     enabled: !!p?.preview_file,
     queryFn: () => signedUrl("product-previews", p!.preview_file),
   });
-
-  if (product.isLoading) {
-    return (
-      <div className="page-container section-y">
-        <div className="h-96 animate-pulse rounded-lg border border-border bg-surface" />
-      </div>
-    );
-  }
 
   if (!p) {
     return (
@@ -123,7 +117,7 @@ function ProductDetail() {
 
   const ratingData = reviewSummary.data ?? { average: 0, count: 0, distribution: [0, 0, 0, 0, 0] };
   const schemaDescription = (p.description || p.whats_included || "").replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim().slice(0, 300);
-  const coverUrl = p.cover_image ? (typeof window === "undefined" ? undefined : publicImageUrl("product-covers", p.cover_image) ?? undefined) : undefined;
+  const coverUrl = p.cover_image ? publicImageUrl("product-covers", p.cover_image) ?? undefined : undefined;
   const productSchema: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Product",
