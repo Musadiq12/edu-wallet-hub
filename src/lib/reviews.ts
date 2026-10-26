@@ -10,13 +10,14 @@ export type Review = {
   title: string;
   comment: string;
   status: "pending" | "approved" | "rejected";
+  is_sample: boolean;
   created_at: string;
   display_name?: string | null;
 };
 
 export type ReviewSummary = { average: number; count: number; distribution: number[] };
 
-const FIELDS = "id,product_id,user_id,rating,title,comment,status,created_at,updated_at";
+const FIELDS = "id,product_id,user_id,rating,title,comment,status,is_sample,created_at,updated_at";
 const reviewKey = (id: string) => ["reviews", id] as const;
 const summaryKey = (id: string) => ["review-summary", id] as const;
 const myReviewKey = (productId: string, userId?: string) => ["my-review", productId, userId] as const;
@@ -27,25 +28,20 @@ export const productReviewsQuery = (productId: string) =>
     queryKey: reviewKey(productId),
     enabled: !!productId,
     queryFn: async (): Promise<Review[]> => {
-      const { data, error } = await supabase
-        .from("reviews")
-        .select(FIELDS)
-        .eq("product_id", productId)
-        .eq("status", "approved")
-        .order("created_at", { ascending: false })
-        .limit(50);
+      const { data, error } = await supabase.from("reviews")
+        .select(FIELDS).eq("product_id", productId).eq("status", "approved")
+        .order("created_at", { ascending: false }).limit(50);
       if (error) throw error;
       const rows = data ?? [];
       if (rows.length === 0) return [];
-      const userIds = [...new Set(rows.map((row) => row.user_id))];
-      const { data: profiles, error: profileError } = await supabase
-        .from("profiles")
-        .select("id,full_name")
-        .in("id", userIds);
+      const userIds = [...new Set(rows.filter((row) => !row.is_sample).map((row) => row.user_id))];
+      const { data: profiles, error: profileError } = userIds.length
+        ? await supabase.from("profiles").select("id,full_name").in("id", userIds)
+        : { data: [], error: null };
       const names = new Map((profileError ? [] : profiles ?? []).map((profile) => [profile.id, profile.full_name]));
       return rows.map((row) => ({
         ...row,
-        display_name: names.get(row.user_id) || "Student",
+        display_name: row.is_sample ? "Sample review" : names.get(row.user_id) || "Student",
       })) as Review[];
     },
   });
@@ -56,7 +52,7 @@ export const reviewSummaryQuery = (productId: string) =>
     enabled: !!productId,
     queryFn: async (): Promise<ReviewSummary> => {
       const { data, error } = await supabase.from("reviews").select("rating")
-        .eq("product_id", productId).eq("status", "approved");
+        .eq("product_id", productId).eq("status", "approved").eq("is_sample", false);
       if (error) throw error;
       const ratings = (data ?? []).map(({ rating }) => rating);
       return {
@@ -73,9 +69,8 @@ export const myReviewQuery = (productId: string, userId: string | undefined) =>
     enabled: !!productId && !!userId,
     queryFn: async (): Promise<Review | null> => {
       if (!userId) return null;
-      // Pending/rejected reads are separately granted to the record owner in RLS.
       const { data, error } = await supabase.from("reviews").select(FIELDS)
-        .eq("product_id", productId).eq("user_id", userId).maybeSingle();
+        .eq("product_id", productId).eq("user_id", userId).eq("is_sample", false).maybeSingle();
       if (error) throw error;
       return data as Review | null;
     },
@@ -87,9 +82,7 @@ export const canReviewQuery = (productId: string, userId: string | undefined) =>
     enabled: !!productId && !!userId,
     queryFn: async () => {
       if (!userId) return false;
-      const { data, error } = await supabase.rpc("has_verified_purchase", {
-        p_product_id: productId,
-      });
+      const { data, error } = await supabase.rpc("has_verified_purchase", { p_product_id: productId });
       if (error) throw error;
       return data === true;
     },
@@ -105,15 +98,14 @@ async function invalidateReviewQueries(queryClient: QueryClient, productId: stri
 }
 
 export async function submitReview(input: {
-  productId: string; userId: string; queryClient: QueryClient;
-  rating: number; title: string; comment: string;
+  productId: string; userId: string; queryClient: QueryClient; rating: number; title: string; comment: string;
 }) {
   const title = input.title.trim();
   const comment = input.comment.trim();
   if (!Number.isInteger(input.rating) || input.rating < 1 || input.rating > 5) throw new Error("Choose a rating from 1 to 5 stars.");
   if (!comment || comment.length > 1000 || title.length > 100) throw new Error("Enter a comment of 1–1000 characters and a title under 100 characters.");
   const { error } = await supabase.from("reviews").insert({
-    product_id: input.productId, user_id: input.userId, rating: input.rating, title, comment, status: "pending",
+    product_id: input.productId, user_id: input.userId, rating: input.rating, title, comment, status: "pending", is_sample: false,
   });
   if (error) throw new Error(friendlyError(error, "Could not submit your review."));
   await invalidateReviewQueries(input.queryClient, input.productId, input.userId);
@@ -129,7 +121,7 @@ export async function updateMyReview(
   if (!comment || comment.length > 1000 || title.length > 100) throw new Error("Enter a comment of 1–1000 characters and a title under 100 characters.");
   const { data, error } = await supabase.from("reviews").update({
     rating: input.rating, title, comment, updated_at: new Date().toISOString(),
-  }).eq("id", reviewId).eq("user_id", input.userId).eq("status", "pending").select("id").maybeSingle();
+  }).eq("id", reviewId).eq("user_id", input.userId).eq("status", "pending").eq("is_sample", false).select("id").maybeSingle();
   if (error) throw new Error(friendlyError(error, "Could not update your review."));
   if (!data) throw new Error("Only a pending review can be edited.");
   await invalidateReviewQueries(input.queryClient, input.productId, input.userId);
