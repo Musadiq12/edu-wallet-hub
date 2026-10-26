@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
   BarChart3, BookOpen, FileText, Gift, Globe2, HelpCircle, Layers3,
-  Menu, RotateCcw, Search, Shield, Target, UserPlus, Users, X,
+  Menu, RotateCcw, Search, Shield, Target, UserPlus, Users, X, ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { NavigationMenu, NavigationMenuContent, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuTrigger } from "@/components/ui/navigation-menu";
@@ -77,6 +77,11 @@ export function SiteHeader() {
     return () => { document.body.style.overflow = ""; };
   }, [open]);
 
+  useEffect(() => {
+    setOpen(false);
+    setSearchOpen(false);
+  }, [location.pathname]);
+
   const submitSearch = (event: React.FormEvent) => {
     event.preventDefault();
     setSearchOpen(false);
@@ -115,7 +120,7 @@ export function SiteHeader() {
         </div>
 
         <div className="flex items-center gap-1.5">
-          <Button variant="ghost" size="icon" aria-label="Search resources" onClick={() => setSearchOpen((v) => !v)}><Search className="size-5" /></Button>
+          <Button variant="ghost" size="icon" aria-label="Search resources" onClick={() => { setSearchOpen((v) => !v); setOpen(false); }}><Search className="size-5" /></Button>
           <div className="hidden items-center gap-2 sm:flex">
             {user ? (
               <>
@@ -146,30 +151,44 @@ export function SiteHeader() {
       )}
 
       {open && (
-        <div id="site-mobile-menu" className="border-t border-border bg-background lg:hidden">
-          <div className="page-container flex max-h-[calc(100vh-4rem)] flex-col gap-2 overflow-y-auto py-4">
-            <div className="grid gap-2 border-b border-border pb-4">
-              <p className="px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Account</p>
+        <div id="site-mobile-menu" className="fixed inset-x-0 bottom-0 top-16 z-40 overflow-y-auto border-t border-border bg-background lg:hidden">
+          <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-5 pb-8 pt-5 sm:px-6">
+            <section aria-labelledby="mobile-account-heading" className="space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p id="mobile-account-heading" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Your account</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{user ? "Quick access to your account" : "Sign in to keep your resources together"}</p>
+                </div>
+              </div>
               {user ? (
-                <>
-                  <Button variant="outline" asChild className="w-full"><Link to="/library" onClick={() => setOpen(false)}>My Library</Link></Button>
-                  {isAdmin && <Button variant="outline" asChild className="w-full"><Link to="/admin" onClick={() => setOpen(false)}>Admin</Link></Button>}
-                  <Button variant="destructive" className="w-full" type="button" onClick={() => { setOpen(false); void signOutCleanly(); }}>Logout</Button>
-                </>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" size="sm" asChild><Link to="/library" onClick={() => setOpen(false)}><Layers3 className="mr-2 size-4" />My Library</Link></Button>
+                  {isAdmin && <Button variant="outline" size="sm" asChild><Link to="/admin" onClick={() => setOpen(false)}><Shield className="mr-2 size-4" />Admin</Link></Button>}
+                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" type="button" onClick={() => { setOpen(false); void signOutCleanly(); }}>Logout</Button>
+                </div>
               ) : (
-                <>
-                  <Button variant="outline" asChild className="w-full"><Link to="/login" onClick={() => setOpen(false)}>Login</Link></Button>
-                  <Button asChild className="w-full"><Link to="/register" onClick={() => setOpen(false)}>Register</Link></Button>
-                </>
+                <div className="flex gap-2">
+                  <Button variant="outline" className="flex-1" asChild><Link to="/login" onClick={() => setOpen(false)}>Log in</Link></Button>
+                  <Button className="flex-1" asChild><Link to="/register" onClick={() => setOpen(false)}>Create account</Link></Button>
+                </div>
               )}
-            </div>
-            <MobileSection title="Resources" items={productLinks} onNavigate={() => setOpen(false)} />
-            <div className="grid gap-2 border-t border-border pt-3">
-              <Button asChild className="w-full"><Link to="/shop" onClick={() => setOpen(false)}>Shop</Link></Button>
-              <Button variant="outline" asChild className="w-full"><Link to="/free-resources" onClick={() => setOpen(false)}>Free Resources</Link></Button>
-              <Button variant={isBlogActive ? "secondary" : "outline"} asChild className={cn("w-full justify-start", isBlogActive && "bg-accent text-accent-foreground")}><Link to="/blog" aria-current={isBlogActive ? "page" : undefined} onClick={() => setOpen(false)}><BookOpen className="mr-2 size-4" />Blog</Link></Button>
-            </div>
-            <MobileSection title="Company" items={[...companyLinks, ...companyLinks2]} onNavigate={() => setOpen(false)} />
+            </section>
+
+            <section aria-label="Main links" className="grid grid-cols-2 gap-2">
+              <Link to="/shop" onClick={() => setOpen(false)} className="col-span-2 flex min-h-14 items-center justify-between rounded-lg bg-primary px-4 py-3 text-primary-foreground transition-colors hover:bg-primary/90">
+                <span className="flex items-center gap-3 font-semibold"><BookOpen className="size-5" />Browse the shop</span><ChevronRight className="size-5" />
+              </Link>
+              <Link to="/free-resources" onClick={() => setOpen(false)} className="flex min-h-12 items-center gap-2 rounded-lg border border-border px-3 py-3 text-sm font-medium transition-colors hover:bg-accent">
+                <Gift className="size-4 shrink-0 text-muted-foreground" />Free resources
+              </Link>
+              <Link to="/blog" onClick={() => setOpen(false)} aria-current={isBlogActive ? "page" : undefined} className={cn("flex min-h-12 items-center gap-2 rounded-lg border border-border px-3 py-3 text-sm font-medium transition-colors hover:bg-accent", isBlogActive && "border-primary/30 bg-accent")}>
+                <BookOpen className="size-4 shrink-0 text-muted-foreground" />Blog
+              </Link>
+            </section>
+
+            <MobileSection title="Explore resources" items={productLinks.filter((item) => item.title !== "Free Resources")} onNavigate={() => setOpen(false)} />
+            <MobileSection title="About EduWallet" items={[...companyLinks, ...companyLinks2]} onNavigate={() => setOpen(false)} compact />
+            <p className="border-t border-border pt-4 text-xs text-muted-foreground">Study resources for your next step.</p>
           </div>
         </div>
       )}
@@ -177,12 +196,24 @@ export function SiteHeader() {
   );
 }
 
-function MobileSection({ title, items, onNavigate }: { title: string; items: LinkItem[]; onNavigate: () => void; }) {
+function MobileSection({ title, items, onNavigate, compact = false }: { title: string; items: LinkItem[]; onNavigate: () => void; compact?: boolean }) {
   return (
-    <section>
-      <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
-      <div className="grid gap-1">
-        {items.map((item) => <Link key={item.title} to={item.href as "/"} onClick={onNavigate} className="flex items-center gap-3 rounded-md px-3 py-3 hover:bg-accent"><item.icon className="size-4 shrink-0" /><span className="text-sm font-medium">{item.title}</span></Link>)}
+    <section aria-label={title}>
+      <h2 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</h2>
+      <div className={compact ? "divide-y divide-border rounded-lg border border-border" : "grid grid-cols-2 gap-2"}>
+        {items.map((item) => (
+          <Link key={item.title} to={item.href as "/"} onClick={onNavigate} className={cn(
+            "group flex min-w-0 items-center gap-3 transition-colors hover:bg-accent",
+            compact ? "px-3 py-3" : "rounded-lg border border-border px-3 py-3",
+          )}>
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground"><item.icon className="size-4" /></span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-medium leading-5">{item.title}</span>
+              {!compact && item.description && <span className="mt-0.5 block line-clamp-2 text-xs leading-4 text-muted-foreground">{item.description}</span>}
+            </span>
+            {compact && <ChevronRight className="size-4 shrink-0 text-muted-foreground" />}
+          </Link>
+        ))}
       </div>
     </section>
   );
