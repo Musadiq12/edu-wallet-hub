@@ -4,19 +4,20 @@ import { SITE_URL, breadcrumbJson } from "@/lib/seo";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy Policy — EduWallet" },
-      { name: "description", content: "Privacy Policy explaining how EduWallet handles account, order, contact, payment and website data." },
-      { property: "og:title", content: "Privacy Policy — EduWallet" },
-      { property: "og:description", content: "How EduWallet collects, uses, stores and protects information." },
-    ],
+      { title: "EduWallet Privacy Policy | Data Use and Protection" },
+      { name: "description", content: "Learn how EduWallet handles account, order, contact and website data, including how information is used, stored and protected." },
+      { property: "og:title", content: "EduWallet Privacy Policy | Data Use and Protection" },
+      { property: "og:description", content: "Learn how EduWallet handles account, order, contact and website data, including how information is used, stored and protected." },
+      { property: "og:type", content: "website" },
       { property: "og:url", content: new URL("/privacy", SITE_URL).toString() },
+      { property: "og:image", content: new URL("/og-image.svg", SITE_URL).toString() },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Privacy Policy — EduWallet" },
-      { name: "twitter:description", content: siteConfig.shortDescription },
+      { name: "twitter:title", content: "EduWallet Privacy Policy | Data Use and Protection" },
+      { name: "twitter:description", content: "Learn how EduWallet handles account, order, contact and website data, including how information is used, stored and protected." },
+      { name: "twitter:image", content: new URL("/og-image.svg", SITE_URL).toString() },
     ],
     links: [{ rel: "canonical", href: new URL("/privacy", SITE_URL).toString() }],
-  }),
-  component: PrivacyPage,
+  }),  component: PrivacyPage,
 });
 
 function PrivacyPage() {
