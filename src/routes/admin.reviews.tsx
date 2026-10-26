@@ -196,5 +196,6 @@ function AdminReviews() {
       <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>{action === "approve" ? "Approve this review?" : action === "reject" ? "Reject this review?" : "Delete this review?"}</AlertDialogTitle>
         <AlertDialogDescription>{action === "approve" ? "This review will be visible on the public product page." : action === "reject" ? "This review will remain private to its author." : "This permanently removes the review and cannot be undone."}</AlertDialogDescription>
       </AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={() => void mutateReview()}>{action === "approve" ? "Approve" : action === "reject" ? "Reject" : "Delete review"}</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+    </AlertDialog>
   </div>;
 }
