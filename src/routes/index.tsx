@@ -9,6 +9,14 @@ import { siteConfig } from "@/config/site";
 import { publishedPostsQuery, postUrl } from "@/lib/blog";
 
 export const Route = createFileRoute("/")({
+  loader: async ({ context }) => {
+    const [products, freeProducts, latestArticles] = await Promise.all([
+      context.queryClient.ensureQueryData(productsQuery({ free: false, limit: 32 })),
+      context.queryClient.ensureQueryData(productsQuery({ free: true, limit: 12 })),
+      context.queryClient.ensureQueryData(publishedPostsQuery()),
+    ]);
+    return { products, freeProducts, latestArticles };
+  },
   head: () => ({
     meta: [
       { title: "Exam Study Notes, PDFs & Solved Papers | EduWallet" },
