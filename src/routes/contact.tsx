@@ -8,14 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { isEmail, safeUrl, useSiteSettings, waLink } from "@/lib/settings";
+import { BRAND, buildMeta, buildTitle } from "@/lib/seo";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
     meta: [
-      { title: "Contact EduWallet | Support & Enquiries" },
-      { name: "description", content: "Contact EduWallet for help with study resources, digital orders, delivery questions and general enquiries. Reach the team by email, WhatsApp or the contact form." },
-      { property: "og:title", content: "Contact EduWallet | Support & Enquiries" },
-      { property: "og:description", content: "Contact EduWallet for help with study resources, digital orders and general enquiries." },
+      { title: buildTitle(["Contact", "Support & Enquiries", BRAND]) },
+      { name: "description", content: buildMeta("Contact EduWallet for help with study resources, digital orders, delivery questions and general enquiries. Reach the team by email, WhatsApp or the contact form.") },
+      { property: "og:title", content: buildTitle(["Contact", "Support & Enquiries", BRAND]) },
+      { property: "og:description", content: buildMeta("Contact EduWallet for help with study resources, digital orders and general enquiries.") },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
