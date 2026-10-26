@@ -72,9 +72,14 @@ function Shop() {
     <div className="section-y">
       <div className="page-container">
         <h1 className="text-3xl font-bold sm:text-4xl">Exam Study Resources</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Notes, guess papers, assignment guidance, solved papers, digital PDFs and physical books across popular Indian exams. Delivery method depends on the product type.
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+          Browse exam-focused notes, guess papers, solved papers, revision guides, assignment guidance and other learning resources for popular Indian exams. Each listing includes product details and pricing; delivery depends on whether the item is a digital PDF or a physical product.
         </p>
+        <section className="mt-4 max-w-3xl space-y-2 text-sm leading-6 text-muted-foreground" aria-labelledby="shop-guide">
+          <h2 id="shop-guide" className="text-base font-semibold text-foreground">Find the right preparation resource</h2>
+          <p>Search by exam, subject, course, or resource name to narrow the catalogue. Review the description, format, included content, and delivery details on a product page before placing an order.</p>
+          <p>Use study materials as a supplement to the current official syllabus and exam instructions. Product availability and formats can vary by listing.</p>
+        </section>
 
         <div className="mt-6">
           <label htmlFor="shop-search" className="sr-only">
