@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 const BASE = (
   process.env["SITE_URL"] ??
   import.meta.env["VITE_SITE_URL"] ??
-  "https://eduwallet.in"
+  "https://edu-wallet-hub.designeroutletmedia.workers.dev"
 ).replace(/\/+$/, "");
 const STATIC = ["/", "/shop", "/free-resources", "/about", "/contact", "/blog"];
 
