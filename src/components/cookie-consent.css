@@ -1,53 +1,82 @@
+/* Standard, compact cookie consent UI. Keep this stylesheet independent of consent logic. */
 .ew-cookie-banner {
   position: fixed;
   z-index: 80;
-  inset-inline: 12px;
-  bottom: max(12px, env(safe-area-inset-bottom));
+  left: max(1rem, env(safe-area-inset-left));
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  width: min(100% - 2rem, 860px);
+  max-width: 860px;
   margin-inline: auto;
-  max-width: 880px;
-  padding: 1rem;
+  padding: 1rem 1.125rem;
   border: 1px solid hsl(var(--border));
   border-radius: 0.875rem;
-  background: hsl(var(--card));
+  background-color: hsl(var(--card));
   color: hsl(var(--card-foreground));
-  box-shadow: 0 12px 36px rgb(15 23 42 / 18%);
+  opacity: 1;
+  box-shadow: 0 8px 28px rgb(15 23 42 / 18%);
 }
 .ew-cookie-banner__copy { min-width: 0; }
+.ew-cookie-banner__copy p { overflow-wrap: anywhere; }
 .ew-cookie-banner__actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.5rem;
   margin-top: 0.875rem;
 }
-.ew-cookie-banner__actions > button { min-height: 44px; padding-inline: 0.65rem; }
-.ew-cookie-overlay {
-  position: fixed;
-  z-index: 90;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  overflow-y: auto;
-  padding: 1rem;
-  background: rgb(15 23 42 / 58%);
+.ew-cookie-banner__actions > button {
+  min-width: 0;
+  min-height: 44px;
+  white-space: normal;
+  padding-inline: 0.65rem;
 }
-.ew-cookie-dialog {
-  width: min(100%, 640px);
-  max-height: min(90dvh, 800px);
-  overflow-y: auto;
-  border: 1px solid hsl(var(--border));
-  border-radius: 1rem;
-  padding: 1.25rem;
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  box-shadow: 0 20px 60px rgb(15 23 42 / 28%);
+.ew-cookie-banner a,
+.ew-cookie-dialog a {
+  color: hsl(var(--primary));
+  text-underline-offset: 3px;
 }
-.ew-cookie-dialog:focus { outline: none; }
+.ew-cookie-banner button:focus-visible,
 .ew-cookie-dialog button:focus-visible,
+.ew-cookie-dialog a:focus-visible,
 .ew-cookie-settings:focus-visible,
 .ew-switch input:focus-visible + span {
   outline: 2px solid hsl(var(--ring));
   outline-offset: 3px;
 }
+.ew-cookie-overlay {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1rem;
+  background: rgb(15 23 42 / 58%);
+  isolation: isolate;
+}
+.ew-cookie-dialog {
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+  width: min(100%, 600px);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid hsl(var(--border));
+  border-radius: 1rem;
+  padding: 1.25rem;
+  background-color: hsl(var(--background));
+  background-image: none;
+  color: hsl(var(--foreground));
+  opacity: 1;
+  box-shadow: 0 20px 60px rgb(15 23 42 / 30%);
+  isolation: isolate;
+}
+.ew-cookie-dialog:focus { outline: none; }
+.ew-cookie-dialog > * { position: relative; }
 .ew-cookie-category {
   display: flex;
   align-items: center;
@@ -56,9 +85,16 @@
   border: 1px solid hsl(var(--border));
   border-radius: 0.65rem;
   padding: 0.875rem;
+  background-color: hsl(var(--card));
 }
+.ew-cookie-category > div { min-width: 0; }
 .ew-switch { position: relative; flex: 0 0 auto; width: 44px; height: 26px; }
-.ew-switch input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.ew-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
 .ew-switch span {
   position: absolute;
   inset: 0;
@@ -75,7 +111,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: white;
+  background: #fff;
   box-shadow: 0 1px 3px rgb(0 0 0 / 20%);
   transition: transform 150ms ease;
 }
@@ -89,18 +125,34 @@
   border: 1px solid hsl(var(--border));
   border-radius: 999px;
   padding: 0.6rem 0.85rem;
-  background: hsl(var(--background));
+  background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   box-shadow: 0 2px 12px rgb(15 23 42 / 10%);
   font-size: 0.75rem;
   font-weight: 600;
 }
 @media (min-width: 720px) {
-  .ew-cookie-banner { display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem; }
+  .ew-cookie-banner {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 1.125rem 1.25rem;
+  }
   .ew-cookie-banner__copy { flex: 1; }
-  .ew-cookie-banner__actions { flex: 0 0 auto; display: flex; margin-top: 0; }
+  .ew-cookie-banner__actions {
+    flex: 0 0 auto;
+    display: flex;
+    margin-top: 0;
+  }
   .ew-cookie-banner__actions > button { min-width: 108px; }
   .ew-cookie-dialog { padding: 1.5rem; }
+}
+@media (max-width: 380px) {
+  .ew-cookie-banner { padding: 0.875rem; }
+  .ew-cookie-banner__actions { gap: 0.35rem; }
+  .ew-cookie-banner__actions > button { font-size: 0.75rem; }
+  .ew-cookie-dialog { padding: 1rem; }
+  .ew-cookie-category { gap: 0.5rem; padding: 0.7rem; }
 }
 @media (prefers-reduced-motion: reduce) {
   .ew-switch span, .ew-switch span::before { transition: none; }
