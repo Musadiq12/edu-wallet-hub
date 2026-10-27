@@ -193,6 +193,8 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/cookies': typeof CookiesRoute
+  '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/free-resources': typeof AdminFreeResourcesRoute
   '/admin/messages': typeof AdminMessagesRoute
@@ -308,6 +310,8 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/sitemap.xml'
     | '/terms'
+    | '/cookies'
+    | '/admin/announcements'
     | '/admin/customers'
     | '/admin/free-resources'
     | '/admin/messages'
