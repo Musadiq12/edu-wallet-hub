@@ -117,7 +117,7 @@ function RootComponent() {
       {!isAuthPage && !isAdminRoute && (
         <Banner
           id="site-announcement"
-          variant="rainbow"
+          variant="normal"
           height="2.5rem"
           message="🎉 New study resources and exam-focused materials are being added regularly."
         />
