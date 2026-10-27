@@ -13,6 +13,83 @@ import { useSession } from "@/lib/auth";
 import { useSiteSettings } from "@/lib/settings";
 import { supabase } from "@/integrations/supabase/client";
 
+type CouponQuote = {
+  valid?: boolean;
+  error?: string;
+  code?: string;
+  label?: string | null;
+  discountAmount?: number;
+  total?: number;
+  checkoutPending?: boolean;
+  checkoutOrderId?: string;
+  checkoutDetails?: {
+    fullName?: string | null;
+    email?: string | null;
+    whatsapp?: string | null;
+    deliveryAddress?: string | null;
+    deliveryCity?: string | null;
+    deliveryState?: string | null;
+    deliveryPostalCode?: string | null;
+    deliveryCountry?: string | null;
+  };
+};
+
+type AppliedCoupon = {
+  code: string;
+  discountAmount: number;
+  total: number;
+  label: string | null;
+  checkoutPending?: boolean;
+};
+
+const COUPON_ERROR_MESSAGES: Record<string, string> = {
+  COUPON_NOT_FOUND: "That coupon code is not valid.",
+  COUPON_EXPIRED: "This coupon is not currently active.",
+  MIN_SUBTOTAL_NOT_MET: "Your order does not meet this coupon’s minimum subtotal.",
+  USAGE_LIMIT_REACHED: "This coupon has reached its total usage limit.",
+  COUPON_ALREADY_USED: "You have already used this coupon. It can only be used once per customer.",
+  COUPON_CUSTOMER_LIMIT_REACHED: "You have reached the allowed number of uses for this coupon.",
+  COUPON_CHECKOUT_PENDING: "You already have an unfinished checkout using this coupon. Resume that checkout instead of starting another.",
+  NOT_ELIGIBLE_FOR_CART: "This coupon does not apply to this product.",
+  COUPON_NOT_STACKABLE: "This coupon cannot be combined with another offer.",
+};
+
+function couponErrorMessage(code?: string) {
+  return (code && COUPON_ERROR_MESSAGES[code]) || "This coupon cannot be applied.";
+}
+
+async function validateCouponCode(code: string, productId: string, subtotal: number): Promise<CouponQuote> {
+  const couponClient = supabase as unknown as {
+    rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+  };
+  const { data, error } = await couponClient.rpc("validate_coupon", {
+    p_code: code,
+    p_product_id: productId,
+    p_subtotal: subtotal,
+  });
+  if (error) throw new Error(error.message);
+  return data as CouponQuote;
+}
+
+function clearCheckoutRequestKey(attemptKey: string | null) {
+  if (!attemptKey) return;
+  try {
+    window.sessionStorage.removeItem(attemptKey);
+  } catch {
+    // A blocked sessionStorage must not interrupt checkout.
+  }
+}
+
+function clearStoredCheckout(attemptKey: string | null, couponKey: string | null) {
+  clearCheckoutRequestKey(attemptKey);
+  if (!couponKey) return;
+  try {
+    window.sessionStorage.removeItem(couponKey);
+  } catch {
+    // A blocked sessionStorage must not interrupt checkout.
+  }
+}
+
 export const Route = createFileRoute("/checkout/$slug")({
   head: () => ({
     meta: [
@@ -35,15 +112,11 @@ function Checkout() {
 
   // Keep the same checkout request ID across refreshes/retries; changing any checkout value starts a new attempt.
   const checkoutAttemptKey = user ? `eduwallet:checkout-attempt:${user.id}:${slug}` : null;
-  const clearCheckoutAttempt = () => {
-    if (!checkoutAttemptKey) return;
-    try {
-      window.sessionStorage.removeItem(checkoutAttemptKey);
-    } catch {
-      // A blocked sessionStorage must not interrupt checkout.
-    }
-  };
+  const couponStorageKey = user ? `eduwallet:checkout-coupon:${user.id}:${slug}` : null;
+  const clearCheckoutRequest = () => clearCheckoutRequestKey(checkoutAttemptKey);
+  const clearCheckoutAttempt = () => clearStoredCheckout(checkoutAttemptKey, couponStorageKey);
   const [saving, setSaving] = useState(false);
+  const [couponRestoring, setCouponRestoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
@@ -61,40 +134,204 @@ function Checkout() {
   const amount = p ? effectivePrice(p) : 0;
   const [couponCode, setCouponCode] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
-  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountAmount: number; total: number; label: string | null } | null>(null);
-  const couponRpc = supabase as unknown as { rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }> };
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
   const payableAmount = appliedCoupon?.total ?? amount;
 
   const applyCoupon = async () => {
     if (!p || !couponCode.trim()) return toast.error("Enter a coupon code.");
+    const requestedCode = couponCode.trim().toUpperCase();
+    if (appliedCoupon?.code.toUpperCase() === requestedCode) {
+      return toast.message("This coupon is already applied.");
+    }
+    if (couponRestoring) return;
     setCouponLoading(true);
+    let couponWasRejected = false;
     try {
-      const { data, error } = await couponRpc.rpc("validate_coupon", { p_code: couponCode.trim(), p_product_id: p.id, p_subtotal: amount });
-      if (error) throw new Error(error.message);
-      const quote = data as { valid?: boolean; error?: string; code?: string; label?: string | null; discountAmount?: number; total?: number };
+      const quote = await validateCouponCode(requestedCode, p.id, amount);
       if (!quote?.valid) {
-        const messages: Record<string, string> = {
-          COUPON_NOT_FOUND: "That coupon code is not valid.", COUPON_EXPIRED: "This coupon is not currently active.",
-          MIN_SUBTOTAL_NOT_MET: "Your order does not meet this coupon’s minimum subtotal.", USAGE_LIMIT_REACHED: "You have already used this coupon, or its usage limit has been reached.",
-          NOT_ELIGIBLE_FOR_CART: "This coupon does not apply to this product.", COUPON_NOT_STACKABLE: "This coupon cannot be combined with another offer.",
-        };
-        throw new Error(messages[quote?.error ?? ""] ?? "This coupon cannot be applied.");
+        couponWasRejected = true;
+        throw new Error(couponErrorMessage(quote?.error));
       }
       const total = Number(quote.total ?? amount);
-      if (total <= 0) throw new Error("This checkout requires a payment; this coupon cannot reduce the order to zero.");
-      clearCheckoutAttempt();
-      setAppliedCoupon({ code: quote.code ?? couponCode.trim().toUpperCase(), discountAmount: Number(quote.discountAmount ?? 0), total, label: quote.label ?? null });
-      toast.success("Coupon applied.");
+      if (!Number.isFinite(total) || total <= 0) {
+        couponWasRejected = true;
+        throw new Error("This checkout requires a payment; this coupon cannot reduce the order to zero.");
+      }
+
+      const nextCode = quote.code ?? requestedCode;
+      let previouslyAppliedCode: string | null = null;
+      try {
+        previouslyAppliedCode = couponStorageKey ? window.sessionStorage.getItem(couponStorageKey) : null;
+      } catch {
+        // Continue without persisted checkout recovery.
+      }
+      // Reapplying the same reserved coupon must keep the original idempotency key.
+      if (previouslyAppliedCode?.trim().toUpperCase() !== nextCode.trim().toUpperCase()) {
+        clearCheckoutRequest();
+      }
+
+      const nextCoupon: AppliedCoupon = {
+        code: nextCode,
+        discountAmount: Number(quote.discountAmount ?? 0),
+        total,
+        label: quote.label ?? null,
+        checkoutPending: Boolean(quote.checkoutPending),
+      };
+      setAppliedCoupon(nextCoupon);
+      setCouponCode(nextCode);
+      try {
+        if (couponStorageKey) window.sessionStorage.setItem(couponStorageKey, JSON.stringify(nextCoupon));
+      } catch {
+        // The server still validates the coupon; persistence only helps resume the same checkout.
+      }
+      if (quote.checkoutPending) {
+        if (quote.checkoutDetails) {
+          setForm((current) => ({
+            ...current,
+            full_name: quote.checkoutDetails?.fullName || current.full_name,
+            email: quote.checkoutDetails?.email || current.email,
+            whatsapp: quote.checkoutDetails?.whatsapp || current.whatsapp,
+            delivery_address: quote.checkoutDetails?.deliveryAddress || current.delivery_address,
+            delivery_city: quote.checkoutDetails?.deliveryCity || current.delivery_city,
+            delivery_state: quote.checkoutDetails?.deliveryState || current.delivery_state,
+            delivery_postal_code: quote.checkoutDetails?.deliveryPostalCode || current.delivery_postal_code,
+            delivery_country: quote.checkoutDetails?.deliveryCountry || current.delivery_country,
+          }));
+        }
+        toast.success("Existing checkout restored. You can safely retry the payment.");
+      } else {
+        toast.success("Coupon applied.");
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not apply coupon.");
-    } finally { setCouponLoading(false); }
+      if (couponWasRejected) {
+        clearCheckoutAttempt();
+        setAppliedCoupon(null);
+        setCouponCode("");
+      } else if (appliedCoupon) {
+        // A network error is not proof the previously applied coupon became invalid.
+        setCouponCode(appliedCoupon.code);
+      }
+      toast.error(err instanceof Error ? err.message : "Could not validate this coupon.");
+    } finally {
+      setCouponLoading(false);
+    }
   };
+
   const removeCoupon = () => {
+    if (appliedCoupon?.checkoutPending) {
+      // Keep the reservation metadata so reapplying the same coupon resumes this order.
+      setAppliedCoupon(null);
+      setCouponCode("");
+      toast.message("Coupon removed from this form. Reapplying it will resume the existing checkout.");
+      return;
+    }
     clearCheckoutAttempt();
-    setAppliedCoupon(null); setCouponCode("");
+    setAppliedCoupon(null);
+    setCouponCode("");
     toast.message("Coupon removed.");
   };
   
+
+  useEffect(() => {
+    if (!user || !p || !couponStorageKey) return;
+    let savedValue: string | null = null;
+    try {
+      savedValue = window.sessionStorage.getItem(couponStorageKey);
+    } catch {
+      return;
+    }
+    if (!savedValue) return;
+
+    let savedCoupon: AppliedCoupon;
+    try {
+      const parsed = JSON.parse(savedValue) as Partial<AppliedCoupon>;
+      if (
+        typeof parsed.code !== "string" ||
+        typeof parsed.discountAmount !== "number" ||
+        typeof parsed.total !== "number" ||
+        !Number.isFinite(parsed.discountAmount) ||
+        !Number.isFinite(parsed.total) ||
+        parsed.total <= 0
+      ) {
+        clearStoredCheckout(checkoutAttemptKey, couponStorageKey);
+        return;
+      }
+      savedCoupon = {
+        code: parsed.code,
+        discountAmount: parsed.discountAmount,
+        total: parsed.total,
+        label: typeof parsed.label === "string" ? parsed.label : null,
+        checkoutPending: Boolean(parsed.checkoutPending),
+      };
+    } catch {
+      clearStoredCheckout(checkoutAttemptKey, couponStorageKey);
+      return;
+    }
+
+    let active = true;
+    setCouponRestoring(true);
+    const restore = async () => {
+      try {
+        const quote = await validateCouponCode(savedCoupon.code, p.id, amount);
+        if (!active) return;
+        if (!quote?.valid) {
+          clearStoredCheckout(checkoutAttemptKey, couponStorageKey);
+          setAppliedCoupon(null);
+          setCouponCode("");
+          toast.error(couponErrorMessage(quote?.error));
+          return;
+        }
+
+        const restoredCoupon: AppliedCoupon = {
+          code: quote.code ?? savedCoupon.code,
+          discountAmount: Number(quote.discountAmount ?? savedCoupon.discountAmount),
+          total: Number(quote.total ?? savedCoupon.total),
+          label: quote.label ?? savedCoupon.label,
+          checkoutPending: Boolean(quote.checkoutPending),
+        };
+        if (!Number.isFinite(restoredCoupon.total) || restoredCoupon.total <= 0) {
+          clearStoredCheckout(checkoutAttemptKey, couponStorageKey);
+          setAppliedCoupon(null);
+          setCouponCode("");
+          return;
+        }
+
+        setAppliedCoupon(restoredCoupon);
+        setCouponCode(restoredCoupon.code);
+        if (quote.checkoutPending && quote.checkoutDetails) {
+          setForm((current) => ({
+            ...current,
+            full_name: quote.checkoutDetails?.fullName || current.full_name,
+            email: quote.checkoutDetails?.email || current.email,
+            whatsapp: quote.checkoutDetails?.whatsapp || current.whatsapp,
+            delivery_address: quote.checkoutDetails?.deliveryAddress || current.delivery_address,
+            delivery_city: quote.checkoutDetails?.deliveryCity || current.delivery_city,
+            delivery_state: quote.checkoutDetails?.deliveryState || current.delivery_state,
+            delivery_postal_code: quote.checkoutDetails?.deliveryPostalCode || current.delivery_postal_code,
+            delivery_country: quote.checkoutDetails?.deliveryCountry || current.delivery_country,
+          }));
+        }
+        try {
+          window.sessionStorage.setItem(couponStorageKey, JSON.stringify(restoredCoupon));
+        } catch {
+          // The coupon is still validated server-side when checkout starts.
+        }
+      } catch {
+        // If validation is temporarily offline, retain the saved quote for the existing
+        // idempotent order; create-razorpay-order will still validate a new order server-side.
+        if (active) {
+          setAppliedCoupon(savedCoupon);
+          setCouponCode(savedCoupon.code);
+        }
+      } finally {
+        if (active) setCouponRestoring(false);
+      }
+    };
+    void restore();
+    return () => {
+      active = false;
+    };
+  }, [user?.id, p?.id, slug, amount, checkoutAttemptKey, couponStorageKey]);
 
   // The confirmation screen replaces the checkout form; reset scroll so its heading is visible.
   useEffect(() => {
@@ -199,7 +436,7 @@ function Checkout() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (saving) return;
+    if (saving || couponRestoring) return;
     setError(null);
     if (!form.full_name.trim() || form.full_name.trim().length > 100) return setError("Please enter your full name.");
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.trim())) return setError("Please enter a valid email address.");
@@ -212,6 +449,17 @@ function Checkout() {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) throw new Error("Your session expired. Please sign in again.");
+      if (!appliedCoupon && couponStorageKey) {
+        // The customer removed a reserved coupon and chose to continue without it.
+        let storedCoupon: AppliedCoupon | null = null;
+        try {
+          const raw = window.sessionStorage.getItem(couponStorageKey);
+          storedCoupon = raw ? JSON.parse(raw) as AppliedCoupon : null;
+        } catch {
+          storedCoupon = null;
+        }
+        if (storedCoupon?.checkoutPending) clearCheckoutAttempt();
+      }
       let idempotencyKey: string;
       try {
         const saved = checkoutAttemptKey ? window.sessionStorage.getItem(checkoutAttemptKey) : null;
@@ -233,6 +481,19 @@ function Checkout() {
         throw new Error(payload?.error || createError.message || "Could not start secure checkout.");
       }
       if (!checkout?.orderId || !checkout?.razorpayOrderId || !checkout?.keyId || !checkout?.amount) throw new Error("The payment service returned an incomplete checkout session. Please retry.");
+      if (appliedCoupon && couponStorageKey) {
+        const reservedCoupon: AppliedCoupon = {
+          ...appliedCoupon,
+          total: Number(checkout.amount) / 100,
+          checkoutPending: true,
+        };
+        setAppliedCoupon(reservedCoupon);
+        try {
+          window.sessionStorage.setItem(couponStorageKey, JSON.stringify(reservedCoupon));
+        } catch {
+          // Server-side idempotency still protects payment creation.
+        }
+      }
       const loadRazorpay=async()=>{
         if ((window as Window & {Razorpay?:unknown}).Razorpay) return;
         let script=document.querySelector<HTMLScriptElement>('script[data-razorpay-checkout="true"]');
@@ -314,8 +575,8 @@ function Checkout() {
               <div className="rounded-lg border border-border bg-surface p-3">
                 <Label htmlFor="coupon-code">Coupon code</Label>
                 <div className="mt-1.5 flex gap-2">
-                  <Input id="coupon-code" value={couponCode} disabled={!!appliedCoupon || couponLoading} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="Enter code" maxLength={64} />
-                  {appliedCoupon ? <Button type="button" variant="outline" onClick={removeCoupon}>Remove</Button> : <Button type="button" variant="outline" disabled={couponLoading || !couponCode.trim()} onClick={() => void applyCoupon()}>{couponLoading ? "Checking…" : "Apply"}</Button>}
+                  <Input id="coupon-code" value={couponCode} disabled={!!appliedCoupon || couponLoading || couponRestoring} onChange={(e) => setCouponCode(e.target.value.toUpperCase())} placeholder="Enter code" maxLength={64} />
+                  {appliedCoupon ? <Button type="button" variant="outline" onClick={removeCoupon}>Remove</Button> : <Button type="button" variant="outline" disabled={couponLoading || couponRestoring || !couponCode.trim()} onClick={() => void applyCoupon()}>{couponRestoring ? "Restoring…" : couponLoading ? "Checking…" : "Apply"}</Button>}
                 </div>
                 {appliedCoupon && <p className="mt-2 text-sm text-success">{appliedCoupon.label || appliedCoupon.code} applied — you save {formatPrice(appliedCoupon.discountAmount)}.</p>}
               </div>
@@ -325,7 +586,7 @@ function Checkout() {
                   id="full_name"
                   value={form.full_name}
                   maxLength={100}
-                  onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, full_name: e.target.value }); }}
+                  onChange={(e) => { clearCheckoutRequest(); setForm({ ...form, full_name: e.target.value }); }}
                   className="mt-1.5 h-11"
                   required
                 />
@@ -337,7 +598,7 @@ function Checkout() {
                   type="email"
                   inputMode="email"
                   value={form.email}
-                  onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, email: e.target.value }); }}
+                  onChange={(e) => { clearCheckoutRequest(); setForm({ ...form, email: e.target.value }); }}
                   className="mt-1.5 h-11"
                   required
                 />
@@ -348,7 +609,7 @@ function Checkout() {
                   id="whatsapp"
                   inputMode="tel"
                   value={form.whatsapp}
-                  onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, whatsapp: e.target.value }); }}
+                  onChange={(e) => { clearCheckoutRequest(); setForm({ ...form, whatsapp: e.target.value }); }}
                   className="mt-1.5 h-11"
                   required
                 />
@@ -360,26 +621,26 @@ function Checkout() {
                 </div>
                 <div>
                   <Label htmlFor="delivery_address">House / street / locality</Label>
-                  <Input id="delivery_address" value={form.delivery_address} maxLength={300} onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, delivery_address: e.target.value }); }} className="mt-1.5 h-11" autoComplete="street-address" required />
+                  <Input id="delivery_address" value={form.delivery_address} maxLength={300} onChange={(e) => { clearCheckoutRequest(); setForm({ ...form, delivery_address: e.target.value }); }} className="mt-1.5 h-11" autoComplete="street-address" required />
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="delivery_city">City / town</Label>
-                    <Input id="delivery_city" value={form.delivery_city} onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, delivery_city: e.target.value }); }} className="mt-1.5 h-11" autoComplete="address-level2" required />
+                    <Input id="delivery_city" value={form.delivery_city} onChange={(e) => { clearCheckoutRequest(); setForm({ ...form, delivery_city: e.target.value }); }} className="mt-1.5 h-11" autoComplete="address-level2" required />
                   </div>
                   <div>
                     <Label htmlFor="delivery_state">State</Label>
-                    <Input id="delivery_state" value={form.delivery_state} onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, delivery_state: e.target.value }); }} className="mt-1.5 h-11" autoComplete="address-level1" required />
+                    <Input id="delivery_state" value={form.delivery_state} onChange={(e) => { clearCheckoutRequest(); setForm({ ...form, delivery_state: e.target.value }); }} className="mt-1.5 h-11" autoComplete="address-level1" required />
                   </div>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
                     <Label htmlFor="delivery_postal_code">PIN code</Label>
-                    <Input id="delivery_postal_code" inputMode="numeric" value={form.delivery_postal_code} maxLength={10} onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, delivery_postal_code: e.target.value }); }} className="mt-1.5 h-11" autoComplete="postal-code" required />
+                    <Input id="delivery_postal_code" inputMode="numeric" value={form.delivery_postal_code} maxLength={10} onChange={(e) => { clearCheckoutRequest(); setForm({ ...form, delivery_postal_code: e.target.value }); }} className="mt-1.5 h-11" autoComplete="postal-code" required />
                   </div>
                   <div>
                     <Label htmlFor="delivery_country">Country</Label>
-                    <Input id="delivery_country" value={form.delivery_country} onChange={(e) => { clearCheckoutAttempt(); setForm({ ...form, delivery_country: e.target.value }); }} className="mt-1.5 h-11" autoComplete="country-name" required />
+                    <Input id="delivery_country" value={form.delivery_country} onChange={(e) => { clearCheckoutRequest(); setForm({ ...form, delivery_country: e.target.value }); }} className="mt-1.5 h-11" autoComplete="country-name" required />
                   </div>
                 </div>
               </>}
@@ -389,7 +650,7 @@ function Checkout() {
                 </p>
               )}
 
-              <Button type="submit" size="lg" className="w-full" disabled={saving}>{saving ? "Preparing secure checkout…" : `Pay ${formatPrice(payableAmount)} with Razorpay`}</Button>
+              <Button type="submit" size="lg" className="w-full" disabled={saving || couponRestoring}>{couponRestoring ? "Restoring checkout…" : saving ? "Preparing secure checkout…" : `Pay ${formatPrice(payableAmount)} with Razorpay`}</Button>
               <p className="text-xs text-muted-foreground">If your bank shows a debit while verification is pending, do not pay again. Contact support with your payment reference.</p>
             </form>
           </section>
