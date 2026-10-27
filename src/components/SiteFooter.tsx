@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Instagram, Mail, MessageCircle, Send, Youtube } from "lucide-react";
+import { Instagram, Mail, MessageCircle, Send, Youtube, Cookie } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { siteConfig } from "@/config/site";
 import { isEmail, safeUrl, useSiteSettingsState, waLink } from "@/lib/settings";
@@ -74,6 +74,17 @@ export function SiteFooter() {
           </ul>
         </nav>
 
+        <div className="md:col-span-3 border-t border-border pt-4">
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent("eduwallet:open-cookie-settings"))}
+            className="inline-flex min-h-10 items-center gap-2 rounded-md text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+          >
+            <Cookie className="size-4" aria-hidden="true" />
+            Cookie settings
+          </button>
+          <Link to="/cookies" className="ml-4 inline-flex min-h-10 items-center text-sm text-muted-foreground underline underline-offset-4 hover:text-foreground">Cookie Policy</Link>
+        </div>
       </div>
 
       <div className="border-t border-border">
