@@ -52,8 +52,12 @@ export function CookieConsent() {
     // Consent defaults are installed once before React mounts by the bootstrap snippet.
     const stored = readConsent();
     setConsent(stored);
+    window.__eduWalletConsent = stored;
     setChoices(stored ? { analytics: stored.analytics, marketing: stored.marketing, functional: stored.functional } : defaultChoices);
-    if (stored) applyGoogleConsent(stored);
+    if (stored) {
+      applyGoogleConsent(stored);
+      window.dispatchEvent(new CustomEvent("eduwallet:consent-changed", { detail: stored }));
+    }
     setShowBanner(!stored);
     setReady(true);
   }, []);
