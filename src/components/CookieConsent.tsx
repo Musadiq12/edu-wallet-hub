@@ -85,6 +85,8 @@ export function CookieConsent() {
     try { localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(record)); } catch { /* in-memory choice still applies */ }
     window.__eduWalletConsent = record;
     applyGoogleConsent(nextChoices);
+    if (!nextChoices.analytics) document.querySelectorAll("script[data-edu-analytics],script[data-edu-analytics-init]").forEach((script) => script.remove());
+    if (!nextChoices.marketing) document.querySelectorAll('script[data-consent-category="marketing"]').forEach((script) => script.remove());
     if (!nextChoices.analytics) document.querySelectorAll("script[data-edu-analytics]").forEach((script) => script.remove());
     setConsent(record); setChoices(nextChoices); setShowBanner(false); setDialogOpen(false);
     try {
