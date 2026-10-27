@@ -127,6 +127,11 @@ export function CookieConsent() {
       <div className="ew-cookie-banner__copy">
         <h2 className="text-base font-semibold">Your privacy choices</h2>
         <p className="mt-1 text-sm leading-6 text-muted-foreground">Essential storage keeps EduWallet working. Optional analytics, advertising and preference technologies stay off until you choose them. Read our <Link to="/privacy" className="font-medium underline underline-offset-2">Privacy Policy</Link> and <Link to="/cookies" className="font-medium underline underline-offset-2">Cookie Policy</Link>.</p>
+          <button type="button" className="mt-2 text-xs font-medium underline underline-offset-4" onClick={() => {
+            setChoices((current) => ({ ...current, marketing: false }));
+            openerRef.current = document.activeElement as HTMLElement;
+            setDialogOpen(true);
+          }}>Do Not Sell or Share My Personal Information</button>
       </div>
       <div className="ew-cookie-banner__actions">
         <Button variant="outline" onClick={() => void chooseAll(true)}>Accept all</Button>
