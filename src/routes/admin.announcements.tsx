@@ -29,6 +29,7 @@ function AnnouncementSettings() {
   const { data, isLoading } = useQuery(announcementQuery());
   const [config, setConfig] = useState<AnnouncementConfig>(defaultAnnouncement);
   const [busy, setBusy] = useState(false);
+  const [saveError, setSaveError] = useState("");
   useEffect(() => { if (data) setConfig(data); }, [data]);
 
   const updateMessage = (index: number, patch: Partial<AnnouncementMessage>) => setConfig((current) => ({
@@ -45,14 +46,22 @@ function AnnouncementSettings() {
   const save = async (event: React.FormEvent) => {
     event.preventDefault();
     const parsed = announcementConfigSchema.safeParse(config);
-    if (!parsed.success) return void toast.error(parsed.error.issues[0]?.message ?? "Check the announcement settings.");
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? "Check the announcement settings.";
+      setSaveError(message);
+      toast.error(message);
+      return;
+    }
     setBusy(true);
+    setSaveError("");
     try {
       await saveAnnouncementConfig(parsed.data);
       await qc.invalidateQueries({ queryKey: ["announcement-bar"] });
       toast.success("Announcement bar saved. Public pages update without a redeploy.");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save announcement settings.");
+      const message = error instanceof Error ? error.message : "Could not save announcement settings.";
+      setSaveError(message);
+      toast.error(message);
     } finally { setBusy(false); }
   };
 
@@ -97,7 +106,10 @@ function AnnouncementSettings() {
         <div className="space-y-2"><Label htmlFor="announcement-text-color">Text color</Label><div className="flex gap-2"><input id="announcement-text-color" aria-label="Choose text color" type="color" value={config.textColor} onChange={(e) => setConfig((current) => ({ ...current, textColor: e.target.value }))} className="h-10 w-12 rounded border border-input bg-background p-1" /><Input aria-label="Text hex color" value={config.textColor} onChange={(e) => setConfig((current) => ({ ...current, textColor: e.target.value }))} pattern="^#[0-9a-fA-F]{6}$" required /></div><p className="text-xs text-muted-foreground">Choose a high-contrast combination. Verify text contrast before publishing.</p></div>
         <div className="space-y-2 sm:col-span-2"><Label htmlFor="announcement-timezone">Scheduling timezone</Label><select id="announcement-timezone" className="h-10 w-full max-w-xs rounded-md border border-input bg-background px-3 text-sm" value={config.timezone} onChange={(e) => setConfig((current) => ({ ...current, timezone: e.target.value as "UTC" | "Asia/Kolkata" }))}><option value="UTC">UTC</option><option value="Asia/Kolkata">India Standard Time (Asia/Kolkata)</option></select><p className="text-xs text-muted-foreground">Browser inputs use your device timezone; saved timestamps are UTC. Pick a timezone and enter dates with your device set to that timezone for accurate scheduling.</p></div>
       </section>
-      <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save announcement settings"}</Button>
+      <div className="space-y-2">
+        {saveError && <p role="alert" className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive">{saveError}</p>}
+        <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save announcement settings"}</Button>
+      </div>
     </form>}
   </div>;
 }
