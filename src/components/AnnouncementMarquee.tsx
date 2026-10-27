@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAnnouncementConfig, type AnnouncementMessage } from "@/lib/announcement";
 import { cn } from "@/lib/utils";
 import "./announcement-marquee.css";
@@ -13,7 +13,13 @@ export function AnnouncementMarquee({ preview = false, config: previewConfig }: 
 }) {
   const query = useAnnouncementConfig();
   const config = preview ? (previewConfig ?? null) : (query.data ?? null);
-  const messages = useMemo(() => (config?.messages ?? []).filter((message) => visibleNow(message, Date.now())), [config?.messages]);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (preview) return;
+    const interval = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => window.clearInterval(interval);
+  }, [preview]);
+  const messages = useMemo(() => (config?.messages ?? []).filter((message) => visibleNow(message, now)), [config?.messages, now]);
   if (!config?.enabled || !messages.length) return null;
 
   const content = (duplicate = false) => messages.map((message) => {
@@ -48,7 +54,6 @@ export function AnnouncementMarquee({ preview = false, config: previewConfig }: 
           <div className="ew-announcement__group" aria-hidden="true" inert>{content(true)}</div>
         </div>
       </div>
-      <p className="sr-only" aria-live="off">{messages.map((message) => message.text).join(". ")}</p>
     </section>
   );
 }
