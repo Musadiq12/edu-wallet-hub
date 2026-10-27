@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAnnouncementConfig, type AnnouncementMessage } from "@/lib/announcement";
 import { cn } from "@/lib/utils";
 import "./announcement-marquee.css";
@@ -14,6 +14,26 @@ export function AnnouncementMarquee({ preview = false, config: previewConfig }: 
   const query = useAnnouncementConfig();
   const config = preview ? (previewConfig ?? null) : (query.data ?? null);
   const [now, setNow] = useState(() => Date.now());
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const sampleRef = useRef<HTMLDivElement>(null);
+  const [copies, setCopies] = useState(3);
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const sample = sampleRef.current;
+    if (!viewport || !sample) return;
+    const measure = () => {
+      const viewportWidth = viewport.clientWidth;
+      const sampleWidth = sample.getBoundingClientRect().width;
+      if (!viewportWidth || !sampleWidth) return;
+      const requiredCopies = Math.max(2, Math.ceil(viewportWidth / sampleWidth) + 1);
+      setCopies((current) => current === requiredCopies ? current : requiredCopies);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(viewport);
+    observer.observe(sample);
+    return () => observer.disconnect();
+  }, [messages]);
   useEffect(() => {
     if (preview) return;
     const interval = window.setInterval(() => setNow(Date.now()), 30_000);
@@ -49,10 +69,31 @@ export function AnnouncementMarquee({ preview = false, config: previewConfig }: 
         ["--ew-marquee-direction" as string]: config.direction === "left" ? "normal" : "reverse",
       }}
     >
-      <div className="ew-announcement__viewport">
+      <div className="ew-announcement__viewport" ref={viewportRef}>
         <div className="ew-announcement__track">
-          <div className="ew-announcement__group">{content(false)}</div>
-          <div className="ew-announcement__group" aria-hidden="true" inert>{content(true)}</div>
+          {[0, 1].map((groupIndex) => (
+            <div
+              className="ew-announcement__group"
+              key={groupIndex}
+              aria-hidden={groupIndex === 1 || undefined}
+              inert={groupIndex === 1 ? true : undefined}
+            >
+              {Array.from({ length: copies }, (_, copyIndex) => {
+                const duplicate = groupIndex === 1 || copyIndex > 0;
+                return (
+                  <div
+                    className="ew-announcement__set"
+                    key={copyIndex}
+                    ref={groupIndex === 0 && copyIndex === 0 ? sampleRef : undefined}
+                    aria-hidden={duplicate || undefined}
+                    inert={duplicate ? true : undefined}
+                  >
+                    {content(duplicate)}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
         </div>
       </div>
     </section>
