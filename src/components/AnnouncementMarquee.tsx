@@ -17,6 +17,8 @@ export function AnnouncementMarquee({ preview = false, config: previewConfig }: 
   const viewportRef = useRef<HTMLDivElement>(null);
   const sampleRef = useRef<HTMLDivElement>(null);
   const [copies, setCopies] = useState(3);
+  const messages = useMemo(() => (config?.messages ?? []).filter((message) => visibleNow(message, now)), [config?.messages, now]);
+
   useEffect(() => {
     const viewport = viewportRef.current;
     const sample = sampleRef.current;
@@ -34,12 +36,13 @@ export function AnnouncementMarquee({ preview = false, config: previewConfig }: 
     observer.observe(sample);
     return () => observer.disconnect();
   }, [messages]);
+
   useEffect(() => {
     if (preview) return;
     const interval = window.setInterval(() => setNow(Date.now()), 30_000);
     return () => window.clearInterval(interval);
   }, [preview]);
-  const messages = useMemo(() => (config?.messages ?? []).filter((message) => visibleNow(message, now)), [config?.messages, now]);
+
   if (!config?.enabled || !messages.length) return null;
 
   const content = (duplicate = false) => messages.map((message) => {
