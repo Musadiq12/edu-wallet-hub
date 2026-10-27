@@ -66,7 +66,7 @@ export function CookieConsent() {
     if (!dialogOpen) return;
     firstChoiceRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") { event.preventDefault(); setDialogOpen(false); return; }
+      if (event.key === "Escape") { event.preventDefault(); setDialogOpen(false); openerRef.current?.focus(); openerRef.current = null; return; }
       if (event.key !== "Tab" || !dialogRef.current) return;
       const nodes = Array.from(dialogRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), [tabindex]:not([tabindex="-1"])')).filter((node) => !node.hasAttribute("hidden"));
       if (!nodes.length) return;
@@ -91,7 +91,6 @@ export function CookieConsent() {
     applyGoogleConsent(nextChoices);
     if (!nextChoices.analytics) document.querySelectorAll("script[data-edu-analytics],script[data-edu-analytics-init]").forEach((script) => script.remove());
     if (!nextChoices.marketing) document.querySelectorAll('script[data-consent-category="marketing"]').forEach((script) => script.remove());
-    if (!nextChoices.analytics) document.querySelectorAll("script[data-edu-analytics]").forEach((script) => script.remove());
     setConsent(record); setChoices(nextChoices); setShowBanner(false); setDialogOpen(false);
     try {
       const url = import.meta.env["VITE_SUPABASE_URL"], key = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
