@@ -1,0 +1,84 @@
+.ew-announcement {
+  display: flex;
+  min-height: 2.5rem;
+  align-items: center;
+  overflow: hidden;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.ew-announcement__viewport {
+  width: 100%;
+  overflow: hidden;
+}
+.ew-announcement__track {
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  animation: ew-marquee var(--ew-marquee-duration, 28s) linear infinite;
+  animation-direction: var(--ew-marquee-direction, normal);
+  will-change: transform;
+}
+.ew-announcement__group {
+  display: flex;
+  flex: 0 0 auto;
+  width: max-content;
+  align-items: center;
+}
+.ew-announcement__item {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 0.55rem;
+  padding-inline: 1.5rem;
+  white-space: nowrap;
+}
+.ew-announcement__item > span:first-child,
+.ew-announcement__plain,
+.ew-announcement__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.ew-announcement__link {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+}
+.ew-announcement__link:hover,
+.ew-announcement__link:focus-visible {
+  text-decoration-color: currentColor;
+}
+.ew-announcement__link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+.ew-announcement__separator {
+  opacity: 0.7;
+  font-size: 0.75rem;
+}
+.ew-announcement:hover .ew-announcement__track,
+.ew-announcement:focus-within .ew-announcement__track {
+  animation-play-state: paused;
+}
+.ew-announcement--preview {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+@keyframes ew-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (max-width: 480px) {
+  .ew-announcement { min-height: 2.75rem; font-size: 0.8125rem; }
+  .ew-announcement__item { padding-inline: 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ew-announcement__track { width: 100%; animation: none; transform: none; }
+  .ew-announcement__group { width: 100%; flex-wrap: wrap; justify-content: center; }
+  .ew-announcement__group[aria-hidden="true"] { display: none; }
+  .ew-announcement__item { padding-block: 0.35rem; white-space: normal; text-align: center; }
+  .ew-announcement__separator { display: none; }
+}
