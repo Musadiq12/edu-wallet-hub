@@ -66,8 +66,8 @@
   overflow: hidden;
 }
 @keyframes ew-marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  from { transform: translateX(100vw); }
+  to { transform: translateX(calc(100vw - 50%)); }
 }
 @media (max-width: 480px) {
   .ew-announcement {
