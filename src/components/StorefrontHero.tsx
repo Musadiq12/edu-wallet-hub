@@ -68,22 +68,12 @@ function parseSlides(value: string): HeroSlide[] {
 export function StorefrontHero() {
   const settings = useSiteSettings();
   const heroSlides = useMemo(() => parseSlides(settings.heroSlides), [settings.heroSlides]);
-  const interval = Math.min(30000, Math.max(3500, Number(settings.heroIntervalMs) || DEFAULT_INTERVAL));
   const [active, setActive] = useState(0);
-  const [paused, setPaused] = useState(false);
   const slide = heroSlides[active] ?? heroSlides[0];
 
   useEffect(() => {
     setActive((current) => Math.min(current, heroSlides.length - 1));
   }, [heroSlides.length]);
-
-  useEffect(() => {
-    if (paused || heroSlides.length < 2) return;
-    const timer = window.setInterval(() => {
-      setActive((current) => (current + 1) % heroSlides.length);
-    }, interval);
-    return () => window.clearInterval(timer);
-  }, [paused, interval, heroSlides.length]);
 
   if (!slide) return null;
 
@@ -92,12 +82,6 @@ export function StorefrontHero() {
       className="page-container pt-5 sm:pt-8"
       aria-roledescription="carousel"
       aria-label="EduWallet featured resources"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocusCapture={() => setPaused(true)}
-      onBlurCapture={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
-      }}
     >
       {slide.imageUrl && <h1 className="sr-only">Exam study notes, PDFs and solved papers for NEET, JEE, UPSC, SSC CGL, Banking and CLAT</h1>}
       <div className={cn("relative isolate overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br shadow-sm", slide.accent || "from-primary/10 via-background to-background")}>
