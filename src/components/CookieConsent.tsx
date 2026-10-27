@@ -101,6 +101,7 @@ export function CookieConsent() {
       });
     } catch { /* audit persistence is not required for the actual choice */ }
     window.dispatchEvent(new CustomEvent("eduwallet:consent-changed", { detail: record }));
+    if (openerRef.current) { openerRef.current.focus(); openerRef.current = null; }
   }, []);
 
   useEffect(() => {
