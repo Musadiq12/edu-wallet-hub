@@ -91,6 +91,7 @@ export function CookieConsent() {
     applyGoogleConsent(nextChoices);
     if (!nextChoices.analytics) document.querySelectorAll("script[data-edu-analytics],script[data-edu-analytics-init]").forEach((script) => script.remove());
     if (!nextChoices.marketing) document.querySelectorAll('script[data-consent-category="marketing"]').forEach((script) => script.remove());
+    if (!nextChoices.marketing) window.dispatchEvent(new CustomEvent("eduwallet:do-not-sell-share", { detail: { optedOut: true } }));
     setConsent(record); setChoices(nextChoices); setShowBanner(false); setDialogOpen(false);
     try {
       const url = import.meta.env["VITE_SUPABASE_URL"], key = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
