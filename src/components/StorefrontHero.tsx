@@ -158,12 +158,24 @@ export function StorefrontHero() {
         ) : (
           <div className="relative z-10 w-full">
             {slide.mobileImageUrl ? (
-              <>
-                <img src={slide.imageUrl} alt={`EduWallet study resources banner, slide ${active + 1}`} className="hidden h-auto w-full max-w-full object-contain sm:block" fetchPriority={active === 0 ? "high" : "auto"} />
-                <img src={slide.mobileImageUrl} alt={`Mobile banner for ${slide.title}`} className="block h-auto w-full max-w-full object-contain sm:hidden" fetchPriority={active === 0 ? "high" : "auto"} />
-              </>
+              <picture>
+                <source media="(max-width: 639px)" srcSet={slide.mobileImageUrl} />
+                <img
+                  src={slide.imageUrl}
+                  alt={`EduWallet study resources banner, slide ${active + 1}`}
+                  className="block h-auto w-full max-w-full object-contain"
+                  fetchPriority={active === 0 ? "high" : "auto"}
+                  decoding="async"
+                />
+              </picture>
             ) : (
-              <img src={slide.imageUrl} alt={`EduWallet banner slide ${active + 1}`} className="block h-auto w-full max-w-full object-contain" fetchPriority={active === 0 ? "high" : "auto"} />
+              <img
+                src={slide.imageUrl}
+                alt={`EduWallet banner slide ${active + 1}`}
+                className="block h-auto w-full max-w-full object-contain"
+                fetchPriority={active === 0 ? "high" : "auto"}
+                decoding="async"
+              />
             )}
           </div>
         )}
