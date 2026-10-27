@@ -24,7 +24,7 @@ export function CoverImage({
           height={300}
           loading="lazy"
           decoding="async"
-          className="absolute inset-0 block h-full w-full object-cover object-center"
+          className="absolute inset-0 block h-full w-full object-contain object-center"
         />
       ) : (
         <div
