@@ -12,9 +12,8 @@ export function AnnouncementMarquee({ preview = false, config: previewConfig }: 
   config?: ReturnType<typeof useAnnouncementConfig>["data"];
 }) {
   const query = useAnnouncementConfig();
-  const config = preview ? previewConfig : query.data;
-  const now = Date.now();
-  const messages = useMemo(() => (config?.messages ?? []).filter((message) => visibleNow(message, now)), [config?.messages, now]);
+  const config = preview ? (previewConfig ?? null) : (query.data ?? null);
+  const messages = useMemo(() => (config?.messages ?? []).filter((message) => visibleNow(message, Date.now())), [config?.messages]);
   if (!config?.enabled || !messages.length) return null;
 
   const content = (duplicate = false) => messages.map((message) => {
