@@ -1,4 +1,4 @@
-export const CONSENT_POLICY_VERSION = "2026-10-v1";
+export const CONSENT_POLICY_VERSION = "2026-10-v2";
 export const CONSENT_STORAGE_KEY = "eduwallet-consent-v2";
 export const CONSENT_LIFETIME_DAYS = 180;
 
