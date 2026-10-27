@@ -12,10 +12,14 @@
   padding: 1rem 1.125rem;
   border: 1px solid hsl(var(--border));
   border-radius: 0.875rem;
-  background-color: hsl(var(--card));
-  color: hsl(var(--card-foreground));
-  opacity: 1;
-  box-shadow: 0 8px 28px rgb(15 23 42 / 18%);
+  /* Use the opaque page surface rather than --card, which may be customized
+     with translucent values by a theme or global design override. */
+  background-color: hsl(var(--background)) !important;
+  background-image: none !important;
+  color: hsl(var(--foreground));
+  opacity: 1 !important;
+  box-shadow: 0 8px 28px rgb(15 23 42 / 22%);
+  isolation: isolate;
 }
 .ew-cookie-banner__copy { min-width: 0; }
 .ew-cookie-banner__copy p { overflow-wrap: anywhere; }
@@ -54,7 +58,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 1rem;
-  background: rgb(15 23 42 / 58%);
+  background: rgb(15 23 42 / 68%);
   isolation: isolate;
 }
 .ew-cookie-dialog {
@@ -68,11 +72,11 @@
   border: 1px solid hsl(var(--border));
   border-radius: 1rem;
   padding: 1.25rem;
-  background-color: hsl(var(--background));
-  background-image: none;
+  background-color: hsl(var(--background)) !important;
+  background-image: none !important;
   color: hsl(var(--foreground));
-  opacity: 1;
-  box-shadow: 0 20px 60px rgb(15 23 42 / 30%);
+  opacity: 1 !important;
+  box-shadow: 0 20px 60px rgb(15 23 42 / 35%);
   isolation: isolate;
 }
 .ew-cookie-dialog:focus { outline: none; }
@@ -85,7 +89,8 @@
   border: 1px solid hsl(var(--border));
   border-radius: 0.65rem;
   padding: 0.875rem;
-  background-color: hsl(var(--card));
+  background-color: hsl(var(--card)) !important;
+  background-image: none !important;
 }
 .ew-cookie-category > div { min-width: 0; }
 .ew-switch { position: relative; flex: 0 0 auto; width: 44px; height: 26px; }
@@ -125,9 +130,11 @@
   border: 1px solid hsl(var(--border));
   border-radius: 999px;
   padding: 0.6rem 0.85rem;
-  background-color: hsl(var(--background));
+  background-color: hsl(var(--background)) !important;
+  background-image: none !important;
   color: hsl(var(--foreground));
-  box-shadow: 0 2px 12px rgb(15 23 42 / 10%);
+  opacity: 1 !important;
+  box-shadow: 0 2px 12px rgb(15 23 42 / 16%);
   font-size: 0.75rem;
   font-weight: 600;
 }
