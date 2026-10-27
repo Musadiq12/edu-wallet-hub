@@ -15,7 +15,7 @@ import { getBreadcrumbLd, getOrganizationLd, getWebsiteLd } from "@/lib/structur
 import { defaultSettings, settingsQuery, useSiteSettings } from "@/lib/settings";
 import { supabase } from "@/integrations/supabase/client";
 import { CookieConsent } from "@/components/CookieConsent";
-import { Banner } from "@/components/ui/banner";
+import { AnnouncementMarquee } from "@/components/AnnouncementMarquee";
 
 const RECOVERY_FLAG = "edu-wallet-password-recovery";
 
@@ -66,21 +66,24 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function Analytics() {
   useEffect(() => {
-    const id = siteConfig.analyticsMeasurementId;
-    if (!id || document.querySelector('script[data-edu-analytics]')) return;
-    const script = document.createElement("script");
-    script.async = true;
-    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
-    script.dataset["eduAnalytics"] = "true";
-    document.head.appendChild(script);
-    const init = document.createElement("script");
-    init.dataset["eduAnalytics"] = "true";
-    init.text = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${id}');`;
-    document.head.appendChild(init);
+    const loadAnalytics = () => {
+      const consent = window.__eduWalletConsent;
+      const id = siteConfig.analyticsMeasurementId;
+      if (!consent?.analytics || !id || document.querySelector('script[data-edu-analytics]')) return;
+      const script = document.createElement("script");
+      script.async = true;
+      script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
+      script.dataset["eduAnalytics"] = "true";
+      document.head.appendChild(script);
+      window.gtag?.("js", new Date());
+      window.gtag?.("config", id, { anonymize_ip: true });
+    };
+    window.addEventListener("eduwallet:consent-changed", loadAnalytics);
+    loadAnalytics();
+    return () => window.removeEventListener("eduwallet:consent-changed", loadAnalytics);
   }, []);
   return null;
 }
-
 function RootShell({ children }: { children: ReactNode }) {
   return <html lang="en"><head><HeadContent /></head><body>{children}<Scripts /></body></html>;
 }
@@ -114,14 +117,7 @@ function RootComponent() {
     <Analytics />
     <div className={isAdminRoute ? "min-h-screen" : isAuthPage ? "min-h-screen" : "flex min-h-screen flex-col"}>
       {!isAuthPage && !isAdminRoute && <SiteHeader />}
-      {!isAuthPage && !isAdminRoute && (
-        <Banner
-          id="site-announcement"
-          variant="normal"
-          height="2.5rem"
-          message="🎉 New study resources and exam-focused materials are being added regularly."
-        />
-      )}
+      {!isAuthPage && !isAdminRoute && <AnnouncementMarquee />}
       <main className={isAdminRoute || isAuthPage ? "min-h-screen" : "flex-1"}><Outlet /></main>
       {!isAuthPage && !isAdminRoute && <SiteFooter />}
     </div>
