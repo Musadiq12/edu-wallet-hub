@@ -75,11 +75,19 @@ export function useAnnouncementConfig() {
 export async function saveAnnouncementConfig(config: AnnouncementConfig) {
   const parsed = announcementConfigSchema.safeParse(config);
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Invalid announcement settings.");
+
+  const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw new Error(`Could not verify your admin session: ${sessionError.message}`);
+  if (!sessionData.session) throw new Error("Your admin session has expired. Sign in again, then save your announcement settings.");
+
   const value = parsed.data;
   const { error } = await supabase.from("announcement_bar_config").upsert({
     id: true,
     enabled: value.enabled,
-    messages: value.messages,
+    messages: value.messages.map((message) => ({
+      ...message,
+      icon: /^[⭐🌟✦✧★☆]+$/u.test((message.icon ?? "").trim()) ? "" : (message.icon ?? ""),
+    })),
     speed_seconds: value.speedSeconds,
     direction: value.direction,
     background_color: value.backgroundColor,
@@ -87,5 +95,13 @@ export async function saveAnnouncementConfig(config: AnnouncementConfig) {
     timezone: value.timezone,
     updated_at: new Date().toISOString(),
   }, { onConflict: "id" });
-  if (error) throw error;
+  if (error) {
+    if (error.code === "42P01" || error.code === "PGRST205") {
+      throw new Error("The announcement settings table is missing from Supabase. Apply the announcement/cookie consent migration, then try again.");
+    }
+    if (error.code === "42501" || error.code === "PGRST301") {
+      throw new Error("Supabase denied this save. Confirm this account has the admin role and that the announcement admin-write RLS policy is applied.");
+    }
+    throw new Error(`Supabase could not save announcement settings (${error.code ?? "unknown error"}): ${error.message}`);
+  }
 }

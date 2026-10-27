@@ -23,7 +23,9 @@ export function AnnouncementMarquee({ preview = false, config: previewConfig }: 
   if (!config?.enabled || !messages.length) return null;
 
   const content = (duplicate = false) => messages.map((message) => {
-    const body = <><span aria-hidden="true">{message.icon || "•"}</span><span>{message.text}</span></>;
+    const icon = (message.icon ?? "").trim();
+    const isDecorativeStar = /^[⭐🌟✦✧★☆]+$/u.test(icon);
+    const body = <>{icon && !isDecorativeStar && <span aria-hidden="true">{icon}</span>}<span>{message.text}</span></>;
     return (
       <span key={(duplicate ? "copy-" : "") + message.id} className="ew-announcement__item">
         {message.url ? (
@@ -31,7 +33,6 @@ export function AnnouncementMarquee({ preview = false, config: previewConfig }: 
         ) : (
           <span aria-hidden={duplicate || undefined} className="ew-announcement__plain">{body}</span>
         )}
-        <span aria-hidden="true" className="ew-announcement__separator">✦</span>
       </span>
     );
   });
