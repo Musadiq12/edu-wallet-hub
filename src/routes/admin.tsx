@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Megaphone,
   Newspaper,
   Moon,
   Package,
@@ -53,6 +54,7 @@ const NAV = [
   { to: "/admin/reviews", label: "Reviews", icon: Star, exact: false },
   { to: "/admin/blog", label: "Blog", icon: Newspaper, exact: false },
   { to: "/admin/free-resources", label: "Free Resources", icon: Gift, exact: false },
+  { to: "/admin/announcements", label: "Announcement Bar", icon: Megaphone, exact: false },
   { to: "/admin/settings", label: "Settings", icon: Settings, exact: false },
 ] as const;
 
