@@ -2,13 +2,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import "./cookie-consent.css";
+import { CONSENT_LIFETIME_DAYS, CONSENT_POLICY_VERSION, CONSENT_STORAGE_KEY, type ConsentChoices } from "@/lib/consent";
 
-const CONSENT_KEY = "eduwallet-consent-v2";
-const POLICY_VERSION = "2026-10-v1";
-const CONSENT_DAYS = 180;
 type OptionalCategory = "analytics" | "marketing" | "functional";
 type Choices = { analytics: boolean; marketing: boolean; functional: boolean };
-type Consent = Choices & { necessary: true; policyVersion: string; timestamp: string; expiresAt: string; jurisdiction: string; consentId: string };
+type Consent = ConsentChoices;
 declare global { interface Window { dataLayer?: unknown[]; gtag?: (...args: unknown[]) => void; __eduWalletConsent?: Consent | null; } }
 
 const defaultChoices: Choices = { analytics: false, marketing: false, functional: false };
@@ -20,10 +18,10 @@ const descriptions: Record<OptionalCategory, string> = {
 
 function readConsent(): Consent | null {
   try {
-    const raw = localStorage.getItem(CONSENT_KEY);
+    const raw = localStorage.getItem(CONSENT_STORAGE_KEY);
     if (!raw) return null;
     const value = JSON.parse(raw) as Consent;
-    if (!value || value.policyVersion !== POLICY_VERSION || Date.parse(value.expiresAt) <= Date.now()) return null;
+    if (!value || value.policyVersion !== CONSENT_POLICY_VERSION || Date.parse(value.expiresAt) <= Date.now()) return null;
     if (value.necessary !== true || typeof value.analytics !== "boolean" || typeof value.marketing !== "boolean" || typeof value.functional !== "boolean") return null;
     return value;
   } catch { return null; }
@@ -79,14 +77,15 @@ export function CookieConsent() {
   const recordChoice = useCallback(async (nextChoices: Choices) => {
     const timestamp = new Date();
     const record: Consent = {
-      necessary: true, ...nextChoices, policyVersion: POLICY_VERSION, timestamp: timestamp.toISOString(),
-      expiresAt: new Date(timestamp.getTime() + CONSENT_DAYS * 86400000).toISOString(),
+      necessary: true, ...nextChoices, policyVersion: CONSENT_POLICY_VERSION, timestamp: timestamp.toISOString(),
+      expiresAt: new Date(timestamp.getTime() + CONSENT_LIFETIME_DAYS * 86400000).toISOString(),
       // Static client cannot reliably infer legal jurisdiction; production geo-based defaults need a CMP/edge signal before tags initialize.
       jurisdiction: "unknown", consentId: crypto.randomUUID(),
     };
-    try { localStorage.setItem(CONSENT_KEY, JSON.stringify(record)); } catch { /* in-memory choice still applies */ }
+    try { localStorage.setItem(CONSENT_STORAGE_KEY, JSON.stringify(record)); } catch { /* in-memory choice still applies */ }
     window.__eduWalletConsent = record;
     applyGoogleConsent(nextChoices);
+    if (!nextChoices.analytics) document.querySelectorAll("script[data-edu-analytics]").forEach((script) => script.remove());
     setConsent(record); setChoices(nextChoices); setShowBanner(false); setDialogOpen(false);
     try {
       const url = import.meta.env["VITE_SUPABASE_URL"], key = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"];
@@ -147,7 +146,7 @@ export function CookieConsent() {
           <Button variant="outline" onClick={() => void recordChoice(choices)}>Save preferences</Button>
           <Button onClick={() => void chooseAll(true)}>Accept all</Button>
         </div>
-        <p className="mt-4 text-xs text-muted-foreground">Choice stored for {CONSENT_DAYS} days. Policy version: {POLICY_VERSION}.</p>
+        <p className="mt-4 text-xs text-muted-foreground">Choice stored for {CONSENT_LIFETIME_DAYS} days. Policy version: {CONSENT_POLICY_VERSION}.</p>
       </section>
     </div>}
     {consent && !showBanner && <button type="button" className="ew-cookie-settings" onClick={openCustomize} aria-label="Open cookie settings">Cookie settings</button>}
