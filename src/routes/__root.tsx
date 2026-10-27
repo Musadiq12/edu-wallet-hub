@@ -75,8 +75,10 @@ function Analytics() {
       script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(id)}`;
       script.dataset["eduAnalytics"] = "true";
       document.head.appendChild(script);
-      window.gtag?.("js", new Date());
-      window.gtag?.("config", id, { anonymize_ip: true });
+      const init = document.createElement("script");
+      init.dataset["eduAnalyticsInit"] = "true";
+      init.text = "window.dataLayer=window.dataLayer||[];window.gtag=window.gtag||function(){window.dataLayer.push(arguments);};window.gtag('js',new Date());window.gtag('config','" + id + "',{anonymize_ip:true});";
+      document.head.appendChild(init);
     };
     window.addEventListener("eduwallet:consent-changed", loadAnalytics);
     loadAnalytics();
