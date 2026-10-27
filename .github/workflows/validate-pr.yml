@@ -1,0 +1,26 @@
+name: Validate pull requests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: ["feat/announcement-cookie-consent"]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    env:
+      VITE_SUPABASE_URL: https://jlzownnxzdwwfylaqqcn.supabase.co
+      SUPABASE_URL: https://jlzownnxzdwwfylaqqcn.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_sajuPlI-7t5OGpKTts9LwA_Ct_3zbZ4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm run lint
+      - run: npm run build
