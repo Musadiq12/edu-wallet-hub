@@ -59,7 +59,7 @@ export function CookieConsent() {
   const firstChoiceRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    ensureDefaultConsent();
+    // Consent defaults are installed once before React mounts by the bootstrap snippet.
     const stored = readConsent();
     setConsent(stored);
     setChoices(stored ? { analytics: stored.analytics, marketing: stored.marketing, functional: stored.functional } : defaultChoices);
