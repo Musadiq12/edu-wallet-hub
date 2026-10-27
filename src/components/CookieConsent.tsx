@@ -166,6 +166,5 @@ export function CookieConsent() {
         <p className="mt-4 text-xs text-muted-foreground">Your choice is saved for {CONSENT_LIFETIME_DAYS} days. Policy version: {CONSENT_POLICY_VERSION}.</p>
       </section>
     </div>}
-    {consent && !showBanner && <button type="button" className="ew-cookie-settings" onClick={openCustomize} aria-label="Open cookie settings">Cookie settings</button>}
   </>;
 }
