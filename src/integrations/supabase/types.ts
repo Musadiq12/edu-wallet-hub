@@ -14,6 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcement_bar_config: {
+        Row: {
+          background_color: string
+          direction: string
+          enabled: boolean
+          id: boolean
+          messages: Json
+          speed_seconds: number
+          text_color: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          background_color?: string
+          direction?: string
+          enabled?: boolean
+          id?: boolean
+          messages?: Json
+          speed_seconds?: number
+          text_color?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          background_color?: string
+          direction?: string
+          enabled?: boolean
+          id?: boolean
+          messages?: Json
+          speed_seconds?: number
+          text_color?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cookie_consent_config: {
+        Row: {
+          banner_text: string
+          banner_title: string
+          consent_days: number
+          cookie_path: string
+          id: boolean
+          policy_version: string
+          privacy_path: string
+          updated_at: string
+        }
+        Insert: {
+          banner_text?: string
+          banner_title?: string
+          consent_days?: number
+          cookie_path?: string
+          id?: boolean
+          policy_version?: string
+          privacy_path?: string
+          updated_at?: string
+        }
+        Update: {
+          banner_text?: string
+          banner_title?: string
+          consent_days?: number
+          cookie_path?: string
+          id?: boolean
+          policy_version?: string
+          privacy_path?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cookie_consent_records: {
+        Row: {
+          categories: Json
+          consent_id: string
+          created_at: string
+          id: string
+          jurisdiction: string
+          policy_version: string
+        }
+        Insert: {
+          categories: Json
+          consent_id: string
+          created_at?: string
+          id?: string
+          jurisdiction?: string
+          policy_version: string
+        }
+        Update: {
+          categories?: Json
+          consent_id?: string
+          created_at?: string
+          id?: string
+          jurisdiction?: string
+          policy_version?: string
+        }
+        Relationships: []
+      }
       achiever_avatars: {
         Row: {
           alt_text: string | null
