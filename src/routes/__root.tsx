@@ -42,9 +42,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       if (typeof firstSlide?.imageUrl === "string") {
         const imageUrl = new URL(firstSlide.imageUrl);
         if (imageUrl.protocol === "https:") {
-          const mobileHref = typeof firstSlide.mobileImageUrl === "string" && firstSlide.mobileImageUrl.startsWith("https://")
-            ? firstSlide.mobileImageUrl
-            : undefined;
+          const mobileHref = typeof firstSlide.mobileImageUrl === "string" && firstSlide.mobileImageUrl.startsWith("https://") ? firstSlide.mobileImageUrl : undefined;
           heroPreload = { href: imageUrl.href, origin: imageUrl.origin, mobileHref };
         }
       }
