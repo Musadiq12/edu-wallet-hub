@@ -148,10 +148,9 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
     if (pricingProblem) return pricingProblem;
     if (form.page_count && Number(form.page_count) < 0) return "Page count cannot be negative.";
     if (form.product_type === "physical") {
-      if (!/^\\d+$/.test(form.stock_quantity) || !Number.isSafeInteger(Number(form.stock_quantity))) return "Stock quantity must be a non-negative whole number.";
-      if (form.low_stock_threshold !== "" && (!/^\\d+$/.test(form.low_stock_threshold) || !Number.isSafeInteger(Number(form.low_stock_threshold)))) return "Low-stock threshold must be a non-negative whole number or left blank.";
-    }
-    if (form.is_free && form.product_type !== "pdf") return "Free resources must use the Digital PDF product type.";
+      if (!/^\d+$/.test(form.stock_quantity) || !Number.isSafeInteger(Number(form.stock_quantity))) return "Stock quantity must be a non-negative whole number.";
+      if (form.low_stock_threshold !== "" && (!/^\d+$/.test(form.low_stock_threshold) || !Number.isSafeInteger(Number(form.low_stock_threshold)))) return "Low-stock threshold must be a non-negative whole number or left blank.";
+    }.is_free && form.product_type !== "pdf") return "Free resources must use the Digital PDF product type.";
     if (form.is_free && !form.google_drive_url.trim()) return "Add a Google Drive link for this free resource.";
     if (form.is_free) {
       try {
