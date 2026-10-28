@@ -102,7 +102,12 @@ export function ProductCard({ product, compact = false }: { product: Product; co
               </Link>
             </Button>
           )}
-          {!product.is_free && !compact && product.product_type !== "physical" && (
+          {!product.is_free && !compact && product.product_type === "physical" && stockMessage?.tone === "out" && (
+            <Button size="sm" className="flex-1" disabled aria-disabled="true">
+              Out of stock
+            </Button>
+          )}
+          {!product.is_free && !compact && (product.product_type !== "physical" || stockMessage?.tone !== "out") && (
             <Button size="sm" className="flex-1" asChild>
               <Link to="/checkout/$slug" params={{ slug: product.slug }}>
                 Buy Now
