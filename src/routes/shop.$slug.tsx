@@ -226,7 +226,7 @@ function ProductDetail() {
     url: absoluteUrl(`/shop/${p.slug}`),
     description: schemaDescription,
     ...(coverUrl ? { image: coverUrl } : {}),
-    offers: { "@type": "Offer", price: String(effectivePrice(p)), priceCurrency: "INR", availability: "https://schema.org/InStock" },
+    offers: { "@type": "Offer", price: String(effectivePrice(p)), priceCurrency: "INR", availability: p.product_type === "physical" && (p.stock_status === "out_of_stock" || p.stock_quantity <= 0) ? "https://schema.org/OutOfStock" : "https://schema.org/InStock", ...(p.product_type === "physical" ? { inventoryLevel: { "@type": "QuantitativeValue", value: Number(p.stock_quantity) } } : {}) },
     ...(ratingData.count > 0 ? { aggregateRating: { "@type": "AggregateRating", ratingValue: String(ratingData.average), reviewCount: String(ratingData.count) } } : {}),
   };
   const handleSubmitReview = async () => {
