@@ -378,37 +378,6 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         </div>
       </section>
 
-      {form.product_type === "physical" && (
-        <section className="space-y-4 rounded-xl border border-border bg-surface p-4 sm:p-5" aria-labelledby="stock-heading">
-          <div>
-            <h2 id="stock-heading" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Stock / Inventory</h2>
-            <p className="mt-1 text-xs text-muted-foreground">Manage availability for this physical product here. Digital PDF products do not use stock controls.</p>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="stock_quantity">Stock quantity <span aria-hidden="true">*</span></Label>
-              <Input id="stock_quantity" type="number" min="0" step="1" inputMode="numeric" required className="h-11" value={form.stock_quantity} disabled={busy} onChange={(e) => set("stock_quantity", e.target.value)} aria-describedby="stock-quantity-help" />
-              <p id="stock-quantity-help" className="text-xs text-muted-foreground">Whole number, zero or higher.</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="stock_status">Stock status</Label>
-              <Select value={form.stock_status} onValueChange={(value) => set("stock_status", value === "out_of_stock" ? "out_of_stock" : "in_stock")} disabled={busy}>
-                <SelectTrigger id="stock_status" className="h-11"><SelectValue /></SelectTrigger>
-                <SelectContent position="popper" className="z-[100]">
-                  <SelectItem value="in_stock">In stock</SelectItem>
-                  <SelectItem value="out_of_stock">Out of stock</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">You can mark this item unavailable even when quantity remains.</p>
-            </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="low_stock_threshold">Low-stock threshold (optional)</Label>
-              <Input id="low_stock_threshold" type="number" min="0" step="1" inputMode="numeric" className="h-11" value={form.low_stock_threshold} disabled={busy} onChange={(e) => set("low_stock_threshold", e.target.value)} placeholder="Leave blank to disable low-stock warning" />
-              <p className="text-xs text-muted-foreground">When remaining stock is at or below this number, the product page shows “Only X left”.</p>
-            </div>
-          </div>
-        </section>
-      )}
 
       <section className="space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Pricing</h2>
@@ -513,6 +482,37 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
             </div>
           ))}
         </div>
+      {form.product_type === "physical" && (
+        <section className="space-y-4 rounded-xl border border-border bg-surface p-4 sm:p-5" aria-labelledby="stock-heading">
+          <div>
+            <h2 id="stock-heading" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Stock / Inventory</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Manage availability for this physical product here. Digital PDF products do not use stock controls.</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="stock_quantity">Stock quantity <span aria-hidden="true">*</span></Label>
+              <Input id="stock_quantity" type="number" min="0" step="1" inputMode="numeric" required className="h-11" value={form.stock_quantity} disabled={busy} onChange={(e) => set("stock_quantity", e.target.value)} aria-describedby="stock-quantity-help" />
+              <p id="stock-quantity-help" className="text-xs text-muted-foreground">Whole number, zero or higher.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="stock_status">Stock status</Label>
+              <Select value={form.stock_status} onValueChange={(value) => set("stock_status", value === "out_of_stock" ? "out_of_stock" : "in_stock")} disabled={busy}>
+                <SelectTrigger id="stock_status" className="h-11"><SelectValue /></SelectTrigger>
+                <SelectContent position="popper" className="z-[100]">
+                  <SelectItem value="in_stock">In stock</SelectItem>
+                  <SelectItem value="out_of_stock">Out of stock</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">You can mark this item unavailable even when quantity remains.</p>
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="low_stock_threshold">Low-stock threshold (optional)</Label>
+              <Input id="low_stock_threshold" type="number" min="0" step="1" inputMode="numeric" className="h-11" value={form.low_stock_threshold} disabled={busy} onChange={(e) => set("low_stock_threshold", e.target.value)} placeholder="Leave blank to disable low-stock warning" />
+              <p className="text-xs text-muted-foreground">When remaining stock is at or below this number, the product page shows “Only X left”.</p>
+            </div>
+          </div>
+        </section>
+      )}
       </section>
 
       <div className="flex flex-col gap-2 border-t border-border pt-5 sm:flex-row">
