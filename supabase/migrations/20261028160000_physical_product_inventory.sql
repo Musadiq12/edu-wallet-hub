@@ -144,7 +144,10 @@ BEGIN
   IF NEW.product_type <> 'physical' THEN RETURN NEW; END IF;
   IF NEW.product_id IS NULL THEN RAISE EXCEPTION 'This physical product is no longer available.'; END IF;
 
-  -- Stock is reserved before payment, so cancellation must release it even if checkout was abandoned.
+  -- Reused idempotent checkouts must not reserve the same stock a second time.
+  IF NEW.inventory_reserved THEN RETURN NEW; END IF;
+
+  -- Stock is held before a payment session is returned so concurrent buyers cannot buy the last unit.
   SELECT * INTO v_product FROM public.products WHERE id = NEW.product_id FOR UPDATE;
   IF NOT FOUND OR v_product.product_type <> 'physical' OR NOT v_product.is_active THEN
     RAISE EXCEPTION 'This physical product is no longer available.';
