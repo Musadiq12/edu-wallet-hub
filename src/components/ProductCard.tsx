@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { CoverImage } from "@/components/CoverImage";
 import { discountPercent, effectivePrice, formatPrice, hasDiscount } from "@/lib/format";
 import type { Product } from "@/lib/catalog";
+import { getStockMessage } from "@/lib/stock";
 
 export function ProductCard({ product, compact = false }: { product: Product; compact?: boolean }) {
   const price = Number(product.price ?? 0);
@@ -12,6 +13,7 @@ export function ProductCard({ product, compact = false }: { product: Product; co
     product.discounted_price != null ? Number(product.discounted_price) : null;
   const off = discountPercent(price, discounted);
   const discountedPrice = hasDiscount(price, discounted);
+  const stockMessage = getStockMessage(product);
 
   return (
     <article className="flex h-full flex-col overflow-hidden rounded-xl border border-border bg-card transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-lg">
@@ -59,6 +61,16 @@ export function ProductCard({ product, compact = false }: { product: Product; co
           {product.page_count ? ` · ${product.page_count} pages` : ""}
         </p>
 
+        {stockMessage && (
+          <p
+            className={`mt-3 inline-flex w-fit items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs font-semibold ${stockMessage.tone === "out" ? "border-destructive/30 bg-destructive/5 text-destructive" : stockMessage.tone === "low" ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300" : "border-success/25 bg-success/5 text-success"}`}
+            aria-label={stockMessage.label}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${stockMessage.tone === "out" ? "bg-destructive" : stockMessage.tone === "low" ? "bg-amber-500" : "bg-success"}`} aria-hidden="true" />
+            {stockMessage.label}
+          </p>
+        )}
+
         <div className="mt-4 flex items-baseline gap-2">
           {product.is_free ? (
             <span className="text-lg font-semibold text-success">Free</span>
@@ -90,7 +102,12 @@ export function ProductCard({ product, compact = false }: { product: Product; co
               </Link>
             </Button>
           )}
-          {!product.is_free && !compact && (
+          {!product.is_free && !compact && product.product_type === "physical" && stockMessage?.tone === "out" && (
+            <Button size="sm" className="flex-1" disabled aria-disabled="true">
+              Out of stock
+            </Button>
+          )}
+          {!product.is_free && !compact && (product.product_type !== "physical" || stockMessage?.tone !== "out") && (
             <Button size="sm" className="flex-1" asChild>
               <Link to="/checkout/$slug" params={{ slug: product.slug }}>
                 Buy Now
