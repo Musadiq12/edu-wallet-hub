@@ -481,6 +481,8 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
             </div>
           ))}
         </div>
+}
+
       {form.product_type === "physical" && (
         <section className="space-y-4 rounded-xl border border-border bg-surface p-4 sm:p-5" aria-labelledby="stock-heading">
           <div>
@@ -511,7 +513,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
             </div>
           </div>
         </section>
-      )}
+      )
       </section>
 
       <div className="flex flex-col gap-2 border-t border-border pt-5 sm:flex-row">
