@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useSiteSettings } from "@/lib/settings";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Star } from "lucide-react";
+import { Star, Share2, Copy, MessageCircle, Facebook, Send, Mail, X as CloseIcon, Twitter as XIcon } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { useSession } from "@/lib/auth";
 import { canReviewQuery, myReviewQuery, productReviewsQuery, reviewSummaryQuery, submitReview, updateMyReview } from "@/lib/reviews";
@@ -11,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { publicImageUrl } from "@/lib/image-storage";
 import { ArrowRight, Eye, FileText, ShieldCheck, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { CoverImage } from "@/components/CoverImage";
 import { EmptyState } from "@/components/EmptyState";
@@ -62,6 +62,111 @@ export const Route = createFileRoute("/shop/$slug")({
   },
   component: ProductDetail,
 });
+
+
+function ProductShare({ title, slug }: { title: string; slug: string }) {
+  const [open, setOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const shareUrl = typeof window !== "undefined"
+    ? new URL(`/shop/${encodeURIComponent(slug)}`, window.location.origin).href
+    : absoluteUrl(`/shop/${encodeURIComponent(slug)}`);
+  const shareText = `Check out ${title}`;
+
+  const copyLink = async () => {
+    let success = false;
+    try {
+      if (navigator.clipboard?.writeText && window.isSecureContext) {
+        await navigator.clipboard.writeText(shareUrl);
+        success = true;
+      }
+    } catch {
+      // Fall back to a temporary text field for older browsers or denied clipboard permissions.
+    }
+    if (!success) {
+      const field = document.createElement("textarea");
+      field.value = shareUrl;
+      field.setAttribute("readonly", "");
+      field.style.position = "fixed";
+      field.style.opacity = "0";
+      field.style.pointerEvents = "none";
+      document.body.appendChild(field);
+      field.select();
+      try {
+        success = document.execCommand("copy");
+      } finally {
+        field.remove();
+      }
+    }
+    if (success) {
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } else {
+      toast.error("Could not copy automatically. Select and copy the page URL from your browser.");
+    }
+  };
+
+  const useNativeShare = async () => {
+    if (typeof navigator.share !== "function") {
+      setOpen(true);
+      return;
+    }
+    try {
+      await navigator.share({ title, text: shareText, url: shareUrl });
+    } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") return;
+      setOpen(true);
+    }
+  };
+
+  const encodedUrl = encodeURIComponent(shareUrl);
+  const encodedText = encodeURIComponent(`${shareText}: ${shareUrl}`);
+  const socialLinks = [
+    { label: "WhatsApp", href: `https://wa.me/?text=${encodedText}`, icon: MessageCircle },
+    { label: "Facebook", href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`, icon: Facebook },
+    { label: "X (Twitter)", href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodedUrl}`, icon: XIcon },
+    { label: "Telegram", href: `https://t.me/share/url?url=${encodedUrl}&text=${encodeURIComponent(shareText)}`, icon: Send },
+  ];
+
+  return (
+    <>
+      <Button type="button" variant="outline" size="lg" className="min-h-11 rounded-xl" onClick={() => void useNativeShare()} aria-label={`Share ${title}`}>
+        <Share2 className="h-4 w-4" aria-hidden="true" />
+        Share
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="w-[calc(100%-2rem)] rounded-2xl p-5 sm:max-w-md sm:p-6">
+          <DialogHeader className="pr-7 text-left">
+            <DialogTitle className="font-serif text-2xl">Share this resource</DialogTitle>
+            <DialogDescription className="line-clamp-2 break-words">{title}</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+            {socialLinks.map(({ label, href, icon: Icon }) => (
+              <a key={label} href={href} target="_blank" rel="noopener noreferrer" className="flex min-h-12 items-center gap-2 rounded-xl border border-border bg-background px-3 py-3 text-sm font-medium transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label={`Share on ${label}`}>
+                <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>{label}</span>
+              </a>
+            ))}
+            <a href={`mailto:?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(`I thought you might find this useful: ${shareUrl}`)}`} className="flex min-h-12 items-center gap-2 rounded-xl border border-border bg-background px-3 py-3 text-sm font-medium transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" aria-label="Share by email">
+              <Mail className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>Email</span>
+            </a>
+          </div>
+          <div className="flex flex-col gap-2 border-t border-border pt-4 sm:flex-row">
+            <Button type="button" className="min-h-11 flex-1" onClick={() => void copyLink()}>
+              <Copy className="h-4 w-4" aria-hidden="true" />
+              {copied ? "Link copied!" : "Copy link"}
+            </Button>
+            <Button type="button" variant="outline" className="min-h-11 sm:w-auto" onClick={() => setOpen(false)}>
+              <CloseIcon className="h-4 w-4" aria-hidden="true" />
+              Close
+            </Button>
+          </div>
+          <p className="sr-only" aria-live="polite">{copied ? "Link copied to clipboard." : ""}</p>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
 
 function ProductDetail() {
   const s = useSiteSettings();
@@ -178,7 +283,10 @@ function ProductDetail() {
               {p.is_free && <Badge className="bg-success text-success-foreground">Free</Badge>}
             </div>
 
-            <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">{p.title}</h1>
+            <div className="mt-4 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <h1 className="min-w-0 font-serif text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">{p.title}</h1>
+              <ProductShare title={p.title} slug={p.slug} />
+            </div>
 
             <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
