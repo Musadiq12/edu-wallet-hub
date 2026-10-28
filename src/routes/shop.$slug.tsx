@@ -282,7 +282,10 @@ function ProductDetail() {
               {p.is_free && <Badge className="bg-success text-success-foreground">Free</Badge>}
             </div>
 
-            <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">{p.title}</h1>
+            <div className="mt-4 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <h1 className="min-w-0 font-serif text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">{p.title}</h1>
+              <ProductShare title={p.title} slug={p.slug} />
+            </div>
 
             {p.product_type === "physical" && (
               <div className="mt-4" aria-live="polite">
