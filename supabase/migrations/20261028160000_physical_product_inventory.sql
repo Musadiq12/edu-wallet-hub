@@ -186,7 +186,7 @@ BEGIN
     IF OLD.inventory_reserved THEN
       UPDATE public.products
       SET stock_quantity = stock_quantity + OLD.quantity,
-          stock_status = 'in_stock',
+          stock_status = CASE WHEN stock_status = 'out_of_stock' AND stock_quantity > 0 THEN 'in_stock' ELSE stock_status END,
           updated_at = now()
       WHERE id = OLD.product_id AND product_type = 'physical';
       NEW.inventory_released := true;
