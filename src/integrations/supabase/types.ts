@@ -1825,6 +1825,10 @@ export type Database = {
         Args: { _payload: Json; _product_id: string }
         Returns: string
       }
+      admin_cancel_physical_order: {
+        Args: { p_order_id: string }
+        Returns: Json
+      }
       has_admin_role: {
         Args: { required_role: Database["public"]["Enums"]["admin_role"] }
         Returns: boolean
