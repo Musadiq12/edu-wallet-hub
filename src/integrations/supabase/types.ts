@@ -1100,6 +1100,9 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          inventory_deducted: boolean
+          inventory_released: boolean
+          inventory_reserved: boolean
           order_status: Database["public"]["Enums"]["order_status"]
           payment_method: string
           payment_status: Database["public"]["Enums"]["payment_status"]
@@ -1261,6 +1264,9 @@ export type Database = {
           pdf_file: string | null
           preview_file: string | null
           price: number
+          stock_quantity: number
+          stock_status: string
+          low_stock_threshold: number | null
           product_type: string
           slug: string
           subject_id: string | null
@@ -1291,6 +1297,9 @@ export type Database = {
           pdf_file?: string | null
           preview_file?: string | null
           price?: number
+          stock_quantity?: number
+          stock_status?: string
+          low_stock_threshold?: number | null
           product_type?: string
           slug: string
           subject_id?: string | null
@@ -1815,6 +1824,10 @@ export type Database = {
       admin_upsert_product: {
         Args: { _payload: Json; _product_id: string }
         Returns: string
+      }
+      admin_cancel_physical_order: {
+        Args: { p_order_id: string }
+        Returns: Json
       }
       has_admin_role: {
         Args: { required_role: Database["public"]["Enums"]["admin_role"] }
