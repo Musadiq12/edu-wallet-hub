@@ -180,8 +180,6 @@ function ProductDetail() {
 
             <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">{p.title}</h1>
 
-            <h1 className="mt-4 font-serif text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">{p.title}</h1>
-
             {p.product_type === "physical" && (
               <div className="mt-4" aria-live="polite">
                 {p.stock_status === "out_of_stock" || p.stock_quantity <= 0 ? (
