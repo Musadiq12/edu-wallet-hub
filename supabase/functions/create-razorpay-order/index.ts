@@ -61,10 +61,13 @@ type ExistingCheckoutOrder = CheckoutOrder & {
   delivery_postal_code: string | null;
   delivery_country: string | null;
   estimated_delivery: string | null;
+  inventory_reserved: boolean;
+  inventory_deducted: boolean;
+  inventory_released: boolean;
 };
 
 const IDEMPOTENCY_ORDER_FIELDS =
-  "id,user_id,product_id,product_type,product_title,full_name,email,whatsapp,amount,payment_status,order_status,payment_gateway,razorpay_order_id,razorpay_status,checkout_idempotency_key,razorpay_creation_started_at,created_at,coupon_code,delivery_address,delivery_city,delivery_state,delivery_postal_code,delivery_country,estimated_delivery";
+  "id,user_id,product_id,product_type,product_title,full_name,email,whatsapp,amount,payment_status,order_status,payment_gateway,razorpay_order_id,razorpay_status,checkout_idempotency_key,razorpay_creation_started_at,created_at,coupon_code,delivery_address,delivery_city,delivery_state,delivery_postal_code,delivery_country,estimated_delivery,inventory_reserved,inventory_deducted,inventory_released";
 
 type GatewayOrderResult =
   | { ok: true; id: string }
@@ -330,6 +333,10 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
       return json(req, { error: "Checkout details changed. Start a new checkout attempt before paying." }, 409);
     }
 
+    if (existing.product_type === "physical" && existing.inventory_released) {
+      return json(req, { error: "This checkout reservation was released. Refresh the product page and start a new checkout." }, 409);
+    }
+
     if (
       existing.payment_status === "verified" ||
       ["paid", "fulfilled", "partially_refunded", "refunded"].includes(existing.razorpay_status)
@@ -538,6 +545,9 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
       return json(req, { error: matchedCouponError[1] }, 409);
     }
 
+    if ((orderError?.message ?? "").includes("OUT_OF_STOCK")) {
+      return json(req, { error: "This physical product has just sold out or does not have enough stock. Please refresh the product page." }, 409);
+    }
     console.error("Razorpay order record creation failed:", orderError);
     return json(req, { error: "Could not create your order. Please retry." }, 500);
   }

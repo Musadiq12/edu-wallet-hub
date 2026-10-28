@@ -63,7 +63,6 @@ export const Route = createFileRoute("/shop/$slug")({
   component: ProductDetail,
 });
 
-
 function ProductShare({ title, slug }: { title: string; slug: string }) {
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -105,7 +104,7 @@ function ProductShare({ title, slug }: { title: string; slug: string }) {
     }
   };
 
-  const useNativeShare = async () => {
+  const handleShare = async () => {
     if (typeof navigator.share !== "function") {
       setOpen(true);
       return;
@@ -129,7 +128,7 @@ function ProductShare({ title, slug }: { title: string; slug: string }) {
 
   return (
     <>
-      <Button type="button" variant="outline" size="lg" className="min-h-11 rounded-xl" onClick={() => void useNativeShare()} aria-label={`Share ${title}`}>
+      <Button type="button" variant="outline" size="lg" className="min-h-11 rounded-xl" onClick={() => void handleShare()} aria-label={`Share ${title}`}>
         <Share2 className="h-4 w-4" aria-hidden="true" />
         Share
       </Button>
@@ -288,6 +287,24 @@ function ProductDetail() {
               <ProductShare title={p.title} slug={p.slug} />
             </div>
 
+            {p.product_type === "physical" && (
+              <div className="mt-4" aria-live="polite">
+                {p.stock_status === "out_of_stock" || p.stock_quantity <= 0 ? (
+                  <p className="inline-flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm font-semibold text-destructive">
+                    <span className="h-2 w-2 rounded-full bg-destructive" aria-hidden="true" /> Out of stock
+                  </p>
+                ) : p.low_stock_threshold != null && p.stock_quantity <= p.low_stock_threshold ? (
+                  <p className="inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
+                    <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" /> Only {p.stock_quantity} left
+                  </p>
+                ) : (
+                  <p className="inline-flex items-center gap-2 rounded-lg border border-success/25 bg-success/5 px-3 py-2 text-sm font-medium text-success">
+                    <span className="h-2 w-2 rounded-full bg-success" aria-hidden="true" /> In stock
+                  </p>
+                )}
+              </div>
+            )}
+
             <dl className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
                 ["Course", p.course_label ?? "—"],
@@ -371,6 +388,10 @@ function ProductDetail() {
                       Google Drive link not added
                     </Button>
                   )
+                ) : p.product_type === "physical" && (p.stock_status === "out_of_stock" || p.stock_quantity <= 0) ? (
+                  <Button size="lg" className="w-full rounded-xl sm:w-auto" disabled>
+                    <ShoppingBag className="mr-2 h-4 w-4" /> Out of stock
+                  </Button>
                 ) : (
                   <Button size="lg" className="w-full rounded-xl px-7 font-semibold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg sm:w-auto" asChild>
                     <Link to="/checkout/$slug" params={{ slug: p.slug }}>
