@@ -545,10 +545,10 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
       return json(req, { error: matchedCouponError[1] }, 409);
     }
 
-    console.error("Razorpay order record creation failed:", orderError);
     if ((orderError?.message ?? "").includes("OUT_OF_STOCK")) {
       return json(req, { error: "This physical product has just sold out or does not have enough stock. Please refresh the product page." }, 409);
     }
+    console.error("Razorpay order record creation failed:", orderError);
     return json(req, { error: "Could not create your order. Please retry." }, 500);
   }
 
