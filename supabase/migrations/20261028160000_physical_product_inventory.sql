@@ -144,6 +144,7 @@ BEGIN
   IF NEW.product_type <> 'physical' THEN RETURN NEW; END IF;
   IF NEW.product_id IS NULL THEN RAISE EXCEPTION 'This physical product is no longer available.'; END IF;
 
+  -- Stock is reserved before payment, so cancellation must release it even if checkout was abandoned.
   SELECT * INTO v_product FROM public.products WHERE id = NEW.product_id FOR UPDATE;
   IF NOT FOUND OR v_product.product_type <> 'physical' OR NOT v_product.is_active THEN
     RAISE EXCEPTION 'This physical product is no longer available.';
@@ -202,6 +203,40 @@ DROP TRIGGER IF EXISTS settle_physical_product_stock_trigger ON public.orders;
 CREATE TRIGGER settle_physical_product_stock_trigger
 BEFORE UPDATE OF payment_status, status ON public.orders
 FOR EACH ROW EXECUTE FUNCTION public.settle_physical_product_stock();
+
+-- Release stale unpaid reservations when their payment session is deliberately marked failed.
+-- Admin cancellation also releases via the order-status trigger above.
+CREATE OR REPLACE FUNCTION public.release_failed_physical_checkout_stock()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = 'public'
+AS $function$
+BEGIN
+  IF OLD.product_type = 'physical'
+     AND OLD.inventory_reserved
+     AND NOT OLD.inventory_released
+     AND NEW.razorpay_status = 'failed'
+     AND OLD.razorpay_status IS DISTINCT FROM NEW.razorpay_status
+     AND NEW.payment_status <> 'verified' THEN
+    UPDATE public.products
+    SET stock_quantity = stock_quantity + OLD.quantity,
+        stock_status = CASE WHEN stock_status = 'out_of_stock' AND stock_quantity > 0 THEN 'in_stock' ELSE stock_status END,
+        updated_at = now()
+    WHERE id = OLD.product_id AND product_type = 'physical';
+    NEW.inventory_reserved := false;
+    NEW.inventory_released := true;
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS release_failed_physical_checkout_stock_trigger ON public.orders;
+CREATE TRIGGER release_failed_physical_checkout_stock_trigger
+BEFORE UPDATE OF razorpay_status ON public.orders
+FOR EACH ROW EXECUTE FUNCTION public.release_failed_physical_checkout_stock();
+
+REVOKE ALL ON FUNCTION public.release_failed_physical_checkout_stock() FROM PUBLIC, anon, authenticated;
 
 REVOKE ALL ON FUNCTION public.reserve_physical_product_stock() FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.settle_physical_product_stock() FROM PUBLIC, anon, authenticated;
