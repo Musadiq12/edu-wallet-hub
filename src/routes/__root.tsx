@@ -34,6 +34,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   loader: async ({ context }) => { try { return await context.queryClient.ensureQueryData(settingsQuery()); } catch { return defaultSettings; } },
   head: ({ matches }) => {
     const currentMatch = matches[matches.length - 1] as (typeof matches)[number] & { pathname?: string; loaderData?: { product?: { title?: string }; title?: string } };
+    const rootSettings = matches[0]?.loaderData as { heroSlides?: string } | undefined;
+    let heroPreload: { href: string; origin: string; mobileHref?: string } | undefined;
+    try {
+      const parsedSlides = JSON.parse(rootSettings?.heroSlides || "[]") as Array<{ imageUrl?: unknown; mobileImageUrl?: unknown }>;
+      const firstSlide = Array.isArray(parsedSlides) ? parsedSlides[0] : undefined;
+      if (typeof firstSlide?.imageUrl === "string") {
+        const imageUrl = new URL(firstSlide.imageUrl);
+        if (imageUrl.protocol === "https:") {
+          const mobileHref = typeof firstSlide.mobileImageUrl === "string" && firstSlide.mobileImageUrl.startsWith("https://") ? firstSlide.mobileImageUrl : undefined;
+          heroPreload = { href: imageUrl.href, origin: imageUrl.origin, mobileHref };
+        }
+      }
+    } catch {
+      // Invalid admin-provided slide JSON should not break document head rendering.
+    }
     const routePath = currentMatch?.pathname || "/";
     const pageName = currentMatch?.loaderData?.product?.title || currentMatch?.loaderData?.title;
     const structuredData = [getOrganizationLd(), getWebsiteLd(), getBreadcrumbLd(routePath, pageName)].filter(Boolean);
@@ -54,6 +69,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     scripts: structuredData.map((data) => ({ type: "application/ld+json", children: JSON.stringify(data).replace(/</g, "\\u003c") })),
     links: [
       { rel: "stylesheet", href: appCss },
+      ...(heroPreload ? [
+        { rel: "preconnect", href: heroPreload.origin, crossOrigin: "anonymous" },
+        ...(heroPreload.mobileHref
+          ? [
+              { rel: "preload", as: "image", href: heroPreload.mobileHref, media: "(max-width: 639px)", fetchPriority: "high" },
+              { rel: "preload", as: "image", href: heroPreload.href, media: "(min-width: 640px)", fetchPriority: "high" },
+            ]
+          : [{ rel: "preload", as: "image", href: heroPreload.href, fetchPriority: "high" }]),
+      ] : []),
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600;8..60,700&display=swap" },

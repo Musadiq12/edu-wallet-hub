@@ -22,9 +22,12 @@ if (!configPath || !rawConfig) {
 
 const config = JSON.parse(rawConfig);
 
+// Enable Workers Cache for tightly scoped public HTML responses.
+config.cache = { ...(config.cache ?? {}), enabled: true };
+
 // Wrangler preview requires an explicit previews block.
 // Nitro output location differs between Worker and Pages build environments.
 if (!config.previews || typeof config.previews !== "object" || Array.isArray(config.previews)) {
   config.previews = {};
-  await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);
 }
+await writeFile(configPath, `${JSON.stringify(config, null, 2)}\n`);

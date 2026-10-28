@@ -3,6 +3,7 @@
   "name": "edu-wallet-r2",
   "main": "src/index.ts",
   "compatibility_date": "2026-10-01",
+  "cache": { "enabled": true },
   "r2_buckets": [
     {
       "binding": "PRODUCTS",

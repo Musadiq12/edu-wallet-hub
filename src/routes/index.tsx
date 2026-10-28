@@ -11,12 +11,13 @@ import { absoluteUrl, BRAND, buildMeta, buildTitle } from "@/lib/seo";
 
 export const Route = createFileRoute("/")({
   loader: async ({ context }) => {
-    const [products, freeProducts, latestArticles] = await Promise.all([
-      context.queryClient.ensureQueryData(productsQuery({ free: false, limit: 32 })),
-      context.queryClient.ensureQueryData(productsQuery({ free: true, limit: 12 })),
-      context.queryClient.ensureQueryData(publishedPostsQuery()),
+    // Fetch only the content required for the initial catalogue. Blog previews are
+    // requested client-side below the fold so they do not delay the first HTML response.
+    const [products, freeProducts] = await Promise.all([
+      context.queryClient.ensureQueryData(productsQuery({ free: false, limit: 16 })),
+      context.queryClient.ensureQueryData(productsQuery({ free: true, limit: 8 })),
     ]);
-    return { products, freeProducts, latestArticles };
+    return { products, freeProducts };
   },
   head: () => ({
     meta: [
@@ -67,7 +68,7 @@ function filterProducts(products: Product[], term: string) {
 function Home() {
   const products = useQuery(productsQuery({ free: false, limit: 32 }));
   const freeProducts = useQuery(productsQuery({ free: true, limit: 12 }));
-  const latestArticles = useQuery(publishedPostsQuery());
+  const latestArticles = useQuery({ ...publishedPostsQuery(), enabled: typeof window !== "undefined" });
   const allProducts = products.data ?? [];
 
   const featured = allProducts.filter((product) => product.is_featured);

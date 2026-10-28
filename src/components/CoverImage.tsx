@@ -1,5 +1,5 @@
 import { BookOpen } from "lucide-react";
-import { publicImageUrl } from "@/lib/image-storage";
+import { publicImageUrl, responsiveImageSrcSet } from "@/lib/image-storage";
 
 export function CoverImage({
   path,
@@ -10,7 +10,8 @@ export function CoverImage({
   title: string;
   className?: string;
 }) {
-  const url = publicImageUrl("product-covers", path);
+  const url = publicImageUrl("product-covers", path, 400);
+  const srcSet = responsiveImageSrcSet("product-covers", path);
 
   return (
     <div
@@ -19,6 +20,8 @@ export function CoverImage({
       {url ? (
         <img
           src={url}
+          srcSet={srcSet}
+          sizes="(max-width: 639px) 72vw, (max-width: 1023px) 280px, 270px"
           alt={`Cover of ${title}`}
           width={400}
           height={300}
