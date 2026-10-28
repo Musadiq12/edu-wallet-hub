@@ -255,11 +255,7 @@ BEGIN
   IF v_order.status = 'Cancelled' OR v_order.inventory_released THEN
     RETURN jsonb_build_object('ok', true, 'unchanged', true, 'status', 'Cancelled');
   END IF;
-  IF v_order.product_type = 'physical' AND v_order.payment_gateway = 'razorpay'
-     AND v_order.payment_status = 'verified' THEN
-    RAISE EXCEPTION 'A paid physical order cannot be cancelled here; process the refund and resolve delivery status first.';
-  END IF;
-
+  -- Inventory is restored exactly once when the order is cancelled. Payment refunds remain a separate admin action.
   UPDATE public.orders
   SET status = 'Cancelled',
       payment_status = CASE WHEN payment_status = 'verified' THEN 'verified'::public.payment_status ELSE 'rejected'::public.payment_status END,
