@@ -514,7 +514,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
             </div>
           </div>
         </section>
-      )}
+        )}
       </section>
 
       <div className="flex flex-col gap-2 border-t border-border pt-5 sm:flex-row">
