@@ -236,6 +236,42 @@ CREATE TRIGGER release_failed_physical_checkout_stock_trigger
 BEFORE UPDATE OF razorpay_status ON public.orders
 FOR EACH ROW EXECUTE FUNCTION public.release_failed_physical_checkout_stock();
 
+-- Admin cancellation is serialized with stock release, and is safe to retry.
+CREATE OR REPLACE FUNCTION public.admin_cancel_physical_order(p_order_id uuid)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = 'public'
+AS $function$
+DECLARE
+  v_order public.orders%ROWTYPE;
+BEGIN
+  IF auth.uid() IS NULL OR NOT public.has_role(auth.uid(), 'admin'::public.app_role) THEN
+    RAISE EXCEPTION 'administrator access required' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT * INTO v_order FROM public.orders WHERE id = p_order_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Order not found'; END IF;
+  IF v_order.status = 'Cancelled' OR v_order.inventory_released THEN
+    RETURN jsonb_build_object('ok', true, 'unchanged', true, 'status', 'Cancelled');
+  END IF;
+  IF v_order.product_type = 'physical' AND v_order.payment_gateway = 'razorpay'
+     AND v_order.payment_status = 'verified' THEN
+    RAISE EXCEPTION 'A paid physical order cannot be cancelled here; process the refund and resolve delivery status first.';
+  END IF;
+
+  UPDATE public.orders
+  SET status = 'Cancelled',
+      payment_status = CASE WHEN payment_status = 'verified' THEN 'verified'::public.payment_status ELSE 'rejected'::public.payment_status END,
+      order_status = 'cancelled'::public.order_status
+  WHERE id = p_order_id;
+  RETURN jsonb_build_object('ok', true, 'status', 'Cancelled');
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION public.admin_cancel_physical_order(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_cancel_physical_order(uuid) TO authenticated;
+
 REVOKE ALL ON FUNCTION public.release_failed_physical_checkout_stock() FROM PUBLIC, anon, authenticated;
 
 REVOKE ALL ON FUNCTION public.reserve_physical_product_stock() FROM PUBLIC, anon, authenticated;
