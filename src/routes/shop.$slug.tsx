@@ -104,7 +104,7 @@ function ProductShare({ title, slug }: { title: string; slug: string }) {
     }
   };
 
-  const useNativeShare = async () => {
+  const handleShare = async () => {
     if (typeof navigator.share !== "function") {
       setOpen(true);
       return;
@@ -128,7 +128,7 @@ function ProductShare({ title, slug }: { title: string; slug: string }) {
 
   return (
     <>
-      <Button type="button" variant="outline" size="lg" className="min-h-11 rounded-xl" onClick={() => void useNativeShare()} aria-label={`Share ${title}`}>
+      <Button type="button" variant="outline" size="lg" className="min-h-11 rounded-xl" onClick={() => void handleShare()} aria-label={`Share ${title}`}>
         <Share2 className="h-4 w-4" aria-hidden="true" />
         Share
       </Button>
