@@ -139,7 +139,7 @@ export async function removeFile(bucket: string, path: string | null | undefined
   await supabase.storage.from(bucket).remove([path]);
 }
 export const ADMIN_PRODUCT_FIELDS =
-  "id,product_type,title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,is_archived,created_at";
+  "id,product_type,title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,stock_quantity,stock_status,low_stock_threshold,is_archived,created_at";
 
 export type AdminProduct = Product & { is_archived: boolean };
 
