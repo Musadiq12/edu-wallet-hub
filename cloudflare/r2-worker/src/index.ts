@@ -139,24 +139,78 @@ export default {
       return json(request, env, { ok: true, service: "edu-wallet-r2" });
     }
 
-    // Public, cacheable cover images. Only the dedicated covers/ prefix is exposed.
+    // Public covers are immutable and cached by normalized output variant.
     if ((url.pathname === "/image" || url.pathname === "/image/") &&
         (request.method === "GET" || request.method === "HEAD")) {
       const key = safeKey(url.searchParams.get("key") || "");
-      if (!key.startsWith("covers/") || key.includes("..")) {
-        return new Response("Not found.", { status: 404 });
+      if (!key.startsWith("covers/") || key.includes("..")) return new Response("Not found.", { status: 404 });
+      const parsedWidth = Number.parseInt(url.searchParams.get("width") || "400", 10);
+      const width = Number.isFinite(parsedWidth) ? Math.min(1200, Math.max(80, parsedWidth)) : 400;
+      const parsedQuality = Number.parseInt(url.searchParams.get("quality") || "78", 10);
+      const quality = Number.isFinite(parsedQuality) ? Math.min(90, Math.max(45, parsedQuality)) : 78;
+      const requestedFormat = (url.searchParams.get("format") || "auto").toLowerCase();
+      const accept = request.headers.get("Accept") || "";
+      const format = requestedFormat === "avif" || (requestedFormat === "auto" && accept.includes("image/avif"))
+        ? "avif"
+        : requestedFormat === "webp" || (requestedFormat === "auto" && accept.includes("image/webp"))
+          ? "webp"
+          : "original";
+      const cacheUrl = new URL(request.url);
+      cacheUrl.searchParams.set("width", String(width));
+      cacheUrl.searchParams.set("quality", String(quality));
+      cacheUrl.searchParams.set("format", format);
+      const cacheKey = new Request(cacheUrl.toString(), { method: "GET" });
+      const cached = await caches.default.match(cacheKey);
+      if (cached) {
+        const headers = new Headers(cached.headers);
+        headers.set("X-Image-Cache", "HIT");
+        return new Response(request.method === "HEAD" ? null : cached.body, { status: cached.status, headers });
       }
       const object = await env.PRODUCTS.get(key);
       if (!object) return new Response("Image not found.", { status: 404 });
       const headers = new Headers();
       object.writeHttpMetadata(headers);
-      const contentType = headers.get("Content-Type") || "";
-      if (!IMAGE_TYPES.has(contentType)) return new Response("Unsupported image type.", { status: 415 });
+      const sourceType = (headers.get("Content-Type") || "").toLowerCase();
+      if (!IMAGE_TYPES.has(sourceType)) return new Response("Unsupported image type.", { status: 415 });
+      let body: ReadableStream | null = object.body;
+      let outputType = sourceType;
+      if (format !== "original") {
+        const sourceUrl = new URL(request.url);
+        sourceUrl.pathname = "/__image-source";
+        sourceUrl.search = "";
+        sourceUrl.searchParams.set("key", key);
+        const transformed = await fetch(sourceUrl.toString(), {
+          cf: { image: { width, fit: "scale-down", quality, format } },
+        });
+        if (transformed.ok && (transformed.headers.get("Content-Type") || "").startsWith("image/")) {
+          body = transformed.body;
+          outputType = transformed.headers.get("Content-Type") || (format === "avif" ? "image/avif" : "image/webp");
+        }
+      }
+      headers.set("Content-Type", outputType);
       headers.set("Cache-Control", "public, max-age=31536000, immutable");
       headers.set("X-Content-Type-Options", "nosniff");
       headers.set("Cross-Origin-Resource-Policy", "cross-origin");
-      headers.set("Content-Length", String(object.size));
-      return new Response(request.method === "HEAD" ? null : object.body, { headers });
+      headers.set("Vary", "Accept");
+      headers.delete("Content-Length");
+      const response = new Response(request.method === "HEAD" ? null : body, { headers });
+      if (request.method === "GET") await caches.default.put(cacheKey, response.clone());
+      const responseHeaders = new Headers(response.headers);
+      responseHeaders.set("X-Image-Cache", "MISS");
+      return new Response(response.body, { status: response.status, headers: responseHeaders });
+    }
+
+    // Public R2 source route used by Cloudflare image resizing only.
+    if (url.pathname === "/__image-source" && request.method === "GET") {
+      const key = safeKey(url.searchParams.get("key") || "");
+      if (!key.startsWith("covers/") || key.includes("..")) return new Response("Not found.", { status: 404 });
+      const object = await env.PRODUCTS.get(key);
+      if (!object) return new Response("Image not found.", { status: 404 });
+      const headers = new Headers();
+      object.writeHttpMetadata(headers);
+      if (!IMAGE_TYPES.has((headers.get("Content-Type") || "").toLowerCase())) return new Response("Unsupported image type.", { status: 415 });
+      headers.set("Cache-Control", "public, max-age=31536000, immutable");
+      return new Response(object.body, { headers });
     }
 
     if (url.pathname === "/upload-image" && request.method === "PUT") {
