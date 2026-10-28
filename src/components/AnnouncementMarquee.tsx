@@ -17,7 +17,14 @@ export function AnnouncementMarquee({ preview = false, config: previewConfig }: 
   const viewportRef = useRef<HTMLDivElement>(null);
   const sampleRef = useRef<HTMLDivElement>(null);
   const [copies, setCopies] = useState(3);
-  const messages = useMemo(() => (config?.messages ?? []).filter((message) => visibleNow(message, now)), [config?.messages, now]);
+
+  // Keep hook dependencies stable. Inlining the filtered messages here caused a
+  // temporal-dead-zone ReferenceError in the production SSR bundle.
+  const sourceMessages = config?.messages;
+  const messages = useMemo(
+    () => (sourceMessages ?? []).filter((message) => visibleNow(message, now)),
+    [sourceMessages, now],
+  );
 
   useEffect(() => {
     const viewport = viewportRef.current;
