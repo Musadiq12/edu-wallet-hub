@@ -481,8 +481,8 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
             </div>
           ))}
         </div>
-      {form.product_type === "physical" && (
-        <section className="space-y-4 rounded-xl border border-border bg-surface p-4 sm:p-5" aria-labelledby="stock-heading">
+        {form.product_type === "physical" && (
+          <section className="space-y-4 rounded-xl border border-border bg-surface p-4 sm:p-5" aria-labelledby="stock-heading">
           <div>
             <h2 id="stock-heading" className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Stock / Inventory</h2>
             <p className="mt-1 text-xs text-muted-foreground">Manage availability for this physical product here. Digital PDF products do not use stock controls.</p>
