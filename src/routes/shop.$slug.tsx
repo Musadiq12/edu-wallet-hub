@@ -281,18 +281,16 @@ function ProductDetail() {
                       Google Drive link not added
                     </Button>
                   )
+                ) : p.product_type === "physical" && (p.stock_status === "out_of_stock" || p.stock_quantity <= 0) ? (
+                  <Button size="lg" className="w-full rounded-xl sm:w-auto" disabled>
+                    <ShoppingBag className="mr-2 h-4 w-4" /> Out of stock
+                  </Button>
                 ) : (
-                  {p.product_type === "physical" && (p.stock_status === "out_of_stock" || p.stock_quantity <= 0) ? (
-                    <Button size="lg" className="w-full rounded-xl sm:w-auto" disabled>
-                      <ShoppingBag className="mr-2 h-4 w-4" /> Out of stock
-                    </Button>
-                  ) : (
-                    <Button size="lg" className="w-full rounded-xl px-7 font-semibold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg sm:w-auto" asChild>
-                      <Link to="/checkout/$slug" params={{ slug: p.slug }}>
-                        <ShoppingBag className="mr-2 h-4 w-4" /> Buy Now
-                      </Link>
-                    </Button>
-                  )}
+                  <Button size="lg" className="w-full rounded-xl px-7 font-semibold shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg sm:w-auto" asChild>
+                    <Link to="/checkout/$slug" params={{ slug: p.slug }}>
+                      <ShoppingBag className="mr-2 h-4 w-4" /> Buy Now
+                    </Link>
+                  </Button>
                 )}
                 {preview.data && !p.is_free && (
                   <Button size="lg" variant="outline" className="w-full rounded-xl sm:w-auto" asChild>
