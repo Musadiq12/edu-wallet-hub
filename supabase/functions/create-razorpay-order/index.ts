@@ -330,6 +330,10 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
       return json(req, { error: "Checkout details changed. Start a new checkout attempt before paying." }, 409);
     }
 
+    if (existing.product_type === "physical" && existing.inventory_released) {
+      return json(req, { error: "This checkout reservation was released. Refresh the product page and start a new checkout." }, 409);
+    }
+
     if (
       existing.payment_status === "verified" ||
       ["paid", "fulfilled", "partially_refunded", "refunded"].includes(existing.razorpay_status)
