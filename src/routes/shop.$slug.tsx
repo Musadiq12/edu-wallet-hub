@@ -20,6 +20,7 @@ import { discountPercent, effectivePrice, formatPrice, hasDiscount } from "@/lib
 import { siteConfig } from "@/config/site";
 import { absoluteUrl, BRAND, buildMeta, buildTitle } from "@/lib/seo";
 import { toast } from "sonner";
+import { getStockMessage } from "@/lib/stock";
 
 export const Route = createFileRoute("/shop/$slug")({
   loader: async ({ context, params }) => {
@@ -213,6 +214,7 @@ function ProductDetail() {
   const discountedPrice = hasDiscount(price, discounted);
   const category = categories.data?.find((c) => c.id === p.category_id);
   const isAssignment = category?.slug === "assignment-guidance";
+  const stockMessage = getStockMessage(p);
 
   const ratingData = reviewSummary.data ?? { average: 0, count: 0, distribution: [0, 0, 0, 0, 0] };
   const schemaDescription = buildMeta((p.description || p.whats_included || "").replace(/<[^>]*>/g, ""), 300);
@@ -287,21 +289,12 @@ function ProductDetail() {
               <ProductShare title={p.title} slug={p.slug} />
             </div>
 
-            {p.product_type === "physical" && (
+            {stockMessage && (
               <div className="mt-4" aria-live="polite">
-                {p.stock_status === "out_of_stock" || p.stock_quantity <= 0 ? (
-                  <p className="inline-flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm font-semibold text-destructive">
-                    <span className="h-2 w-2 rounded-full bg-destructive" aria-hidden="true" /> Out of stock
-                  </p>
-                ) : p.low_stock_threshold != null && p.stock_quantity <= p.low_stock_threshold ? (
-                  <p className="inline-flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
-                    <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" /> Only {p.stock_quantity} left
-                  </p>
-                ) : (
-                  <p className="inline-flex items-center gap-2 rounded-lg border border-success/25 bg-success/5 px-3 py-2 text-sm font-medium text-success">
-                    <span className="h-2 w-2 rounded-full bg-success" aria-hidden="true" /> In stock
-                  </p>
-                )}
+                <p className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold ${stockMessage.tone === "out" ? "border-destructive/30 bg-destructive/5 text-destructive" : stockMessage.tone === "low" ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300" : "border-success/25 bg-success/5 text-success"}`}>
+                  <span className={`h-2 w-2 rounded-full ${stockMessage.tone === "out" ? "bg-destructive" : stockMessage.tone === "low" ? "bg-amber-500" : "bg-success"}`} aria-hidden="true" />
+                  {stockMessage.label}
+                </p>
               </div>
             )}
 
