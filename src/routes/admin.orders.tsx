@@ -121,9 +121,14 @@ function AdminOrders() {
   ) => {
     setBusyId(order.id);
     try {
-      const corePatch: TablesUpdate<"orders"> = patch;
-      const { error } = await supabase.from("orders").update(corePatch).eq("id", order.id);
-      if (error) throw error;
+      if (patch.status === "Cancelled" && order.product_type === "physical") {
+        const { error } = await physicalTrackingRpc.rpc("admin_cancel_physical_order", { p_order_id: order.id });
+        if (error) throw error;
+      } else {
+        const corePatch: TablesUpdate<"orders"> = patch;
+        const { error } = await supabase.from("orders").update(corePatch).eq("id", order.id);
+        if (error) throw error;
+      }
       await Promise.all([
         qc.invalidateQueries({ queryKey: ["admin", "orders"] }),
         qc.invalidateQueries({ queryKey: ["admin", "order-status-history", order.id] }),
