@@ -142,6 +142,18 @@ function Checkout() {
     );
   }
 
+  if (p.product_type === "physical" && (p.stock_status === "out_of_stock" || p.stock_quantity <= 0)) {
+    return (
+      <div className="page-container section-y">
+        <EmptyState
+          title="Out of stock"
+          description="This physical product is currently unavailable. Please check back later."
+          action={<Button asChild><Link to="/shop/$slug" params={{ slug }}><span>Back to product</span></Link></Button>}
+        />
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="page-container section-y">
