@@ -133,7 +133,14 @@ function BecomeSellerPage() {
       .eq("user_id", user.id).maybeSingle()
       .then(({ data, error }) => {
         if (!active) return;
-        if (error) setFormError("We couldn't load your application. Refresh the page or contact support.");
+        if (error) {
+          const message = String(error.message ?? "").toLowerCase();
+          setFormError(
+            message.includes("seller_applications") && (message.includes("does not exist") || message.includes("schema cache"))
+              ? "Seller applications are not enabled in the live database yet. The marketplace database migration must be applied before you can submit."
+              : "We couldn’t load your application status. Check your connection and try again. If this continues, contact support.",
+          );
+        }
         else if (data) {
           setApplication(data);
           setFullName(data.full_name ?? "");
