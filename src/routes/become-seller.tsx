@@ -352,7 +352,7 @@ function BecomeSellerPage() {
                   <Label htmlFor="seller-id-card">ID card (PDF, JPG or PNG) <span className="text-destructive">*</span></Label>
                   <label htmlFor="seller-id-card" className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-input bg-background px-4 py-5 text-center transition-colors hover:border-primary hover:bg-primary/5">
                     <UploadCloud className="size-6 text-muted-foreground" />
-                    <span className="mt-2 text-sm font-medium">{idCard ? idCard.name : application?.status === "rejected" && application.id_card_path ? "Upload a replacement ID card (optional)" : "Choose an ID card file"}</span>
+                    <span className="mt-2 max-w-full truncate px-3 text-sm font-medium" title={idCard?.name}>{idCard ? idCard.name : application?.status === "rejected" && application.id_card_path ? "Upload a replacement ID card (optional)" : "Choose an ID card file"}</span>
                     <span className="mt-1 text-xs text-muted-foreground">PDF, JPG or PNG · Maximum 5 MB</span>
                     <input id="seller-id-card" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" className="sr-only" onChange={(e) => { const file = e.target.files?.[0] ?? null; setIdCard(file); setFormError(""); }} />
                   </label>
