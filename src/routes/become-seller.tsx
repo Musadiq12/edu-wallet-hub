@@ -224,7 +224,7 @@ function BecomeSellerPage() {
 
       let error: { message?: string } | null = null;
       if (application?.status === "rejected") {
-        // Rejected applications are updated only when the database provides an owner resubmission policy.
+        // Application policy and trigger permit only a rejected -> pending transition.
         const result = await appTable.update(payload).eq("id", application.id).eq("user_id", user.id);
         error = result.error;
       } else {
