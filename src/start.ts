@@ -18,9 +18,9 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
   }
 });
 
-// Redirect browser navigations to the canonical HTTPS origin. Leave non-GET
-// methods untouched so POST server functions and API requests are never rewritten
-// by a 301 into a GET. URL-based checks avoid relying on a non-guaranteed Host header.
+// Redirect only non-canonical hostnames. HTTPS enforcement is handled by Cloudflare
+// at the edge: the Worker request URL may reflect an internal scheme and must not be
+// used to infer the visitor's original HTTP/HTTPS scheme. Leave non-GET methods untouched.
 const canonicalHostMiddleware = createMiddleware().server(async ({ next, request }) => {
   if (request.method !== "GET" && request.method !== "HEAD") return next();
 
@@ -28,8 +28,7 @@ const canonicalHostMiddleware = createMiddleware().server(async ({ next, request
   const host = url.hostname.toLowerCase();
   const needsRedirect =
     host === "edu-wallet-hub.designeroutletmedia.workers.dev" ||
-    host === "www.eduwallethub.in" ||
-    (host === "eduwallethub.in" && url.protocol !== "https:");
+    host === "www.eduwallethub.in";
 
   if (!needsRedirect) return next();
 
