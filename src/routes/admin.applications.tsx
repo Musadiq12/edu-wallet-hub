@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronLeft, Clock3, FileText, Loader2, Search, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   approveSellerApplication,
+  assertSellerApplicationsAdmin,
   getPendingSellerApplicationCount,
   getSellerApplicationDetail,
   listSellerApplications,
@@ -22,6 +23,7 @@ import {
 } from "@/lib/seller-applications.server-fns";
 import { useSession, useIsAdmin } from "@/lib/auth";
 import { BRAND, buildTitle } from "@/lib/seo";
+import { supabase } from "@/integrations/supabase/client";
 
 type Status = "pending" | "approved" | "rejected";
 type Application = {
@@ -33,6 +35,17 @@ type Application = {
 type Detail = Application & { id_card_url: string | null };
 
 export const Route = createFileRoute("/admin/applications")({
+  beforeLoad: async () => {
+    // Supabase sessions live in browser storage; the token is verified by a server function.
+    if (typeof window === "undefined") return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) throw redirect({ to: "/" });
+    try {
+      await assertSellerApplicationsAdmin({ data: { accessToken: session.access_token } });
+    } catch {
+      throw redirect({ to: "/" });
+    }
+  },
   head: () => ({ meta: [
     { title: buildTitle(["Seller Applications", "Admin", BRAND]) },
     { name: "robots", content: "noindex, nofollow" },
@@ -61,19 +74,25 @@ function SellerApplicationsAdmin() {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
 
+  const getAccessToken = async () => {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error || !session?.access_token) throw new Error("Your session has expired. Please sign in again.");
+    return session.access_token;
+  };
+
   const apps = useQuery({
     queryKey: ["admin", "seller-applications", status],
-    queryFn: () => listSellerApplications({ data: { status } }),
+    queryFn: async () => listSellerApplications({ data: { status, accessToken: await getAccessToken() } }),
     enabled: !!user && !!isAdmin,
   });
   const pendingCount = useQuery({
     queryKey: ["admin", "seller-applications", "pending-count"],
-    queryFn: () => getPendingSellerApplicationCount(),
+    queryFn: async () => getPendingSellerApplicationCount({ data: { accessToken: await getAccessToken() } }),
     enabled: !!user && !!isAdmin,
   });
   const detail = useQuery({
     queryKey: ["admin", "seller-application-detail", selectedId],
-    queryFn: () => getSellerApplicationDetail({ data: { id: selectedId! } }),
+    queryFn: async () => getSellerApplicationDetail({ data: { id: selectedId!, accessToken: await getAccessToken() } }),
     enabled: !!user && !!isAdmin && !!selectedId,
     staleTime: 4 * 60 * 1000,
   });
@@ -96,7 +115,7 @@ function SellerApplicationsAdmin() {
     if (!approveTarget || busy) return;
     setBusy(true);
     try {
-      await approveSellerApplication({ data: { id: approveTarget.id } });
+      await approveSellerApplication({ data: { id: approveTarget.id, accessToken: await getAccessToken() } });
       await refreshLists();
       toast.success("Seller application approved. The user is now a seller.");
     } catch (error) {
@@ -110,7 +129,7 @@ function SellerApplicationsAdmin() {
     if (!rejectTarget || busy || reason.trim().length < 3) return;
     setBusy(true);
     try {
-      await rejectSellerApplication({ data: { id: rejectTarget.id, reason: reason.trim() } });
+      await rejectSellerApplication({ data: { id: rejectTarget.id, reason: reason.trim(), accessToken: await getAccessToken() } });
       await refreshLists();
       toast.success("Application rejected. The applicant can edit and resubmit.");
     } catch (error) {
