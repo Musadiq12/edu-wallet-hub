@@ -118,6 +118,10 @@ export const getSellerApplicationDetail = createServerFn({ method: "POST" })
       .select("email").eq("id", row.user_id).maybeSingle();
     let idCardUrl: string | null = null;
     if (row.id_card_path) {
+      // Service-role signing bypasses Storage RLS, so verify ownership explicitly first.
+      if (!row.id_card_path.startsWith(row.user_id + "/")) {
+        throw new Error("The ID card path does not belong to this applicant.");
+      }
       // A private-bucket URL, valid for 300 seconds; no public URL is ever generated.
       const { data: signed, error: signedError } = await adminClient.storage
         .from("seller-documents")
