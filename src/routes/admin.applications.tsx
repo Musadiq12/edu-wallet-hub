@@ -46,11 +46,9 @@ export const Route = createFileRoute("/admin/applications")({
     if (typeof window === "undefined") return;
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) throw redirect({ to: "/" });
-    try {
-      await assertSellerApplicationsAdmin({ data: { accessToken: session.access_token } });
-    } catch {
-      throw redirect({ to: "/" });
-    }
+    // Server functions still enforce admin access on every request. Do not hide
+    // server errors by redirecting to the home page; let the route show the failure.
+    await assertSellerApplicationsAdmin({ data: { accessToken: session.access_token } });
   },
   head: () => ({ meta: [
     { title: buildTitle(["Seller Applications", "Admin", BRAND]) },
