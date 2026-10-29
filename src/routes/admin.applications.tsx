@@ -34,6 +34,12 @@ type Application = {
 };
 type Detail = Application & { id_card_url: string | null };
 
+async function getSessionAccessToken() {
+  const { data: { session }, error } = await supabase.auth.getSession();
+  if (error || !session?.access_token) throw new Error("Your session has expired. Please sign in again.");
+  return session.access_token;
+}
+
 export const Route = createFileRoute("/admin/applications")({
   beforeLoad: async () => {
     // Supabase sessions live in browser storage; the token is verified by a server function.
@@ -75,12 +81,6 @@ function SellerApplicationsAdmin() {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const getAccessToken = async () => {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error || !session?.access_token) throw new Error("Your session has expired. Please sign in again.");
-    return session.access_token;
-  };
-
   useEffect(() => {
     let active = true;
     if (loading) return;
@@ -90,7 +90,7 @@ function SellerApplicationsAdmin() {
     }
     void (async () => {
       try {
-        const accessToken = await getAccessToken();
+        const accessToken = await getSessionAccessToken();
         await assertSellerApplicationsAdmin({ data: { accessToken } });
         if (active) setServerRoleChecked(true);
       } catch {
