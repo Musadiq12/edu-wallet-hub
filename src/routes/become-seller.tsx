@@ -56,14 +56,16 @@ export const Route = createFileRoute("/become-seller")({
 });
 
 function humanError(error: unknown) {
-  const message = typeof error === "object" && error !== null && "message" in error
-    ? String((error as { message?: unknown }).message ?? "")
-    : typeof error === "string" ? error : "";
+  const detail = typeof error === "object" && error !== null
+    ? error as { message?: unknown; code?: unknown }
+    : {};
+  const message = String(detail.message ?? (typeof error === "string" ? error : ""));
+  const code = String(detail.code ?? "");
   const lower = message.toLowerCase();
-  if (lower.includes("row-level security") || lower.includes("permission denied") || lower.includes("42501")) {
+  if (code === "42501" || lower.includes("row-level security") || lower.includes("permission denied")) {
     return "Your application could not be saved because database permissions blocked the request. Please contact support.";
   }
-  if (lower.includes("duplicate key") || lower.includes("already exists")) {
+  if (code === "23505" || lower.includes("duplicate key") || lower.includes("already exists")) {
     return "An application already exists for this account. Refresh the page and try again.";
   }
   if (lower.includes("network") || lower.includes("fetch")) {
@@ -72,10 +74,15 @@ function humanError(error: unknown) {
   if (lower.includes("bucket") || lower.includes("storage")) {
     return "Your ID card could not be uploaded. Please try another PDF, JPG, or PNG file up to 5 MB. If this continues, contact support.";
   }
-  if (lower.includes("seller_applications") || lower.includes("schema cache") || lower.includes("column")) {
-    return "The seller application service is not fully available yet. Please contact support and mention “seller application database configuration”.";
+  if (code === "23502" || lower.includes("not-null constraint")) {
+    return "A required application field is missing from the live database configuration. Please contact support and mention “seller application required field”.";
   }
-  if (lower.includes("23505")) return "An application already exists for this account. Refresh the page to check its status.";
+  if (code === "23514" || lower.includes("check constraint")) {
+    return "One of the application details did not pass validation. Check your selected exams and UPI ID, then try again.";
+  }
+  if (code === "42P01" || code === "42703" || code === "PGRST205" || lower.includes("schema cache") || lower.includes("does not exist")) {
+    return "The seller application database schema is not fully available yet. Please contact support and mention “seller application database configuration”.";
+  }
   return "We could not complete your application. Please check your connection and try again. If it continues, contact support.";
 }
 
@@ -246,7 +253,7 @@ function BecomeSellerPage() {
         const result = await appTable.insert(payload);
         error = result.error;
       }
-      if (error) throw new Error("seller_applications insert failed: " + (error.message ?? "unknown database error"));
+      if (error) throw error;
 
       setApplication({
         id: application?.id ?? crypto.randomUUID(),
