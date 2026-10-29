@@ -1,3 +1,4 @@
+import { env as workerEnv } from "cloudflare:workers";
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 
@@ -27,7 +28,7 @@ function env(name: string) {
     SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
     SUPABASE_PUBLISHABLE_KEY: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
   };
-  const value = process.env[name] || publicFallbacks[name];
+  const value = process.env[name] || workerEnv[name as keyof typeof workerEnv] || publicFallbacks[name];
   if (!value) throw new Error("Server configuration is missing " + name + ".");
   return value;
 }
