@@ -72,7 +72,11 @@ function AdminLayout() {
   const pendingSellerApplications = useQuery({
     queryKey: ["admin", "seller-applications", "pending-count"],
     enabled: !!user && !!isAdmin,
-    queryFn: () => getPendingSellerApplicationCount(),
+    queryFn: async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error || !session?.access_token) throw new Error("Please sign in again.");
+      return getPendingSellerApplicationCount({ data: { accessToken: session.access_token } });
+    },
   });
   const pendingReviews = useQuery({
     queryKey: ["admin", "reviews", "pending-count"],
