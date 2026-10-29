@@ -51,8 +51,27 @@ jobs:
           test -f .output/server/index.mjs
           test -d .output/public
 
+      - name: Prepare Cloudflare runtime environment
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from "node:fs";
+          const path = ".output/server/wrangler.json";
+          const config = JSON.parse(fs.readFileSync(path, "utf8"));
+          config.compatibility_flags = [...new Set([
+            ...(config.compatibility_flags ?? []),
+            "nodejs_compat",
+            "nodejs_compat_populate_process_env",
+          ])];
+          config.vars = {
+            ...(config.vars ?? {}),
+            SUPABASE_URL: process.env.SUPABASE_URL,
+            SUPABASE_PUBLISHABLE_KEY: process.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          };
+          fs.writeFileSync(path, JSON.stringify(config, null, 2) + "\\n");
+          NODE
+
       - name: Set server-side Supabase secret
         run: printf '%s' "$SUPABASE_SERVICE_ROLE_KEY" | npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY --name edu-wallet-hub
 
       - name: Deploy storefront Worker to Cloudflare
-        run: npx wrangler deploy --config .output/server/wrangler.json --name edu-wallet-hub --var "SUPABASE_URL:$SUPABASE_URL" --var "SUPABASE_PUBLISHABLE_KEY:$VITE_SUPABASE_PUBLISHABLE_KEY"
+        run: npx wrangler deploy --config .output/server/wrangler.json --name edu-wallet-hub
