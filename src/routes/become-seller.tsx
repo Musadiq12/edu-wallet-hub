@@ -359,10 +359,20 @@ function BecomeSellerPage() {
                   <Label htmlFor="seller-id-card">ID card (PDF, JPG or PNG) <span className="text-destructive">*</span></Label>
                   <label htmlFor="seller-id-card" className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-input bg-background px-4 py-5 text-center transition-colors hover:border-primary hover:bg-primary/5">
                     <UploadCloud className="size-6 text-muted-foreground" />
-                    <span className="mt-2 max-w-full truncate px-3 text-sm font-medium" title={idCard?.name}>{idCard ? idCard.name : application?.status === "rejected" && application.id_card_path ? "Upload a replacement ID card (optional)" : "Choose an ID card file"}</span>
+                    <span className="mt-2 max-w-full truncate px-3 text-sm font-medium">{idCard ? "ID card selected" : application?.status === "rejected" && application.id_card_path ? "Upload a replacement ID card (optional)" : "Choose an ID card file"}</span>
                     <span className="mt-1 text-xs text-muted-foreground">PDF, JPG or PNG · Maximum 5 MB</span>
                     <input id="seller-id-card" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" className="sr-only" onChange={(e) => { const file = e.target.files?.[0] ?? null; setIdCard(file); setFormError(""); }} />
                   </label>
+                  {idCard && (
+                    <div className="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-muted/30 p-3">
+                      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><FileCheck2 className="size-5" /></div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium" title={idCard.name}>{idCard.name}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">{idCard.type === "application/pdf" ? "PDF document" : idCard.type === "image/jpeg" ? "JPEG image" : "PNG image"} · {(idCard.size / (1024 * 1024)).toFixed(2)} MB</p>
+                      </div>
+                      <button type="button" onClick={() => { setIdCard(null); const input = document.getElementById("seller-id-card") as HTMLInputElement | null; if (input) input.value = ""; }} className="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Remove selected ID card">Remove</button>
+                    </div>
+                  )}
                   {application?.status === "rejected" && application.id_card_path && !idCard && <p className="text-xs text-muted-foreground">Your previous file will be reused unless you select a replacement.</p>}
                 </div>
                 <div className="space-y-2 sm:col-span-2">
