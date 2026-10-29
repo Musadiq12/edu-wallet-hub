@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronLeft, Clock3, FileText, Loader2, Search, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
@@ -41,17 +41,6 @@ async function getSessionAccessToken() {
 }
 
 export const Route = createFileRoute("/admin/applications")({
-  beforeLoad: async () => {
-    // Supabase sessions live in browser storage; the token is verified by a server function.
-    if (typeof window === "undefined") return;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) throw redirect({ to: "/" });
-    try {
-      await assertSellerApplicationsAdmin({ data: { accessToken: session.access_token } });
-    } catch {
-      throw redirect({ to: "/" });
-    }
-  },
   head: () => ({ meta: [
     { title: buildTitle(["Seller Applications", "Admin", BRAND]) },
     { name: "robots", content: "noindex, nofollow" },
@@ -73,6 +62,7 @@ function SellerApplicationsAdmin() {
   const navigate = useNavigate();
   const { user, loading } = useSession();
   const [serverRoleChecked, setServerRoleChecked] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
   const [status, setStatus] = useState<Status>("pending");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -88,13 +78,20 @@ function SellerApplicationsAdmin() {
       void navigate({ to: "/", replace: true });
       return;
     }
+    setVerificationError(null);
     void (async () => {
       try {
         const accessToken = await getSessionAccessToken();
-        await assertSellerApplicationsAdmin({ data: { accessToken } });
-        if (active) setServerRoleChecked(true);
-      } catch {
-        if (active) void navigate({ to: "/", replace: true });
+        const result = await assertSellerApplicationsAdmin({ data: { accessToken } });
+        if (!active) return;
+        if (!result.authorized) {
+          void navigate({ to: "/", replace: true });
+          return;
+        }
+        setServerRoleChecked(true);
+      } catch (error) {
+        if (!active) return;
+        setVerificationError(error instanceof Error ? error.message : "Could not verify administrator access.");
       }
     })();
     return () => { active = false; };
@@ -159,7 +156,8 @@ function SellerApplicationsAdmin() {
     }
   };
 
-  if (loading || !serverRoleChecked) return <div className="space-y-3"><Skeleton className="h-10 w-64" /><Skeleton className="h-36 w-full" /><Skeleton className="h-20 w-full" /></div>;
+  if (loading || (!!user && !serverRoleChecked && !verificationError)) return <div className="space-y-3"><Skeleton className="h-10 w-64" /><Skeleton className="h-36 w-full" /><Skeleton className="h-20 w-full" /></div>;
+  if (verificationError) return <div className="mx-auto max-w-xl rounded-xl border border-destructive/30 bg-card p-6"><h1 className="text-xl font-semibold">Could not verify administrator access</h1><p className="mt-2 text-sm text-muted-foreground">The server-side check failed, so application data remains locked. This is a configuration or verification error, not an application list.</p><p className="mt-3 rounded-lg bg-muted p-3 text-sm" role="alert">{verificationError}</p><div className="mt-4 flex flex-wrap gap-2"><Button onClick={() => { setVerificationError(null); setServerRoleChecked(false); void navigate({ to: "/admin/applications", replace: true }); }}>Retry</Button><Button variant="outline" asChild><Link to="/admin">Admin dashboard</Link></Button></div></div>;
   const current = detail.data as Detail | undefined;
 
   return <div className="space-y-6">
