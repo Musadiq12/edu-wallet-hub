@@ -19,7 +19,15 @@ type ApplicationRow = {
 };
 
 function env(name: string) {
-  const value = process.env[name];
+  // Cloudflare Worker variables are available as env bindings, while this server
+  // bundle may not expose them through process.env on every compatibility setup.
+  // Public Supabase settings can safely fall back to Vite's build-time values;
+  // the service-role key must remain a runtime secret and has no public fallback.
+  const publicFallbacks: Record<string, string | undefined> = {
+    SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  };
+  const value = process.env[name] || publicFallbacks[name];
   if (!value) throw new Error("Server configuration is missing " + name + ".");
   return value;
 }
