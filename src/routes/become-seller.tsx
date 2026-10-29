@@ -77,6 +77,9 @@ function humanError(error: unknown) {
   if (code === "23502" || lower.includes("not-null constraint")) {
     return "A required application field is missing from the live database configuration. Please contact support and mention “seller application required field”.";
   }
+  if (lower.includes("invalid regular expression") || code === "2201B") {
+    return "The application validation service is being repaired. Please refresh the page and submit again in a moment.";
+  }
   if (code === "23514" || lower.includes("check constraint")) {
     return "One of the application details did not pass validation. Check your selected exams and UPI ID, then try again.";
   }
