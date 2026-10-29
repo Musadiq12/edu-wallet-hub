@@ -180,6 +180,11 @@ function AdminLayout() {
                     {pendingReviews.data}
                   </span>
                 )}
+                {item.label === "Seller Applications" && (pendingSellerApplications.data ?? 0) > 0 && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                    {pendingSellerApplications.data}
+                  </span>
+                )}
 
 
               </span>
@@ -205,6 +210,11 @@ function AdminLayout() {
                 {item.label === "Reviews" && (pendingReviews.data ?? 0) > 0 && (
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                     {pendingReviews.data}
+                  </span>
+                )}
+                {item.label === "Seller Applications" && (pendingSellerApplications.data ?? 0) > 0 && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                    {pendingSellerApplications.data}
                   </span>
                 )}
 
