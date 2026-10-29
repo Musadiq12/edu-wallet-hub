@@ -31,7 +31,6 @@ import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 import { adminOrdersQuery } from "@/lib/admin";
 import { getPendingSellerApplicationCount } from "@/lib/seller-applications.server-fns";
-import { getPendingSellerApplicationCount } from "@/lib/seller-applications.server-fns";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin")({
@@ -54,7 +53,6 @@ const NAV = [
   { to: "/admin/coupons", label: "Coupons", icon: BadgePercent, exact: false },
   { to: "/admin/customers", label: "Customers", icon: Users, exact: false },
   { to: "/admin/applications", label: "Seller Applications", icon: Store, exact: false },
-  { to: "/admin/applications", label: "Seller Applications", icon: Store, exact: false },
   { to: "/admin/messages", label: "Messages", icon: Bell, exact: false },
   { to: "/admin/reviews", label: "Reviews", icon: Star, exact: false },
   { to: "/admin/blog", label: "Blog", icon: Newspaper, exact: false },
@@ -71,15 +69,6 @@ function AdminLayout() {
   const { user, loading } = useSession();
   const { data: isAdmin, isLoading: roleLoading } = useIsAdmin(user?.id);
   const orders = useQuery({ ...adminOrdersQuery(), enabled: !!user && !!isAdmin });
-  const pendingSellerApplications = useQuery({
-    queryKey: ["admin", "seller-applications", "pending-count"],
-    enabled: !!user && !!isAdmin,
-    queryFn: async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error || !session?.access_token) throw new Error("Please sign in again.");
-      return getPendingSellerApplicationCount({ data: { accessToken: session.access_token } });
-    },
-  });
   const pendingSellerApplications = useQuery({
     queryKey: ["admin", "seller-applications", "pending-count"],
     enabled: !!user && !!isAdmin,
@@ -196,11 +185,7 @@ function AdminLayout() {
                     {pendingSellerApplications.data}
                   </span>
                 )}
-                {item.label === "Seller Applications" && (pendingSellerApplications.data ?? 0) > 0 && (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                    {pendingSellerApplications.data}
-                  </span>
-                )}
+
               </span>
             )}
             </Link>
@@ -226,16 +211,8 @@ function AdminLayout() {
                     {pendingReviews.data}
                   </span>
                 )}
-                {item.label === "Seller Applications" && (pendingSellerApplications.data ?? 0) > 0 && (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                    {pendingSellerApplications.data}
-                  </span>
-                )}
-                {item.label === "Seller Applications" && (pendingSellerApplications.data ?? 0) > 0 && (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                    {pendingSellerApplications.data}
-                  </span>
-                )}
+
+
               </span>
             )}
           </Link>
