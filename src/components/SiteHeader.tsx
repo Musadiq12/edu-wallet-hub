@@ -83,7 +83,14 @@ export function SiteHeader() {
       setMarketplaceRole(null);
       return () => { active = false; };
     }
-    supabase.from("profiles").select("role").eq("id", user.id).maybeSingle()
+    const profilesTable = supabase.from("profiles") as unknown as {
+      select: (columns: string) => {
+        eq: (column: string, value: string) => {
+          maybeSingle: () => Promise<{ data: { role?: string | null } | null; error: { message?: string } | null }>;
+        };
+      };
+    };
+    profilesTable.select("role").eq("id", user.id).maybeSingle()
       .then(({ data, error }) => {
         if (!active) return;
         setMarketplaceRole(error ? null : ((data as { role?: string | null } | null)?.role ?? "buyer"));
