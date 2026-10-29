@@ -107,7 +107,14 @@ function BecomeSellerPage() {
     }
 
     setRoleLoading(true);
-    supabase.from("profiles").select("role,full_name").eq("id", user.id).maybeSingle()
+    const profilesTable = supabase.from("profiles") as unknown as {
+      select: (columns: string) => {
+        eq: (column: string, value: string) => {
+          maybeSingle: () => Promise<{ data: { role?: string | null; full_name?: string | null } | null; error: { message?: string } | null }>;
+        };
+      };
+    };
+    profilesTable.select("role,full_name").eq("id", user.id).maybeSingle()
       .then(({ data, error }) => {
         if (!active) return;
         if (error) {
