@@ -95,7 +95,12 @@ begin
        or new.user_id is distinct from old.user_id
        or new.status <> 'pending'
        or new.reviewed_at is not null
-       or new.rejection_reason is not null then
+       or new.rejection_reason is not null
+       or new.pan_number is distinct from old.pan_number
+       or new.bank_details is distinct from old.bank_details
+       or new.qualification_proof_path is distinct from old.qualification_proof_path
+       or new.created_at is distinct from old.created_at
+       or new.id is distinct from old.id then
       raise exception 'Only rejected applications can be resubmitted by their owner'
         using errcode='42501';
     end if;
