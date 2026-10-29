@@ -66,8 +66,17 @@ export const assertSellerApplicationsAdmin = createServerFn({ method: "POST" })
     return input;
   })
   .handler(async ({ data }) => {
-    await requireAdmin(data.accessToken);
-    return { ok: true };
+    try {
+      await requireAdmin(data.accessToken);
+      return { authorized: true as const };
+    } catch (error) {
+      // A verified user with a non-admin profile is denied cleanly. Configuration,
+      // token-validation, and database errors still surface for diagnosis.
+      if (error instanceof Error && error.message === "Administrator access required.") {
+        return { authorized: false as const };
+      }
+      throw error;
+    }
   });
 
 export const listSellerApplications = createServerFn({ method: "POST" })
