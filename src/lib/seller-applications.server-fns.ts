@@ -102,20 +102,15 @@ export const approveSellerApplication = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { adminClient } = await requireAdmin();
     const { data: row, error: rowError } = await adminClient.from("seller_applications")
-      .select("id,user_id,status").eq("id", data.id).maybeSingle();
+      .select("id,status").eq("id", data.id).maybeSingle();
     if (rowError || !row) throw new Error("Application not found.");
     if (row.status !== "pending") throw new Error("Only pending applications can be approved.");
-    const reviewedAt = new Date().toISOString();
-    const { data: updated, error: updateError } = await adminClient.from("seller_applications")
-      .update({ status: "approved", reviewed_at: reviewedAt, rejection_reason: null })
-      .eq("id", row.id).eq("status", "pending").select("id").maybeSingle();
-    if (updateError || !updated) throw new Error("Could not approve this application. It may already have been reviewed.");
-    const { error: profileError } = await adminClient.from("profiles").update({ role: "seller" })
-      .eq("id", row.user_id);
-    if (profileError) {
-      await adminClient.from("seller_applications").update({ status: "pending", reviewed_at: null }).eq("id", row.id);
-      throw new Error("Could not assign the seller role. The application has been returned to pending.");
-    }
+    const { error } = await adminClient.rpc("admin_review_seller_application", {
+      p_application_id: data.id,
+      p_status: "approved",
+      p_rejection_reason: null,
+    });
+    if (error) throw new Error("Could not approve this application. It may already have been reviewed.");
     return { ok: true };
   });
 
@@ -129,10 +124,12 @@ export const rejectSellerApplication = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const { adminClient } = await requireAdmin();
-    const { data: updated, error } = await adminClient.from("seller_applications")
-      .update({ status: "rejected", rejection_reason: data.reason, reviewed_at: new Date().toISOString() })
-      .eq("id", data.id).eq("status", "pending").select("id").maybeSingle();
-    if (error || !updated) throw new Error("Could not reject this application. It may already have been reviewed.");
+    const { error } = await adminClient.rpc("admin_review_seller_application", {
+      p_application_id: data.id,
+      p_status: "rejected",
+      p_rejection_reason: data.reason,
+    });
+    if (error) throw new Error("Could not reject this application. It may already have been reviewed.");
     return { ok: true };
   });
 
