@@ -56,14 +56,16 @@ export const Route = createFileRoute("/become-seller")({
 });
 
 function humanError(error: unknown) {
-  const message = typeof error === "object" && error !== null && "message" in error
-    ? String((error as { message?: unknown }).message ?? "")
-    : typeof error === "string" ? error : "";
+  const detail = typeof error === "object" && error !== null
+    ? error as { message?: unknown; code?: unknown }
+    : {};
+  const message = String(detail.message ?? (typeof error === "string" ? error : ""));
+  const code = String(detail.code ?? "");
   const lower = message.toLowerCase();
-  if (lower.includes("row-level security") || lower.includes("permission denied") || lower.includes("42501")) {
+  if (code === "42501" || lower.includes("row-level security") || lower.includes("permission denied")) {
     return "Your application could not be saved because database permissions blocked the request. Please contact support.";
   }
-  if (lower.includes("duplicate key") || lower.includes("already exists")) {
+  if (code === "23505" || lower.includes("duplicate key") || lower.includes("already exists")) {
     return "An application already exists for this account. Refresh the page and try again.";
   }
   if (lower.includes("network") || lower.includes("fetch")) {
@@ -246,7 +248,7 @@ function BecomeSellerPage() {
         const result = await appTable.insert(payload);
         error = result.error;
       }
-      if (error) throw new Error("seller_applications insert failed: " + (error.message ?? "unknown database error"));
+      if (error) throw error;
 
       setApplication({
         id: application?.id ?? crypto.randomUUID(),
