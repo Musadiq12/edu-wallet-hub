@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequestHeader } from "@tanstack/react-start/server";
+import { getRequest } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 
 type ReviewStatus = "pending" | "approved" | "rejected";
@@ -26,24 +26,28 @@ function env(name: string) {
 }
 
 async function requireAdmin() {
-  const authorization = getRequestHeader("authorization");
-  const bearer = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
-  if (!bearer) throw new Error("Admin access required.");
+  const authorization = getRequest()?.headers.get("authorization");
+  const bearer = authorization?.match(/^Bearer\\s+(.+)$/i)?.[1];
+  if (!bearer || bearer.split(".").length !== 3) throw new Error("Admin access required.");
 
   const url = env("SUPABASE_URL");
   const publishableKey = env("SUPABASE_PUBLISHABLE_KEY");
   const serviceRoleKey = env("SUPABASE_SERVICE_ROLE_KEY");
 
-  const userClient = createClient(url, publishableKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: userResult, error: userError } = await userClient.auth.getUser(bearer);
-  if (userError || !userResult.user) throw new Error("Please sign in to continue.");
+  const userClient = createClient(url, publishableKey, {
+    global: { headers: { Authorization: `Bearer ${bearer}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data: claimsData, error: claimsError } = await userClient.auth.getClaims(bearer);
+  const userId = claimsData?.claims?.sub;
+  if (claimsError || typeof userId !== "string") throw new Error("Please sign in to continue.");
 
   const adminClient = createClient(url, serviceRoleKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: profile, error: profileError } = await adminClient
-    .from("profiles").select("role").eq("id", userResult.user.id).maybeSingle();
+    .from("profiles").select("role").eq("id", userId).maybeSingle();
   if (profileError || profile?.role !== "admin") throw new Error("Administrator access required.");
 
-  return { adminClient, user: userResult.user };
+  return { adminClient, userId };
 }
 
 export const listSellerApplications = createServerFn({ method: "GET" })
