@@ -98,14 +98,18 @@ comment on column public.products.status is 'Marketplace status; legacy catalog 
 create index if not exists products_seller_id_idx on public.products(seller_id);
 create index if not exists products_marketplace_status_idx on public.products(status);
 
--- Product catalog policies are additive. Existing admin policies are left untouched.
+-- Existing catalog read policies are deliberately replaced because PostgreSQL ORs permissive
+-- policies together. Keeping the old active-only policy would bypass the new approval status.
+drop policy if exists "public read active products" on public.products;
+drop policy if exists "authenticated read active products" on public.products;
 drop policy if exists marketplace_public_read_approved_products on public.products;
 create policy marketplace_public_read_approved_products on public.products
 for select to anon, authenticated
-using (status='approved' and is_active=true and not is_archived);
-drop policy if exists seller_read_own_products on public.products;
-create policy seller_read_own_products on public.products
-for select to authenticated using (seller_id=(select auth.uid()));
+using (
+  status='approved' and is_active=true and not is_archived
+  or public.is_admin_staff()
+  or (seller_id=(select auth.uid()))
+);
 drop policy if exists seller_insert_own_pending_products on public.products;
 create policy seller_insert_own_pending_products on public.products
 for insert to authenticated
