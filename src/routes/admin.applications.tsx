@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, ChevronLeft, Clock3, FileText, Loader2, Search, ShieldCheck, X } from "lucide-react";
 import { toast } from "sonner";
@@ -21,7 +21,7 @@ import {
   listSellerApplications,
   rejectSellerApplication,
 } from "@/lib/seller-applications.server-fns";
-import { useSession, useIsAdmin } from "@/lib/auth";
+import { useSession } from "@/lib/auth";
 import { BRAND, buildTitle } from "@/lib/seo";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -64,8 +64,9 @@ const statusStyles: Record<Status, string> = {
 
 function SellerApplicationsAdmin() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { user, loading } = useSession();
-  const { data: isAdmin, isLoading: roleLoading } = useIsAdmin(user?.id);
+  const [serverRoleChecked, setServerRoleChecked] = useState(false);
   const [status, setStatus] = useState<Status>("pending");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -80,10 +81,29 @@ function SellerApplicationsAdmin() {
     return session.access_token;
   };
 
+  useEffect(() => {
+    let active = true;
+    if (loading) return;
+    if (!user) {
+      void navigate({ to: "/", replace: true });
+      return;
+    }
+    void (async () => {
+      try {
+        const accessToken = await getAccessToken();
+        await assertSellerApplicationsAdmin({ data: { accessToken } });
+        if (active) setServerRoleChecked(true);
+      } catch {
+        if (active) void navigate({ to: "/", replace: true });
+      }
+    })();
+    return () => { active = false; };
+  }, [loading, user, navigate]);
+
   const apps = useQuery({
     queryKey: ["admin", "seller-applications", status],
     queryFn: async () => listSellerApplications({ data: { status, accessToken: await getAccessToken() } }),
-    enabled: !!user && !!isAdmin,
+    enabled: !!user && serverRoleChecked,
   });
   const pendingCount = useQuery({
     queryKey: ["admin", "seller-applications", "pending-count"],
@@ -93,7 +113,7 @@ function SellerApplicationsAdmin() {
   const detail = useQuery({
     queryKey: ["admin", "seller-application-detail", selectedId],
     queryFn: async () => getSellerApplicationDetail({ data: { id: selectedId!, accessToken: await getAccessToken() } }),
-    enabled: !!user && !!isAdmin && !!selectedId,
+    enabled: !!user && serverRoleChecked && !!selectedId,
     staleTime: 4 * 60 * 1000,
   });
   const rows = (apps.data ?? []) as Application[];
@@ -139,9 +159,7 @@ function SellerApplicationsAdmin() {
     }
   };
 
-  if (loading || roleLoading) return <div className="space-y-3"><Skeleton className="h-10 w-64" /><Skeleton className="h-36 w-full" /><Skeleton className="h-20 w-full" /></div>;
-  if (!user || !isAdmin) return <div className="rounded-xl border border-border bg-card p-8"><h1 className="text-xl font-semibold">Access denied</h1><p className="mt-2 text-sm text-muted-foreground">This area is restricted to administrators.</p><Button className="mt-4" asChild><Link to="/">Back to site</Link></Button></div>;
-
+  if (loading || !serverRoleChecked) return <div className="space-y-3"><Skeleton className="h-10 w-64" /><Skeleton className="h-36 w-full" /><Skeleton className="h-20 w-full" /></div>;
   const current = detail.data as Detail | undefined;
 
   return <div className="space-y-6">
