@@ -24,6 +24,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as BecomeSellerRouteImport } from './routes/become-seller'
 import { Route as SellerAgreementRouteImport } from './routes/seller-agreement'
+import { Route as SellerDashboardRouteImport } from './routes/seller.dashboard'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminFreeResourcesRouteImport } from './routes/admin.free-resources'
@@ -125,6 +126,11 @@ const SellerAgreementRoute = SellerAgreementRouteImport.update({
   path: '/seller-agreement',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SellerDashboardRoute = SellerDashboardRouteImport.update({
+  id: '/seller/dashboard',
+  path: '/seller/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/become-seller': typeof BecomeSellerRoute
   '/seller-agreement': typeof SellerAgreementRoute
+  '/seller/dashboard': typeof SellerDashboardRoute
   '/cookies': typeof CookiesRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
   '/admin/customers': typeof AdminCustomersRoute
@@ -228,6 +235,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/become-seller': typeof BecomeSellerRoute
   '/seller-agreement': typeof SellerAgreementRoute
+  '/seller/dashboard': typeof SellerDashboardRoute
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/free-resources': typeof FreeResourcesRoute
@@ -260,6 +268,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/become-seller': typeof BecomeSellerRoute
   '/seller-agreement': typeof SellerAgreementRoute
+  '/seller/dashboard': typeof SellerDashboardRoute
   '/admin': typeof AdminRouteWithChildren
   '/contact': typeof ContactRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -292,6 +301,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/become-seller'
+    | '/seller-agreement'
+    | '/seller/dashboard'
     | '/admin'
     | '/contact'
     | '/forgot-password'
@@ -324,6 +336,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/become-seller'
+    | '/seller-agreement'
+    | '/seller/dashboard'
     | '/contact'
     | '/forgot-password'
     | '/free-resources'
@@ -353,6 +368,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/become-seller'
+    | '/seller-agreement'
+    | '/seller/dashboard'
     | '/admin'
     | '/contact'
     | '/forgot-password'
@@ -382,6 +400,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  BecomeSellerRoute: typeof BecomeSellerRoute
+  SellerAgreementRoute: typeof SellerAgreementRoute
+  SellerDashboardRoute: typeof SellerDashboardRoute
   AdminRoute: typeof AdminRouteWithChildren
   ContactRoute: typeof ContactRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
@@ -504,6 +525,13 @@ declare module '@tanstack/react-router' {
       path: '/seller-agreement'
       fullPath: '/seller-agreement'
       preLoaderRoute: typeof SellerAgreementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/seller/dashboard': {
+      id: '/seller/dashboard'
+      path: '/seller/dashboard'
+      fullPath: '/seller/dashboard'
+      preLoaderRoute: typeof SellerDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cookies': {
@@ -647,6 +675,9 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  BecomeSellerRoute: BecomeSellerRoute,
+  SellerAgreementRoute: SellerAgreementRoute,
+  SellerDashboardRoute: SellerDashboardRoute,
   AdminRoute: AdminRouteWithChildren,
   ContactRoute: ContactRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
