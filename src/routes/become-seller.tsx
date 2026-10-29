@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { AlertCircle, ArrowRight, CheckCircle2, Clock3, FileCheck2, FileUp, ShieldCheck, UploadCloud } from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle2, Clock3, FileCheck2, FileUp, ShieldCheck, UploadCloud, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,7 +58,7 @@ export const Route = createFileRoute("/become-seller")({
 function humanError(error: unknown) {
   const message = typeof error === "object" && error !== null && "message" in error
     ? String((error as { message?: unknown }).message ?? "")
-    : "";
+    : typeof error === "string" ? error : "";
   const lower = message.toLowerCase();
   if (lower.includes("row-level security") || lower.includes("permission denied") || lower.includes("42501")) {
     return "Your application could not be saved because database permissions blocked the request. Please contact support.";
@@ -69,7 +69,14 @@ function humanError(error: unknown) {
   if (lower.includes("network") || lower.includes("fetch")) {
     return "Network issue. Check your connection and try again.";
   }
-  return "We could not submit your application. Please try again.";
+  if (lower.includes("bucket") || lower.includes("storage")) {
+    return "Your ID card could not be uploaded. Please try another PDF, JPG, or PNG file up to 5 MB. If this continues, contact support.";
+  }
+  if (lower.includes("seller_applications") || lower.includes("schema cache") || lower.includes("column")) {
+    return "The seller application service is not fully available yet. Please contact support and mention “seller application database configuration”.";
+  }
+  if (lower.includes("23505")) return "An application already exists for this account. Refresh the page to check its status.";
+  return "We could not complete your application. Please check your connection and try again. If it continues, contact support.";
 }
 
 function safeFilename(name: string) {
@@ -205,6 +212,7 @@ function BecomeSellerPage() {
 
     try {
       if (idCard) {
+        // Keep the client and storage key aligned: one ID document per application.
         const extension = idCard.type === "application/pdf" ? "pdf" : idCard.type === "image/jpeg" ? "jpg" : "png";
         const path = user.id + "/" + crypto.randomUUID() + "-" + safeFilename(idCard.name.replace(/\.[^.]+$/, "")) + "." + extension;
         const { error: uploadError } = await supabase.storage.from("seller-documents").upload(path, idCard, {
@@ -238,7 +246,7 @@ function BecomeSellerPage() {
         const result = await appTable.insert(payload);
         error = result.error;
       }
-      if (error) throw error;
+      if (error) throw new Error("seller_applications insert failed: " + (error.message ?? "unknown database error"));
 
       setApplication({
         id: application?.id ?? crypto.randomUUID(),
@@ -256,8 +264,10 @@ function BecomeSellerPage() {
       setSuccess(true);
       toast.success("Seller application submitted.");
     } catch (error) {
-      setFormError(humanError(error));
-      toast.error(humanError(error));
+      console.error("[seller-application] submission failed", error);
+      const message = humanError(error);
+      setFormError(message);
+      toast.error(message);
       if (uploadedPath) await supabase.storage.from("seller-documents").remove([uploadedPath]).catch(() => undefined);
     } finally {
       busyRef.current = false;
@@ -311,7 +321,8 @@ function BecomeSellerPage() {
           <div className="border-b border-border p-5 sm:p-8">
             <p className="text-xs font-semibold uppercase tracking-[.16em] text-secondary">Seller application</p>
             <h2 className="mt-2 font-serif text-2xl font-semibold sm:text-3xl">{application?.status === "rejected" ? "Update your application" : "Become a Seller"}</h2>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">Complete every field below. Your details are shared only with authorized reviewers.</p>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">Complete your seller profile below. Required fields are marked with an asterisk; your identity document remains private.</p>
+            <div className="mt-5 flex flex-wrap gap-2 text-xs font-medium text-muted-foreground"><span className="rounded-full border border-border bg-background px-3 py-1.5">1. Your details</span><span className="rounded-full border border-border bg-background px-3 py-1.5">2. Verification</span><span className="rounded-full border border-border bg-background px-3 py-1.5">3. Review</span></div>
           </div>
 
           {application?.status === "rejected" && (
@@ -357,11 +368,11 @@ function BecomeSellerPage() {
                 </fieldset>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="seller-id-card">ID card (PDF, JPG or PNG) <span className="text-destructive">*</span></Label>
-                  <label htmlFor="seller-id-card" className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-input bg-background px-4 py-5 text-center transition-colors hover:border-primary hover:bg-primary/5">
-                    <UploadCloud className="size-6 text-muted-foreground" />
-                    <span className="mt-2 max-w-full truncate px-3 text-sm font-medium">{idCard ? "ID card selected" : application?.status === "rejected" && application.id_card_path ? "Upload a replacement ID card (optional)" : "Choose an ID card file"}</span>
-                    <span className="mt-1 text-xs text-muted-foreground">PDF, JPG or PNG · Maximum 5 MB</span>
-                    <input id="seller-id-card" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" className="sr-only" onChange={(e) => { const file = e.target.files?.[0] ?? null; setIdCard(file); setFormError(""); }} />
+                  <label htmlFor="seller-id-card" className="group flex min-h-36 cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-primary/25 bg-muted/20 px-4 py-6 text-center transition-colors hover:border-primary/60 hover:bg-primary/5">
+                    <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/15"><UploadCloud className="size-5" /></span>
+                    <span className="mt-3 max-w-full truncate px-3 text-sm font-semibold">{idCard ? "ID card selected" : application?.status === "rejected" && application.id_card_path ? "Choose a replacement ID card (optional)" : "Select one ID card"}</span>
+                    <span className="mt-1 text-xs text-muted-foreground">PDF, JPG or PNG · Up to 5 MB · One file only</span>
+                    <input id="seller-id-card" type="file" multiple={false} accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" className="sr-only" onChange={(e) => { const file = e.target.files?.[0] ?? null; setIdCard(file); setFormError(""); }} />
                   </label>
                   {idCard && (
                     <div className="flex min-w-0 items-center gap-3 rounded-xl border border-border bg-muted/30 p-3">
@@ -370,10 +381,11 @@ function BecomeSellerPage() {
                         <p className="truncate text-sm font-medium" title={idCard.name}>{idCard.name}</p>
                         <p className="mt-0.5 text-xs text-muted-foreground">{idCard.type === "application/pdf" ? "PDF document" : idCard.type === "image/jpeg" ? "JPEG image" : "PNG image"} · {(idCard.size / (1024 * 1024)).toFixed(2)} MB</p>
                       </div>
-                      <button type="button" onClick={() => { setIdCard(null); const input = document.getElementById("seller-id-card") as HTMLInputElement | null; if (input) input.value = ""; }} className="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground" aria-label="Remove selected ID card">Remove</button>
+                      <button type="button" onClick={() => { setIdCard(null); const input = document.getElementById("seller-id-card") as HTMLInputElement | null; if (input) input.value = ""; }} className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2.5 py-2 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground" aria-label="Remove selected ID card"><X className="size-3.5" />Remove</button>
                     </div>
                   )}
-                  {application?.status === "rejected" && application.id_card_path && !idCard && <p className="text-xs text-muted-foreground">Your previous file will be reused unless you select a replacement.</p>}
+                  {application?.status === "rejected" && application.id_card_path && !idCard && <p className="rounded-lg bg-muted/40 px-3 py-2 text-xs leading-5 text-muted-foreground">Your previously submitted ID will be reused unless you choose a replacement.</p>}
+                  <p className="text-xs leading-5 text-muted-foreground">Your file is stored privately and can only be accessed by you and authorized EduWallet reviewers.</p>
                 </div>
                 <div className="space-y-2 sm:col-span-2">
                   <Label htmlFor="seller-upi">UPI ID <span className="text-destructive">*</span></Label>
