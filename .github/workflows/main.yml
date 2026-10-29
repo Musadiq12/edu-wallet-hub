@@ -67,7 +67,7 @@ jobs:
             SUPABASE_URL: process.env.SUPABASE_URL,
             SUPABASE_PUBLISHABLE_KEY: process.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           };
-          fs.writeFileSync(path, JSON.stringify(config, null, 2) + "\\n");
+          fs.writeFileSync(path, JSON.stringify(config, null, 2) + "\n");
           NODE
 
       - name: Set server-side Supabase secret
