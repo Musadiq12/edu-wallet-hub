@@ -102,17 +102,17 @@ function SellerApplicationsAdmin() {
 
   const apps = useQuery({
     queryKey: ["admin", "seller-applications", status],
-    queryFn: async () => listSellerApplications({ data: { status, accessToken: await getAccessToken() } }),
+    queryFn: async () => listSellerApplications({ data: { status, accessToken: await getSessionAccessToken() } }),
     enabled: !!user && serverRoleChecked,
   });
   const pendingCount = useQuery({
     queryKey: ["admin", "seller-applications", "pending-count"],
-    queryFn: async () => getPendingSellerApplicationCount({ data: { accessToken: await getAccessToken() } }),
-    enabled: !!user && !!isAdmin,
+    queryFn: async () => getPendingSellerApplicationCount({ data: { accessToken: await getSessionAccessToken() } }),
+    enabled: !!user && serverRoleChecked,
   });
   const detail = useQuery({
     queryKey: ["admin", "seller-application-detail", selectedId],
-    queryFn: async () => getSellerApplicationDetail({ data: { id: selectedId!, accessToken: await getAccessToken() } }),
+    queryFn: async () => getSellerApplicationDetail({ data: { id: selectedId!, accessToken: await getSessionAccessToken() } }),
     enabled: !!user && serverRoleChecked && !!selectedId,
     staleTime: 4 * 60 * 1000,
   });
@@ -135,7 +135,7 @@ function SellerApplicationsAdmin() {
     if (!approveTarget || busy) return;
     setBusy(true);
     try {
-      await approveSellerApplication({ data: { id: approveTarget.id, accessToken: await getAccessToken() } });
+      await approveSellerApplication({ data: { id: approveTarget.id, accessToken: await getSessionAccessToken() } });
       await refreshLists();
       toast.success("Seller application approved. The user is now a seller.");
     } catch (error) {
@@ -149,7 +149,7 @@ function SellerApplicationsAdmin() {
     if (!rejectTarget || busy || reason.trim().length < 3) return;
     setBusy(true);
     try {
-      await rejectSellerApplication({ data: { id: rejectTarget.id, reason: reason.trim(), accessToken: await getAccessToken() } });
+      await rejectSellerApplication({ data: { id: rejectTarget.id, reason: reason.trim(), accessToken: await getSessionAccessToken() } });
       await refreshLists();
       toast.success("Application rejected. The applicant can edit and resubmit.");
     } catch (error) {
