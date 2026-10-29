@@ -153,6 +153,7 @@ function BecomeSellerPage() {
   };
 
   const validate = () => {
+    if (!role) return "Your account role could not be verified. Refresh the page before submitting.";
     if (fullName.trim().length < 2 || fullName.trim().length > 100) return "Enter your full name (2–100 characters).";
     if (!profession.trim() || profession.trim().length > 100) return "Enter your profession (up to 100 characters).";
     if (!education.trim() || education.trim().length > 200) return "Enter your education or qualification (up to 200 characters).";
