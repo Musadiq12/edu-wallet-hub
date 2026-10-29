@@ -133,7 +133,14 @@ function BecomeSellerPage() {
       .eq("user_id", user.id).maybeSingle()
       .then(({ data, error }) => {
         if (!active) return;
-        if (error) setFormError("We couldn't load your application. Refresh the page or contact support.");
+        if (error) {
+          const message = String(error.message ?? "").toLowerCase();
+          setFormError(
+            message.includes("seller_applications") && (message.includes("does not exist") || message.includes("schema cache"))
+              ? "Seller applications are not enabled in the live database yet. The marketplace database migration must be applied before you can submit."
+              : "We couldn’t load your application status. Check your connection and try again. If this continues, contact support.",
+          );
+        }
         else if (data) {
           setApplication(data);
           setFullName(data.full_name ?? "");
@@ -352,7 +359,7 @@ function BecomeSellerPage() {
                   <Label htmlFor="seller-id-card">ID card (PDF, JPG or PNG) <span className="text-destructive">*</span></Label>
                   <label htmlFor="seller-id-card" className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-input bg-background px-4 py-5 text-center transition-colors hover:border-primary hover:bg-primary/5">
                     <UploadCloud className="size-6 text-muted-foreground" />
-                    <span className="mt-2 text-sm font-medium">{idCard ? idCard.name : application?.status === "rejected" && application.id_card_path ? "Upload a replacement ID card (optional)" : "Choose an ID card file"}</span>
+                    <span className="mt-2 max-w-full truncate px-3 text-sm font-medium" title={idCard?.name}>{idCard ? idCard.name : application?.status === "rejected" && application.id_card_path ? "Upload a replacement ID card (optional)" : "Choose an ID card file"}</span>
                     <span className="mt-1 text-xs text-muted-foreground">PDF, JPG or PNG · Maximum 5 MB</span>
                     <input id="seller-id-card" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" className="sr-only" onChange={(e) => { const file = e.target.files?.[0] ?? null; setIdCard(file); setFormError(""); }} />
                   </label>
