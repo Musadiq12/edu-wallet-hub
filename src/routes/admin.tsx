@@ -20,6 +20,7 @@ import {
   Settings,
   Star,
   ShoppingCart,
+  Store,
   Sun,
   Users,
   X,
@@ -29,6 +30,7 @@ import { useIsAdmin, useSession, signOutCleanly } from "@/lib/auth";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 import { adminOrdersQuery } from "@/lib/admin";
+import { getPendingSellerApplicationCount } from "@/lib/seller-applications.server-fns";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin")({
@@ -50,6 +52,7 @@ const NAV = [
   { to: "/admin/products", label: "Products", icon: Package, exact: false },
   { to: "/admin/coupons", label: "Coupons", icon: BadgePercent, exact: false },
   { to: "/admin/customers", label: "Customers", icon: Users, exact: false },
+  { to: "/admin/applications", label: "Seller Applications", icon: Store, exact: false },
   { to: "/admin/messages", label: "Messages", icon: Bell, exact: false },
   { to: "/admin/reviews", label: "Reviews", icon: Star, exact: false },
   { to: "/admin/blog", label: "Blog", icon: Newspaper, exact: false },
@@ -66,6 +69,11 @@ function AdminLayout() {
   const { user, loading } = useSession();
   const { data: isAdmin, isLoading: roleLoading } = useIsAdmin(user?.id);
   const orders = useQuery({ ...adminOrdersQuery(), enabled: !!user && !!isAdmin });
+  const pendingSellerApplications = useQuery({
+    queryKey: ["admin", "seller-applications", "pending-count"],
+    enabled: !!user && !!isAdmin,
+    queryFn: () => getPendingSellerApplicationCount(),
+  });
   const pendingReviews = useQuery({
     queryKey: ["admin", "reviews", "pending-count"],
     enabled: !!user && !!isAdmin,
@@ -168,6 +176,11 @@ function AdminLayout() {
                     {pendingReviews.data}
                   </span>
                 )}
+                {item.label === "Seller Applications" && (pendingSellerApplications.data ?? 0) > 0 && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                    {pendingSellerApplications.data}
+                  </span>
+                )}
               </span>
             )}
             </Link>
@@ -191,6 +204,11 @@ function AdminLayout() {
                 {item.label === "Reviews" && (pendingReviews.data ?? 0) > 0 && (
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                     {pendingReviews.data}
+                  </span>
+                )}
+                {item.label === "Seller Applications" && (pendingSellerApplications.data ?? 0) > 0 && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                    {pendingSellerApplications.data}
                   </span>
                 )}
               </span>
