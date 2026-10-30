@@ -1274,6 +1274,8 @@ export type Database = {
           admin_note: string | null
           amount: number
           available_on: string | null
+          commission_amount: number | null
+          commission_rate: number | null
           checkout_idempotency_key: string | null
           coupon_code: string | null
           coupon_discount: number
@@ -2289,32 +2291,38 @@ export type Database = {
       }
       withdrawal_requests: {
         Row: {
-          amount: number
-          id: string
-          paid_at: string | null
-          requested_at: string
-          seller_id: string
-          status: string
-          upi_reference: string | null
+          amount: number; id: string; paid_at: string | null; requested_at: string;
+          seller_id: string; status: string; upi_reference: string | null; upi_id: string | null;
+          processing_at: string | null; rejected_at: string | null; rejection_reason: string | null; idempotency_key: string | null;
         }
         Insert: {
-          amount: number
-          id?: string
-          paid_at?: string | null
-          requested_at?: string
-          seller_id: string
-          status?: string
-          upi_reference?: string | null
+          amount: number; id?: string; paid_at?: string | null; requested_at?: string; seller_id: string;
+          status?: string; upi_reference?: string | null; upi_id?: string | null; processing_at?: string | null;
+          rejected_at?: string | null; rejection_reason?: string | null; idempotency_key?: string | null;
         }
         Update: {
-          amount?: number
-          id?: string
-          paid_at?: string | null
-          requested_at?: string
-          seller_id?: string
-          status?: string
-          upi_reference?: string | null
+          amount?: number; id?: string; paid_at?: string | null; requested_at?: string; seller_id?: string;
+          status?: string; upi_reference?: string | null; upi_id?: string | null; processing_at?: string | null;
+          rejected_at?: string | null; rejection_reason?: string | null; idempotency_key?: string | null;
         }
+        Relationships: []
+      }
+      seller_ledger: {
+        Row: { id: string; seller_id: string; order_id: string | null; withdrawal_id: string | null; entry_type: string; amount: number; description: string; created_at: string }
+        Insert: { id?: string; seller_id: string; order_id?: string | null; withdrawal_id?: string | null; entry_type: string; amount: number; description: string; created_at?: string }
+        Update: { id?: string; seller_id?: string; order_id?: string | null; withdrawal_id?: string | null; entry_type?: string; amount?: number; description?: string; created_at?: string }
+        Relationships: []
+      }
+      withdrawal_status_history: {
+        Row: { id: string; withdrawal_id: string; from_status: string | null; to_status: string; changed_by: string | null; reason: string | null; created_at: string }
+        Insert: { id?: string; withdrawal_id: string; from_status?: string | null; to_status: string; changed_by?: string | null; reason?: string | null; created_at?: string }
+        Update: { id?: string; withdrawal_id?: string; from_status?: string | null; to_status?: string; changed_by?: string | null; reason?: string | null; created_at?: string }
+        Relationships: []
+      }
+      marketplace_commission_settings: {
+        Row: { id: number; commission_rate: number; updated_by: string | null; updated_at: string }
+        Insert: { id?: number; commission_rate?: number; updated_by?: string | null; updated_at?: string }
+        Update: { id?: number; commission_rate?: number; updated_by?: string | null; updated_at?: string }
         Relationships: []
       }
     }
@@ -2340,6 +2348,8 @@ export type Database = {
         Row: {
           available_on: string | null
           buyer_first_name: string | null
+          commission_amount: number | null
+          commission_rate: number | null
           created_at: string | null
           id: string | null
           product_title: string | null
@@ -2425,6 +2435,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_seller_wallets: { Args: never; Returns: { seller_id: string; full_name: string | null; email: string | null; verification_status: string; is_suspended: boolean; total_sales: number; lifetime_earnings: number; commission_deducted: number; pending_balance: number; released_earnings: number; pending_withdrawals: number; withdrawable_balance: number }[] }
+      admin_set_seller_suspension: { Args: { p_seller_id: string; p_suspended: boolean; p_reason?: string | null }; Returns: undefined }
+      admin_withdrawal_queue: { Args: never; Returns: Json }
+      admin_get_marketplace_commission: { Args: never; Returns: { commission_rate: number; updated_at: string }[] }
+      admin_transition_withdrawal: { Args: { p_request_id: string; p_status: string; p_reason?: string | null; p_upi_reference?: string | null }; Returns: undefined }
+      admin_set_marketplace_commission: { Args: { p_rate: number }; Returns: undefined }
+      seller_request_withdrawal: { Args: { p_amount: number; p_idempotency_key: string }; Returns: string }
+      seller_update_upi: { Args: { p_upi_id: string }; Returns: undefined }
+      seller_wallet_summary: { Args: never; Returns: Json }
+      seller_withdrawal_history: { Args: never; Returns: Json }
+      seller_wallet_upi: { Args: never; Returns: string | null }
       admin_update_physical_order_tracking: {
         Args: {
           p_courier_name?: string
