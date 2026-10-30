@@ -43,7 +43,7 @@ grant execute on function public.current_user_is_seller() to authenticated;
 create or replace function public.seller_balance(p_seller_id uuid)
 returns table(pending_balance numeric,available_balance numeric)
 language sql stable security definer set search_path = ''
-as $
+as $$
   select
     coalesce(sum(o.seller_share) filter (where o.available_on>now() and not o.refunded),0)::numeric(12,2),
     (coalesce(sum(o.seller_share) filter (where o.available_on<=now() and not o.refunded),0)
@@ -53,7 +53,7 @@ as $
   from public.orders o
   where o.seller_id=p_seller_id and p_seller_id=(select auth.uid())
     and public.current_user_is_seller() and o.seller_share is not null
-$;
+$$;
 revoke all on function public.seller_balance(uuid) from public, anon;
 grant execute on function public.seller_balance(uuid) to authenticated;
 
@@ -195,7 +195,7 @@ grant execute on function public.seller_archive_or_delete_product(uuid) to authe
 -- Permit the RPCs above to change the moderation state only inside the current transaction.
 create or replace function public.guard_marketplace_product_fields()
 returns trigger language plpgsql security invoker set search_path = ''
-as $
+as $$
 begin
   if tg_op = 'UPDATE'
      and current_setting('app.seller_product_write', true) = 'enabled'
