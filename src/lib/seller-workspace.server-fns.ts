@@ -66,6 +66,11 @@ async function requireSeller(accessToken: string): Promise<SellerContext> {
   if (profileError || profile?.role !== "seller") {
     throw new Error("Seller access is no longer available for this account.");
   }
+  const { data: application, error: applicationError } = await client
+    .from("seller_applications").select("status,is_suspended").eq("user_id", userId).maybeSingle();
+  if (applicationError || application?.status !== "approved" || application.is_suspended) {
+    throw new Error(application?.is_suspended ? "Seller access is suspended." : "Seller access is no longer available for this account.");
+  }
   return { userId, client };
 }
 
