@@ -1866,7 +1866,7 @@ export type Database = {
       }
       seller_update_product: {
         Args: { p_product_id: string; p_title: string; p_slug: string; p_description: string; p_exam_label: string; p_subject_label: string; p_price: number; p_pdf_path: string; p_preview_path?: string | null }
-        Returns: undefined
+        Returns: boolean
       }
       seller_archive_or_delete_product: { Args: { p_product_id: string }; Returns: string }
       seller_balance: { Args: { p_seller_id: string }; Returns: { pending_balance: number; available_balance: number }[] }
