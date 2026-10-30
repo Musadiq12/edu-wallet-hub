@@ -64,5 +64,4 @@ drop index if exists public.seller_ledger_order_id_entry_type_key;
 create unique index if not exists seller_ledger_once_per_order_event
 on public.seller_ledger(order_id,entry_type)
 where entry_type in ('sale_credit','commission_debit','sale_reversal');
-
 commit;
