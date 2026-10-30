@@ -212,6 +212,9 @@ export const sellerDeleteProduct = createServerFn({method:"POST"})
     const {data:row,error}=await context.client.from("products").select("pdf_file,preview_file,status")
       .eq("id",data.id).eq("seller_id",context.userId).is("deleted_at",null).maybeSingle();
     if(error || !row) throw new Error("This product could not be found.");
+    if(!["pending","rejected"].includes(row.status)) {
+      throw new Error("Only pending or rejected products can be deleted. Published products must be taken down by an administrator.");
+    }
     const {data:result,error:rpcError}=await context.client.rpc("seller_archive_or_delete_product",{p_product_id:data.id});
     if(rpcError) throw new Error(safeMessage(rpcError,"Could not remove this product."));
     if(result==="deleted") await removePrivateFiles(context,[row.pdf_file,row.preview_file]);
