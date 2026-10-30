@@ -429,22 +429,31 @@ begin
     raise exception 'administrator access required' using errcode = '42501';
   end if;
   return query
+  with order_totals as (
+    select o.seller_id,
+      count(*) filter(where not o.refunded)::bigint as total_sales,
+      coalesce(sum(o.seller_share) filter(where not o.refunded),0)::numeric as lifetime_earnings,
+      coalesce(sum(o.commission_amount) filter(where not o.refunded),0)::numeric as commission_deducted,
+      coalesce(sum(o.seller_share) filter(where o.available_on > now() and not o.refunded),0)::numeric as pending_balance,
+      coalesce(sum(o.seller_share) filter(where o.available_on <= now() and not o.refunded),0)::numeric as released_earnings
+    from public.orders o where o.seller_id is not null and o.seller_share is not null
+    group by o.seller_id
+  ), withdrawal_totals as (
+    select w.seller_id,
+      coalesce(sum(w.amount) filter(where w.status in ('requested','processing')),0)::numeric as pending_withdrawals,
+      coalesce(sum(w.amount) filter(where w.status in ('requested','processing','paid')),0)::numeric as reserved_withdrawals
+    from public.withdrawal_requests w group by w.seller_id
+  )
   select a.user_id,p.full_name,p.email,a.status,a.is_suspended,
-    count(o.id) filter (where not o.refunded)::bigint,
-    coalesce(sum(o.seller_share) filter (where not o.refunded),0)::numeric,
-    coalesce(sum(o.commission_amount) filter (where not o.refunded),0)::numeric,
-    coalesce(sum(o.seller_share) filter (where o.available_on > now() and not o.refunded),0)::numeric,
-    coalesce(sum(o.seller_share) filter (where o.available_on <= now() and not o.refunded),0)::numeric,
-    coalesce((select sum(w.amount) from public.withdrawal_requests w
-      where w.seller_id=a.user_id and w.status in ('requested','processing')),0)::numeric,
-    greatest(coalesce(sum(o.seller_share) filter (where o.available_on <= now() and not o.refunded),0)
-      -(select coalesce(sum(w.amount),0) from public.withdrawal_requests w
-        where w.seller_id=a.user_id and w.status in ('requested','processing','paid'))-500,0)::numeric
+    coalesce(ot.total_sales,0),coalesce(ot.lifetime_earnings,0),coalesce(ot.commission_deducted,0),
+    coalesce(ot.pending_balance,0),coalesce(ot.released_earnings,0),
+    coalesce(wt.pending_withdrawals,0),
+    greatest(coalesce(ot.released_earnings,0)-coalesce(wt.reserved_withdrawals,0)-500,0)
   from public.seller_applications a
   join public.profiles p on p.id=a.user_id
-  left join public.orders o on o.seller_id=a.user_id and o.seller_share is not null
-  where a.status='approved'
-  group by a.user_id,p.full_name,p.email,a.status,a.is_suspended;
+  left join order_totals ot on ot.seller_id=a.user_id
+  left join withdrawal_totals wt on wt.seller_id=a.user_id
+  where a.status='approved';
 end;
 $$;
 revoke all on function public.admin_seller_wallets() from public, anon;
