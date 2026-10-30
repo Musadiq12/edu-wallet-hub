@@ -1269,6 +1269,16 @@ export type Database = {
           low_stock_threshold: number | null
           product_type: string
           review_feedback: string | null
+          seller_id: string | null
+          status: string
+          submitted_at: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          published_at: string | null
+          rejection_reason: string | null
+          admin_notes: string | null
+          revision_of: string | null
+          deleted_at: string | null
           slug: string
           subject_id: string | null
           subject_label: string | null
@@ -1303,6 +1313,16 @@ export type Database = {
           low_stock_threshold?: number | null
           product_type?: string
           review_feedback?: string | null
+          deleted_at?: string | null
+          revision_of?: string | null
+          admin_notes?: string | null
+          rejection_reason?: string | null
+          published_at?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          submitted_at?: string | null
+          status?: string
+          seller_id?: string | null
           slug: string
           subject_id?: string | null
           subject_label?: string | null
@@ -1333,14 +1353,23 @@ export type Database = {
           preview_file?: string | null
           price?: number
           product_type?: string
+          seller_id?: string | null
+          status?: string
+          submitted_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          published_at?: string | null
+          rejection_reason?: string | null
+          admin_notes?: string | null
+          revision_of?: string | null
+          deleted_at?: string | null
           slug?: string
           subject_id?: string | null
           subject_label?: string | null
           title?: string
           updated_at?: string
           whats_included?: string | null
-        }
-        Relationships: [
+        }        Relationships: [
           {
             foreignKeyName: "products_category_id_fkey"
             columns: ["category_id"]
@@ -1370,6 +1399,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      seller_notifications: {
+        Row: {
+          id: string
+          seller_id: string
+          product_id: string | null
+          event_type: string
+          title: string
+          message: string
+          target_url: string | null
+          read_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          seller_id: string
+          product_id?: string | null
+          event_type: string
+          title: string
+          message: string
+          target_url?: string | null
+          read_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          seller_id?: string
+          product_id?: string | null
+          event_type?: string
+          title?: string
+          message?: string
+          target_url?: string | null
+          read_at?: string | null
+          created_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -1857,6 +1922,10 @@ export type Database = {
       has_verified_purchase: {
         Args: { p_product_id: string }
         Returns: boolean
+      }
+      transition_seller_product: {
+        Args: { p_product_id: string; p_action: string; p_reason?: string | null; p_admin_notes?: string | null }
+        Returns: Database["public"]["Tables"]["products"]["Row"]
       }
       is_admin_staff: { Args: never; Returns: boolean }
       current_user_is_seller: { Args: never; Returns: boolean }

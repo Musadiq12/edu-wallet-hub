@@ -54,6 +54,10 @@ function AdminProducts() {
     mutationLockRef.current = true;
     setBusyId(p.id);
     try {
+    if (p.seller_id) {
+      toast.error("Seller products must be published through Product Review.");
+      return;
+    }
     const { error } = await supabase.from("products").update({ is_active: value }).eq("id", p.id);
     if (error) {
       toast.error(friendlyError(error, "Could not update the product."));

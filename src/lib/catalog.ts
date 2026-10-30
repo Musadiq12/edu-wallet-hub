@@ -29,6 +29,8 @@ export type Product = {
   is_featured: boolean;
   is_active: boolean;
   is_demo: boolean;
+  seller_id: string | null;
+  status: string;
   created_at: string;
 };
 
@@ -41,7 +43,7 @@ export type Category = {
 };
 
 const PRODUCT_FIELDS =
-  "id,product_type,title,seo_title,seo_description,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,stock_quantity,stock_status,low_stock_threshold,created_at";
+  "id,product_type,title,seo_title,seo_description,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,seller_id,status,stock_quantity,stock_status,low_stock_threshold,created_at";
 
 export const categoriesQuery = () =>
   queryOptions({
@@ -70,6 +72,7 @@ export const productsQuery = (opts?: {
         .select(PRODUCT_FIELDS)
         .eq("is_active", true)
         .eq("is_archived", false)
+        .or("and(seller_id.is.null),and(status.eq.published,revision_of.is.null,deleted_at.is.null)")
         .order("created_at", { ascending: false });
       if (opts?.featured) q = q.eq("is_featured", true);
       if (opts?.free !== undefined) q = q.eq("is_free", opts.free);
@@ -90,6 +93,7 @@ export const productBySlugQuery = (slug: string) =>
         .eq("slug", slug)
         .eq("is_active", true)
         .eq("is_archived", false)
+        .or("and(seller_id.is.null),and(status.eq.published,revision_of.is.null,deleted_at.is.null)")
         .maybeSingle();
       if (error) throw error;
       return (data ?? null) as unknown as Product | null;
@@ -103,6 +107,8 @@ export const adminProductsQuery = () =>
       const { data, error } = await supabase
         .from("products")
         .select(PRODUCT_FIELDS)
+        .is("seller_id", null)
+        .neq("status", "pending")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as Product[];

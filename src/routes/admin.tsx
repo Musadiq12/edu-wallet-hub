@@ -17,6 +17,7 @@ import {
   Newspaper,
   Moon,
   Package,
+  ClipboardCheck,
   Settings,
   Star,
   ShoppingCart,
@@ -50,6 +51,7 @@ const NAV = [
   { to: "/admin/orders", label: "Sales", icon: ShoppingCart, exact: false },
   { to: "/", label: "View Site", icon: ExternalLink, exact: false, external: true },
   { to: "/admin/products", label: "Products", icon: Package, exact: false },
+  { to: "/admin/seller-products", label: "Product Review", icon: ClipboardCheck, exact: false },
   { to: "/admin/coupons", label: "Coupons", icon: BadgePercent, exact: false },
   { to: "/admin/customers", label: "Customers", icon: Users, exact: false },
   { to: "/admin/applications", label: "Seller Applications", icon: Store, exact: false },
@@ -77,6 +79,17 @@ function AdminLayout() {
       if (error || !session?.access_token) throw new Error("Please sign in again.");
       return getPendingSellerApplicationCount({ data: { accessToken: session.access_token } });
     },
+  });
+  const pendingSellerProducts = useQuery({
+    queryKey: ["admin", "seller-products", "pending-count"],
+    enabled: !!user && !!isAdmin,
+    queryFn: async () => {
+      const { count, error } = await supabase.from("products").select("id", { count: "exact", head: true })
+        .not("seller_id", "is", null).eq("status", "pending").is("deleted_at", null);
+      if (error) throw error;
+      return count ?? 0;
+    },
+    refetchInterval: 60000,
   });
   const pendingReviews = useQuery({
     queryKey: ["admin", "reviews", "pending-count"],
@@ -175,6 +188,12 @@ function AdminLayout() {
               {(open || mobile) && (
               <span className="flex min-w-0 flex-1 items-center justify-between gap-2 text-sm font-medium">
                 {item.label}
+                {item.label === "Product Review" && (pendingSellerProducts.data ?? 0) > 0 && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">{pendingSellerProducts.data}</span>
+                )}
+                {item.label === "Product Review" && (pendingSellerProducts.data ?? 0) > 0 && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">{pendingSellerProducts.data}</span>
+                )}
                 {item.label === "Reviews" && (pendingReviews.data ?? 0) > 0 && (
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                     {pendingReviews.data}
@@ -205,6 +224,9 @@ function AdminLayout() {
             {(open || mobile) && (
               <span className="flex min-w-0 flex-1 items-center justify-between gap-2 text-sm font-medium">
                 {item.label}
+                {item.label === "Product Review" && (pendingSellerProducts.data ?? 0) > 0 && (
+                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">{pendingSellerProducts.data}</span>
+                )}
                 {item.label === "Reviews" && (pendingReviews.data ?? 0) > 0 && (
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                     {pendingReviews.data}

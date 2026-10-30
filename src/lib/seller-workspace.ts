@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  sellerDashboardData, sellerGetProduct, sellerListProducts, sellerSalesData,
+  sellerDashboardData, sellerGetProduct, sellerListProducts, sellerSalesData, sellerNotifications,
 } from "@/lib/seller-workspace.server-fns";
 
 export async function sellerAccessToken() {
@@ -28,4 +28,9 @@ export const sellerProductQuery = (id: string) => queryOptions({
 export const sellerSalesQuery = (page: number) => queryOptions({
   queryKey: ["seller","sales",page],
   queryFn: async () => sellerSalesData({ data: { accessToken: await sellerAccessToken(), page } }),
+});
+
+export const sellerNotificationsQuery = () => queryOptions({
+  queryKey: ["seller","notifications"],
+  queryFn: async () => sellerNotifications({ data: { accessToken: await sellerAccessToken() } }),
 });

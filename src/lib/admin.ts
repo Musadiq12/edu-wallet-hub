@@ -139,7 +139,7 @@ export async function removeFile(bucket: string, path: string | null | undefined
   await supabase.storage.from(bucket).remove([path]);
 }
 export const ADMIN_PRODUCT_FIELDS =
-  "id,product_type,title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,stock_quantity,stock_status,low_stock_threshold,is_archived,created_at";
+  "id,product_type,title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,stock_quantity,stock_status,low_stock_threshold,is_archived,created_at,seller_id,status";
 
 export type AdminProduct = Product & { is_archived: boolean };
 
@@ -147,7 +147,7 @@ export const adminProductsQuery = (includeArchived = false) =>
   queryOptions({
     queryKey: ["admin", "products", includeArchived],
     queryFn: async (): Promise<AdminProduct[]> => {
-      let q = supabase.from("products").select(ADMIN_PRODUCT_FIELDS).order("created_at", { ascending: false });
+      let q = supabase.from("products").select(ADMIN_PRODUCT_FIELDS).is("seller_id", null).neq("status", "pending").order("created_at", { ascending: false });
       if (!includeArchived) q = q.eq("is_archived", false);
       const { data, error } = await q;
       if (error) throw error;
@@ -163,6 +163,7 @@ export const adminProductQuery = (id: string) =>
         .from("products")
         .select(ADMIN_PRODUCT_FIELDS)
         .eq("id", id)
+        .is("seller_id", null)
         .maybeSingle();
       if (error) throw error;
       return (data ?? null) as unknown as AdminProduct | null;

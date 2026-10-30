@@ -23,7 +23,7 @@ const productInputSchema = z.object({
   pdfPath: z.string().min(1).max(500),
   previewPath: z.string().max(500).nullable().optional(),
 });
-const listStatusSchema = z.enum(["pending","approved","rejected","all"]);
+const listStatusSchema = z.enum(["pending","published","rejected","unpublished","all"]);
 const pageSchema = z.number().int().min(1).max(100000);
 const salesLimitSchema = z.number().int().min(1).max(20);
 
@@ -142,8 +142,8 @@ export const sellerListProducts = createServerFn({ method: "POST" })
   .handler(async ({data}) => {
     try {
       const {userId,client}=await requireSeller(data.accessToken);
-      let query=client.from("products").select("id,title,slug,course_label,subject_label,price,description,pdf_file,preview_file,status,is_archived,is_active,review_feedback,created_at")
-        .eq("seller_id",userId).order("created_at",{ascending:false});
+      let query=client.from("products").select("id,title,slug,course_label,subject_label,price,description,pdf_file,preview_file,status,is_archived,is_active,review_feedback,rejection_reason,submitted_at,published_at,revision_of,created_at")
+        .eq("seller_id",userId).is("deleted_at",null).order("submitted_at",{ascending:false,nullsFirst:false});
       if(data.status!=="all") query=query.eq("status",data.status);
       const {data:rows,error}=await query;
       if(error) throw error;
@@ -160,8 +160,8 @@ export const sellerGetProduct = createServerFn({method:"POST"})
     try {
       const {userId,client}=await requireSeller(data.accessToken);
       const {data:row,error}=await client.from("products")
-        .select("id,title,slug,description,course_label,subject_label,price,pdf_file,preview_file,status,is_archived,is_active,created_at")
-        .eq("id",data.id).eq("seller_id",userId).maybeSingle();
+        .select("id,title,slug,description,course_label,subject_label,price,pdf_file,preview_file,status,is_archived,is_active,created_at,rejection_reason,review_feedback")
+        .eq("id",data.id).eq("seller_id",userId).is("deleted_at",null).maybeSingle();
       if(error || !row) throw new Error("product not found");
       return row;
     } catch(error) { throw new Error(safeMessage(error,"Could not load this product.")); }
@@ -209,9 +209,12 @@ export const sellerDeleteProduct = createServerFn({method:"POST"})
   .validator((input:{accessToken:string;id:string})=>({accessToken:z.string().min(1).parse(input.accessToken),id:productIdSchema.parse(input.id)}))
   .handler(async({data})=>{
     const context=await requireSeller(data.accessToken);
-    const {data:row,error}=await context.client.from("products").select("pdf_file,preview_file")
-      .eq("id",data.id).eq("seller_id",context.userId).maybeSingle();
+    const {data:row,error}=await context.client.from("products").select("pdf_file,preview_file,status")
+      .eq("id",data.id).eq("seller_id",context.userId).is("deleted_at",null).maybeSingle();
     if(error || !row) throw new Error("This product could not be found.");
+    if(!["pending","rejected"].includes(row.status)) {
+      throw new Error("Only pending or rejected products can be deleted. Published products must be taken down by an administrator.");
+    }
     const {data:result,error:rpcError}=await context.client.rpc("seller_archive_or_delete_product",{p_product_id:data.id});
     if(rpcError) throw new Error(safeMessage(rpcError,"Could not remove this product."));
     if(result==="deleted") await removePrivateFiles(context,[row.pdf_file,row.preview_file]);
@@ -225,8 +228,8 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
   })
   .handler(async({data})=>{
     const context=await requireSeller(data.accessToken);
-    const {data:existing,error:readError}=await context.client.from("products").select("pdf_file,preview_file")
-      .eq("id",data.id).eq("seller_id",context.userId).maybeSingle();
+    const {data:existing,error:readError}=await context.client.from("products").select("pdf_file,preview_file,status")
+      .eq("id",data.id).eq("seller_id",context.userId).is("deleted_at",null).maybeSingle();
     if(readError || !existing) throw new Error("This product could not be found.");
     await verifyStoredPdf(context,data.pdfPath,20*1024*1024);
     if(data.previewPath) await verifyStoredPdf(context,data.previewPath,5*1024*1024);
@@ -240,8 +243,31 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
       await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? data.pdfPath : null, data.previewPath !== existing.preview_file ? data.previewPath : null]);
       throw new Error(safeMessage(error,"Could not update this product."));
     }
-    // Keep replaced files when any buyer order references the product.
-    if(!hasOrders) await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? existing.pdf_file : null, data.previewPath !== existing.preview_file ? existing.preview_file : null]);
+    // Keep previous files for products with order history and for live-product revisions.
+    if(!hasOrders && existing.status!=="approved" && existing.status!=="published") await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? existing.pdf_file : null, data.previewPath !== existing.preview_file ? existing.preview_file : null]);
+    return {ok:true,hasOrders};
+  });
+
+export const sellerNotifications = createServerFn({method:"POST"})
+  .validator((input:{accessToken:string})=>({accessToken:z.string().min(1).parse(input.accessToken)}))
+  .handler(async({data})=>{
+    const {userId,client}=await requireSeller(data.accessToken);
+    const {data:rows,error}=await client.from("seller_notifications")
+      .select("id,product_id,event_type,title,message,target_url,read_at,created_at")
+      .eq("seller_id",userId).order("created_at",{ascending:false}).limit(30);
+    if(error) throw new Error("Could not load seller notifications.");
+    return rows??[];
+  });
+
+export const markSellerNotificationRead = createServerFn({method:"POST"})
+  .validator((input:{accessToken:string;id:string})=>({
+    accessToken:z.string().min(1).parse(input.accessToken),id:productIdSchema.parse(input.id),
+  }))
+  .handler(async({data})=>{
+    const {userId,client}=await requireSeller(data.accessToken);
+    const {error}=await client.from("seller_notifications").update({read_at:new Date().toISOString()})
+      .eq("id",data.id).eq("seller_id",userId);
+    if(error) throw new Error("Could not update notification.");
     return {ok:true};
   });
 
