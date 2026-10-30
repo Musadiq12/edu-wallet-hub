@@ -45,6 +45,7 @@ function SellerProductReviewPage() {
   const qc = useQueryClient();
   const [token, setToken] = useState("");
   const [search, setSearch] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [status, setStatus] = useState<"pending" | "published" | "rejected" | "unpublished">("pending");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -81,8 +82,8 @@ function SellerProductReviewPage() {
 
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return (queue.data ?? []).filter(row => !term || row.title.toLowerCase().includes(term) || (row.seller_name ?? "").toLowerCase().includes(term));
-  }, [queue.data, search]);
+    return (queue.data ?? []).filter(row => (categoryFilter === "all" || (row.course_label ?? "Other") === categoryFilter) && (!term || row.title.toLowerCase().includes(term) || (row.seller_name ?? "").toLowerCase().includes(term)));
+  }, [queue.data, search, categoryFilter]);
 
   const runAction = async (action: "approve" | "reject" | "unpublish" | "republish" | "save_notes", value?: string) => {
     if (!selectedId || busy) return;
@@ -114,6 +115,7 @@ function SellerProductReviewPage() {
 
   const selected = detail.data;
   const pendingCount = queue.data?.length ?? 0;
+  const categories = useMemo(() => [...new Set((queue.data ?? []).map(row => row.course_label ?? "Other"))].sort(), [queue.data]);
 
   return <div className="space-y-6">
     <div className="flex flex-wrap items-end justify-between gap-3">
@@ -134,7 +136,8 @@ function SellerProductReviewPage() {
     <div className="grid items-start gap-5 xl:grid-cols-[minmax(300px,0.85fr)_minmax(0,1.5fr)]">
       <Card className="overflow-hidden shadow-none">
         <div className="border-b border-border p-3">
-          <div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><Input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search product or seller ID" className="pl-9"/></div>
+          <div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><Input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search product or seller name" className="pl-9"/></div>
+          <div className="mt-2 flex items-center gap-2"><span className="text-xs text-muted-foreground">Category</span><select value={categoryFilter} onChange={event=>setCategoryFilter(event.target.value)} className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm"><option value="all">All categories</option>{categories.map(value=><option key={value} value={value}>{value}</option>)}</select></div>
           <p className="mt-2 text-xs text-muted-foreground">Oldest submissions appear first.</p>
         </div>
         <CardContent className="p-0">
