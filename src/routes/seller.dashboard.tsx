@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, BadgeCheck, Banknote, BookOpen, CalendarClock, CheckCircle2, CircleHelp, Clock3, IndianRupee, Package, ShieldCheck, ShoppingBag, Wallet } from "lucide-react";
+import { BadgeCheck, Banknote, BookOpen, CalendarClock, CheckCircle2, CircleHelp, Clock3, IndianRupee, Package, ShieldCheck, ShoppingBag, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
