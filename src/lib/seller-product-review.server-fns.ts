@@ -57,7 +57,13 @@ export const listSellerProductReviews = createServerFn({method:"POST"})
     if(data.status!=="all") query=query.eq("status",data.status);
     const {data:rows,error}=await query;
     if(error) throw new Error("Could not load seller product reviews.");
-    return rows ?? [];
+    const sellerIds=[...new Set((rows??[]).map(row=>row.seller_id).filter((id):id is string=>!!id))];
+    const {data:profiles, error:profileError}=sellerIds.length
+      ? await admin.from("profiles").select("id,full_name").in("id",sellerIds)
+      : {data:[],error:null};
+    if(profileError) throw new Error("Could not load seller names.");
+    const names=new Map((profiles??[]).map(profile=>[profile.id,profile.full_name??"Seller"]));
+    return (rows??[]).map(row=>({...row,seller_name:names.get(row.seller_id)??"Seller"}));
   });
 
 export const getSellerProductReview = createServerFn({method:"POST"})
