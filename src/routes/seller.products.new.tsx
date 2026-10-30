@@ -24,7 +24,7 @@ function NewSellerProduct(){
  const [title,setTitle]=useState(""),[description,setDescription]=useState(""),[exam,setExam]=useState(""),[subject,setSubject]=useState(""),[price,setPrice]=useState("");
  const [pdf,setPdf]=useState<File|null>(null),[preview,setPreview]=useState<File|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState("");
  const pick=(file:File|null,kind:Kind)=>{
-  if(!file){kind==="pdf"?setPdf(null):setPreview(null);return;}
+  if(!file){if(kind==="pdf"){setPdf(null);}else{setPreview(null);}return;}
   const limit=kind==="pdf"?MAX_PDF:MAX_PREVIEW;
   if(file.type!=="application/pdf"||!file.name.toLowerCase().endsWith(".pdf")){setError("Choose a PDF file with a valid PDF MIME type.");return;}
   if(file.size>limit){setError(kind==="pdf"?"Main PDF must be 20 MB or smaller.":"Preview PDF must be 5 MB or smaller.");return;}
