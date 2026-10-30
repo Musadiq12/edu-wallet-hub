@@ -1,0 +1,252 @@
+import { env as workerEnv } from "cloudflare:workers";
+import { createServerFn } from "@tanstack/react-start";
+import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
+
+function env(name: string) {
+  const publicFallbacks: Record<string, string | undefined> = {
+    SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+    SUPABASE_PUBLISHABLE_KEY: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  };
+  const value = process.env[name] || workerEnv[name as keyof typeof workerEnv] || publicFallbacks[name];
+  if (!value) throw new Error("Server configuration is missing " + name + ".");
+  return value;
+}
+
+const productIdSchema = z.string().uuid();
+const productInputSchema = z.object({
+  title: z.string().trim().min(5).max(120),
+  description: z.string().trim().min(20).max(2000),
+  exam: z.enum(["NEET","JEE","UPSC","SSC","CGL","CLAT","CA","Other"]),
+  subject: z.string().trim().min(2).max(60),
+  price: z.number().finite().min(10).max(5000).refine(v => Math.round(v*100) === v*100),
+  pdfPath: z.string().min(1).max(500),
+  previewPath: z.string().max(500).nullable().optional(),
+});
+const listStatusSchema = z.enum(["pending","approved","rejected","all"]);
+const pageSchema = z.number().int().min(1).max(100000);
+const salesLimitSchema = z.number().int().min(1).max(20);
+
+type SellerContext = { userId: string; client: ReturnType<typeof createClient> };
+
+async function requireSeller(accessToken: string): Promise<SellerContext> {
+  if (typeof accessToken !== "string" || accessToken.split(".").length !== 3) {
+    throw new Error("Please sign in to continue.");
+  }
+  const client = createClient(env("SUPABASE_URL"), env("SUPABASE_PUBLISHABLE_KEY"), {
+    global: { headers: { Authorization: "Bearer " + accessToken } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+  const { data, error } = await client.auth.getClaims(accessToken);
+  const userId = data?.claims?.sub;
+  if (error || typeof userId !== "string" || !z.string().uuid().safeParse(userId).success) {
+    throw new Error("Please sign in to continue.");
+  }
+  const { data: profile, error: profileError } = await client
+    .from("profiles").select("role").eq("id", userId).maybeSingle();
+  if (profileError || profile?.role !== "seller") {
+    throw new Error("Seller access is no longer available for this account.");
+  }
+  return { userId, client };
+}
+
+function safeMessage(error: unknown, fallback: string) {
+  const message = error instanceof Error ? error.message.toLowerCase() : "";
+  if (message.includes("product not found")) return "This product could not be found.";
+  if (message.includes("duplicate key")) return "That product URL is already in use. Please change the title.";
+  if (message.includes("invalid product") || message.includes("22023")) return "Check the product details and try again.";
+  if (message.includes("archived")) return "Archived products cannot be edited.";
+  if (message.includes("seller access")) return "Seller access is no longer available. Please sign in again.";
+  return fallback;
+}
+
+function safeFilenamePart(name: string) {
+  const withoutExtension = name.replace(/\.pdf$/i, "");
+  const cleaned = withoutExtension.normalize("NFKD").replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
+  return (cleaned || "study-note").slice(0, 80);
+}
+
+async function verifyPdf(file: File, maxBytes: number) {
+  if (!(file instanceof File) || file.size < 5 || file.size > maxBytes || file.type !== "application/pdf") {
+    throw new Error("Upload a valid PDF within the allowed size limit.");
+  }
+  const header = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+  if (header[0] !== 0x25 || header[1] !== 0x50 || header[2] !== 0x44 || header[3] !== 0x46 || header[4] !== 0x2d) {
+    throw new Error("The uploaded file is not a valid PDF.");
+  }
+}
+
+async function uploadPrivatePdf(context: SellerContext, file: File, maxBytes: number) {
+  await verifyPdf(file, maxBytes);
+  const productFolder = crypto.randomUUID();
+  const fileName = crypto.randomUUID() + "_" + safeFilenamePart(file.name) + ".pdf";
+  const path = context.userId + "/" + productFolder + "/" + fileName;
+  const { error } = await context.client.storage.from("product-files").upload(path, file, {
+    cacheControl: "0", upsert: false, contentType: "application/pdf",
+  });
+  if (error) throw new Error("The PDF could not be uploaded. Please try again.");
+  return path;
+}
+
+async function removePrivateFiles(context: SellerContext, paths: Array<string | null | undefined>) {
+  const ownPaths = [...new Set(paths.filter((p): p is string =>
+    typeof p === "string" && p.startsWith(context.userId + "/")))];
+  if (ownPaths.length) await context.client.storage.from("product-files").remove(ownPaths);
+}
+
+export const sellerDashboardData = createServerFn({ method: "POST" })
+  .validator((input: { accessToken: string }) => {
+    if (!input || typeof input.accessToken !== "string") throw new Error("Please sign in.");
+    return input;
+  })
+  .handler(async ({ data }) => {
+    try {
+      const { userId, client } = await requireSeller(data.accessToken);
+      const [{ count, error: countError }, { data: recent, error: recentError }, { data: balance, error: balanceError }] = await Promise.all([
+        client.from("orders").select("id", { count: "exact", head: true }).eq("seller_id", userId).eq("refunded", false).not("seller_share", "is", null),
+        client.from("orders").select("id,created_at,product_title,seller_share,available_on,refunded")
+          .eq("seller_id", userId).not("seller_share", "is", null).order("created_at", { ascending: false }).limit(5),
+        client.rpc("seller_balance", { p_seller_id: userId }),
+      ]);
+      if (countError || recentError || balanceError) throw new Error("Unable to load seller summary.");
+      const orders = recent ?? [];
+      const totalEarned = orders.length ? (await client.from("orders").select("seller_share")
+        .eq("seller_id",userId).eq("refunded",false).not("seller_share","is",null)).data?.reduce((sum,row)=>sum+Number(row.seller_share??0),0) ?? 0 : 0;
+      const totals = (Array.isArray(balance) ? balance[0] : balance) as {pending_balance?:number;available_balance?:number} | null;
+      return {
+        totalSales: count ?? 0,
+        totalEarned,
+        pendingBalance: Number(totals?.pending_balance ?? 0),
+        availableBalance: Number(totals?.available_balance ?? 0),
+        recent: orders.map(row => ({
+          id: row.id, created_at: row.created_at, product_title: row.product_title,
+          seller_share: Number(row.seller_share ?? 0), refunded: row.refunded,
+          available_on: row.available_on,
+        })),
+      };
+    } catch (error) {
+      throw new Error(safeMessage(error, "Unable to load your seller dashboard."));
+    }
+  });
+
+export const sellerListProducts = createServerFn({ method: "POST" })
+  .validator((input: { accessToken:string; status?:string }) => {
+    if (!input || typeof input.accessToken!=="string") throw new Error("Please sign in.");
+    return { accessToken:input.accessToken,status:listStatusSchema.parse(input.status ?? "all") };
+  })
+  .handler(async ({data}) => {
+    try {
+      const {userId,client}=await requireSeller(data.accessToken);
+      let query=client.from("products").select("id,title,slug,course_label,subject_label,price,description,pdf_file,preview_file,status,is_archived,is_active,created_at")
+        .eq("seller_id",userId).order("created_at",{ascending:false});
+      if(data.status!=="all") query=query.eq("status",data.status);
+      const {data:rows,error}=await query;
+      if(error) throw error;
+      return rows ?? [];
+    } catch(error) { throw new Error(safeMessage(error,"Could not load your products.")); }
+  });
+
+export const sellerGetProduct = createServerFn({method:"POST"})
+  .validator((input:{accessToken:string;id:string})=>({
+    accessToken:z.string().min(1).parse(input.accessToken),
+    id:productIdSchema.parse(input.id),
+  }))
+  .handler(async({data})=>{
+    try {
+      const {userId,client}=await requireSeller(data.accessToken);
+      const {data:row,error}=await client.from("products")
+        .select("id,title,slug,description,course_label,subject_label,price,pdf_file,preview_file,status,is_archived,is_active,created_at")
+        .eq("id",data.id).eq("seller_id",userId).maybeSingle();
+      if(error || !row) throw new Error("product not found");
+      return row;
+    } catch(error) { throw new Error(safeMessage(error,"Could not load this product.")); }
+  });
+
+export const sellerCreateProduct = createServerFn({method:"POST"})
+  .validator((input:{accessToken:string;title:string;description:string;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null}) => {
+    const parsed=productInputSchema.parse(input);
+    return { ...parsed, accessToken:z.string().min(1).parse(input.accessToken) };
+  })
+  .handler(async({data})=>{
+    const context=await requireSeller(data.accessToken);
+    const {client}=context;
+    const payload={
+      p_title:data.title,p_slug:await (async()=>{
+        const slug=data.title.toLowerCase().trim().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,100);
+        return slug+"-"+crypto.randomUUID().slice(0,8);
+      })(),
+      p_description:data.description,p_exam_label:data.exam,p_subject_label:data.subject,
+      p_price:data.price,p_pdf_path:data.pdfPath,p_preview_path:data.previewPath ?? null,
+    };
+    const {data:id,error}=await client.rpc("seller_create_product",payload);
+    if(error) {
+      await removePrivateFiles(context,[data.pdfPath,data.previewPath]);
+      throw new Error(safeMessage(error,"Could not save your product. Please try again."));
+    }
+    return {id};
+  });
+
+export const sellerUploadProductPdf = createServerFn({method:"POST"})
+  .validator((input:{accessToken:string;file:File;kind:"pdf"|"preview"}) => {
+    if(!input || typeof input.accessToken!=="string" || !(input.file instanceof File) || !["pdf","preview"].includes(input.kind)) {
+      throw new Error("Invalid file upload.");
+    }
+    return input;
+  })
+  .handler(async({data})=>{
+    const context=await requireSeller(data.accessToken);
+    return {path:await uploadPrivatePdf(context,data.file,data.kind==="pdf"?20*1024*1024:5*1024*1024)};
+  });
+
+export const sellerDeleteProduct = createServerFn({method:"POST"})
+  .validator((input:{accessToken:string;id:string})=>({accessToken:z.string().min(1).parse(input.accessToken),id:productIdSchema.parse(input.id)}))
+  .handler(async({data})=>{
+    const context=await requireSeller(data.accessToken);
+    const {data:row,error}=await context.client.from("products").select("pdf_file,preview_file")
+      .eq("id",data.id).eq("seller_id",context.userId).maybeSingle();
+    if(error || !row) throw new Error("This product could not be found.");
+    const {data:result,error:rpcError}=await context.client.rpc("seller_archive_or_delete_product",{p_product_id:data.id});
+    if(rpcError) throw new Error(safeMessage(rpcError,"Could not remove this product."));
+    if(result==="deleted") await removePrivateFiles(context,[row.pdf_file,row.preview_file]);
+    return {result};
+  });
+
+export const sellerSaveProductEdit = createServerFn({method:"POST"})
+  .validator((input:{accessToken:string;id:string;title:string;description:string;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null})=>{
+    const parsed=productInputSchema.parse(input);
+    return {...parsed,accessToken:z.string().min(1).parse(input.accessToken),id:productIdSchema.parse(input.id)};
+  })
+  .handler(async({data})=>{
+    const context=await requireSeller(data.accessToken);
+    const {data:existing,error:readError}=await context.client.from("products").select("pdf_file,preview_file")
+      .eq("id",data.id).eq("seller_id",context.userId).maybeSingle();
+    if(readError || !existing) throw new Error("This product could not be found.");
+    const {error}=await context.client.rpc("seller_update_product",{
+      p_product_id:data.id,p_title:data.title,
+      p_slug:data.title.toLowerCase().trim().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,100)+"-"+crypto.randomUUID().slice(0,8),
+      p_description:data.description,p_exam_label:data.exam,p_subject_label:data.subject,p_price:data.price,
+      p_pdf_path:data.pdfPath,p_preview_path:data.previewPath ?? null,
+    });
+    if(error) {
+      await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? data.pdfPath : null, data.previewPath !== existing.preview_file ? data.previewPath : null]);
+      throw new Error(safeMessage(error,"Could not update this product."));
+    }
+    // Preserve previous files while orders may reference them through the buyer library.
+    return {ok:true};
+  });
+
+export const sellerSalesData = createServerFn({method:"POST"})
+  .validator((input:{accessToken:string;page:number})=>({
+    accessToken:z.string().min(1).parse(input.accessToken),page:pageSchema.parse(input.page),
+  }))
+  .handler(async({data})=>{
+    try{
+      const {client,userId}=await requireSeller(data.accessToken);
+      const from=(data.page-1)*20, to=from+19;
+      const {data:rows,error,count}=await client.from("seller_sales")
+        .select("id,created_at,product_title,seller_share,available_on,refunded,buyer_first_name",{count:"exact"})
+        .eq("seller_id",userId).order("created_at",{ascending:false}).range(from,to);
+      if(error) throw error;
+      return {rows:rows??[],total:count??0};
+    }catch(error){throw new Error(safeMessage(error,"Could not load seller sales."));}
+  });
