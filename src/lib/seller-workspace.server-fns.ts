@@ -228,12 +228,9 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
     const {data:existing,error:readError}=await context.client.from("products").select("pdf_file,preview_file")
       .eq("id",data.id).eq("seller_id",context.userId).maybeSingle();
     if(readError || !existing) throw new Error("This product could not be found.");
-    const {count:orderCount,error:orderCountError}=await context.client.from("orders")
-      .select("id",{count:"exact",head:true}).eq("product_id",data.id);
-    if(orderCountError) throw new Error("Could not verify the product's order history.");
     await verifyStoredPdf(context,data.pdfPath,20*1024*1024);
     if(data.previewPath) await verifyStoredPdf(context,data.previewPath,5*1024*1024);
-    const {error}=await context.client.rpc("seller_update_product",{
+    const {data:hasOrders,error}=await context.client.rpc("seller_update_product",{
       p_product_id:data.id,p_title:data.title,
       p_slug:data.title.toLowerCase().trim().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,100)+"-"+crypto.randomUUID().slice(0,8),
       p_description:data.description,p_exam_label:data.exam,p_subject_label:data.subject,p_price:data.price,
@@ -243,8 +240,8 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
       await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? data.pdfPath : null, data.previewPath !== existing.preview_file ? data.previewPath : null]);
       throw new Error(safeMessage(error,"Could not update this product."));
     }
-    // Preserve previously purchased files. With no order history, replaced objects can be removed.
-    if(!orderCount) await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? existing.pdf_file : null, data.previewPath !== existing.preview_file ? existing.preview_file : null]);
+    // Keep replaced files when any buyer order references the product.
+    if(!hasOrders) await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? existing.pdf_file : null, data.previewPath !== existing.preview_file ? existing.preview_file : null]);
     return {ok:true};
   });
 
