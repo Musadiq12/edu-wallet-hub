@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route=createFileRoute("/seller/products/$id/edit")({component:EditSellerProduct});
 const exams=["NEET","JEE","UPSC","SSC","CGL","CLAT","CA","Other"] as const;
-type Product={id:string;title:string;description:string;course_label:string;subject_label:string;price:number;pdf_file:string;preview_file:string|null;status:string;is_archived:boolean};
+type Product={id:string;title:string;description:string;course_label:string;subject_label:string;price:number;pdf_file:string;preview_file:string|null;status:string;is_archived:boolean;rejection_reason?:string|null;review_feedback?:string|null};
 type Kind="pdf"|"preview";
 const MAX_PDF=20*1024*1024,MAX_PREVIEW=5*1024*1024;
 function EditSellerProduct(){
@@ -38,7 +38,7 @@ function ProductEditForm({product}:{product:Product}){
  const [pdf,setPdf]=useState<File|null>(null),[preview,setPreview]=useState<File|null>(null),[removePreview,setRemovePreview]=useState(false);
  const [busy,setBusy]=useState(false),[error,setError]=useState(""),[confirm,setConfirm]=useState(false);
  const [mainPath,setMainPath]=useState(product.pdf_file),[previewPath,setPreviewPath]=useState<string|null>(product.preview_file??null);
- const approved=product.status==="approved";
+ const approved=product.status==="published"||product.status==="approved";
  if(product.is_archived)return <Card><CardContent className="space-y-2 p-5"><p className="font-semibold">This product is archived and cannot be edited.</p><Button asChild variant="outline"><Link to="/seller/products">Back to products</Link></Button></CardContent></Card>;
  const pick=(file:File|null,kind:Kind)=>{
   if(!file){kind==="pdf"?setPdf(null):setPreview(null);return;}
@@ -72,7 +72,7 @@ function ProductEditForm({product}:{product:Product}){
    await sellerSaveProductEdit({data:{accessToken:token,id:product.id,title:title.trim(),description:description.trim(),exam,subject:subject.trim(),price:amount,pdfPath:nextPdf,previewPath:nextPreview}});
    newMain=null;newPreview=null;
    await qc.invalidateQueries({queryKey:["seller","products"]});await qc.invalidateQueries({queryKey:["seller","product",product.id]});
-   toast.success("Product resubmitted for review.");void navigate({to:"/seller/products",replace:true});
+   toast.success(approved?"Changes submitted as a new review revision.":"Product resubmitted for review.");void navigate({to:"/seller/products",replace:true});
   }catch(err){
    const paths=[newMain,newPreview].filter((v):v is string=>!!v);if(paths.length)await supabase.storage.from("product-files").remove(paths).catch(()=>undefined);
    const message=err instanceof Error?err.message:"Could not save changes. Try again.";setError(message);toast.error(message);
@@ -80,7 +80,7 @@ function ProductEditForm({product}:{product:Product}){
  };
  const onSubmit=(event:React.FormEvent)=>{event.preventDefault();if(approved)setConfirm(true);else void save()};
  return <>
-  {approved&&<div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-800 dark:text-amber-200">Editing an approved note will send it back for review and hide it from the store until approved.</div>}
+  {approved&&<div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-800 dark:text-amber-200">Editing a live note creates a separate pending revision. Your current live version remains available until the revision is approved.</div>}
   <Card><CardContent className="p-4 sm:p-6"><form onSubmit={onSubmit} className="space-y-5">
    <div className="space-y-2"><Label htmlFor="edit-title">Title</Label><Input id="edit-title" value={title} maxLength={120} onChange={e=>setTitle(e.target.value)} required/></div>
    <div className="space-y-2"><Label htmlFor="edit-description">Description</Label><Textarea id="edit-description" rows={5} value={description} maxLength={2000} onChange={e=>setDescription(e.target.value)} required/></div>
@@ -91,6 +91,6 @@ function ProductEditForm({product}:{product:Product}){
    {error&&<p role="alert" className="rounded-lg bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button variant="outline" asChild disabled={busy}><Link to="/seller/products">Cancel</Link></Button><Button type="submit" disabled={busy}>{busy&&<Loader2 className="size-4 animate-spin"/>}{busy?"Saving…":"Save changes"}</Button></div>
   </form></CardContent></Card>
-  <AlertDialog open={confirm} onOpenChange={open=>!open&&!busy&&setConfirm(false)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Send this note for review again?</AlertDialogTitle><AlertDialogDescription>Editing will send this note back for review and hide it from the store until approved.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={busy}>Continue editing</AlertDialogCancel><AlertDialogAction disabled={busy} onClick={event=>{event.preventDefault();setConfirm(false);void save()}}>Save and resubmit</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+  <AlertDialog open={confirm} onOpenChange={open=>!open&&!busy&&setConfirm(false)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Send this note for review again?</AlertDialogTitle><AlertDialogDescription>Your current live version will stay available while the revised version is reviewed.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={busy}>Continue editing</AlertDialogCancel><AlertDialogAction disabled={busy} onClick={event=>{event.preventDefault();setConfirm(false);void save()}}>Save and resubmit</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
  </>;
 }
