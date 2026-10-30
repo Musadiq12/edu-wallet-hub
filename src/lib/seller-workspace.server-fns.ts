@@ -66,26 +66,31 @@ function safeFilenamePart(name: string) {
   return (cleaned || "study-note").slice(0, 80);
 }
 
-async function verifyPdf(file: File, maxBytes: number) {
-  if (!(file instanceof File) || file.size < 5 || file.size > maxBytes || file.type !== "application/pdf") {
+async function makePrivatePdfPath(context: SellerContext, originalName: string) {
+  const folderId = crypto.randomUUID();
+  const fileName = crypto.randomUUID() + "_" + safeFilenamePart(originalName) + ".pdf";
+  return context.userId + "/" + folderId + "/" + fileName;
+}
+
+async function verifyStoredPdf(context: SellerContext, path: string, maxBytes: number) {
+  if (!path.startsWith(context.userId + "/") || !/^[0-9a-f-]{36}\/[0-9a-f-]{36}_[A-Za-z0-9_-]+\.pdf$/i.test(path.slice(context.userId.length + 1))) {
+    throw new Error("Invalid private PDF path.");
+  }
+  const { data: object, error: objectError } = await context.client.storage.from("product-files").list(path.split("/").slice(0,2).join("/"), {
+    search: path.split("/").pop(), limit: 1,
+  });
+  const found = object?.find(item => item.name === path.split("/").pop());
+  if (objectError || !found || found.metadata?.mimetype !== "application/pdf" || Number(found.metadata?.size ?? 0) > maxBytes) {
     throw new Error("Upload a valid PDF within the allowed size limit.");
   }
-  const header = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+  const { data: file, error } = await context.client.storage.from("product-files").download(path);
+  if (error || !file || file.size < 5 || file.size > maxBytes || file.type !== "application/pdf") {
+    throw new Error("Upload a valid PDF within the allowed size limit.");
+  }
+  const header = new Uint8Array(await file.slice(0,5).arrayBuffer());
   if (header[0] !== 0x25 || header[1] !== 0x50 || header[2] !== 0x44 || header[3] !== 0x46 || header[4] !== 0x2d) {
     throw new Error("The uploaded file is not a valid PDF.");
   }
-}
-
-async function uploadPrivatePdf(context: SellerContext, file: File, maxBytes: number) {
-  await verifyPdf(file, maxBytes);
-  const productFolder = crypto.randomUUID();
-  const fileName = crypto.randomUUID() + "_" + safeFilenamePart(file.name) + ".pdf";
-  const path = context.userId + "/" + productFolder + "/" + fileName;
-  const { error } = await context.client.storage.from("product-files").upload(path, file, {
-    cacheControl: "0", upsert: false, contentType: "application/pdf",
-  });
-  if (error) throw new Error("The PDF could not be uploaded. Please try again.");
-  return path;
 }
 
 async function removePrivateFiles(context: SellerContext, paths: Array<string | null | undefined>) {
@@ -170,6 +175,8 @@ export const sellerCreateProduct = createServerFn({method:"POST"})
   .handler(async({data})=>{
     const context=await requireSeller(data.accessToken);
     const {client}=context;
+    await verifyStoredPdf(context,data.pdfPath,20*1024*1024);
+    if(data.previewPath) await verifyStoredPdf(context,data.previewPath,5*1024*1024);
     const payload={
       p_title:data.title,p_slug:await (async()=>{
         const slug=data.title.toLowerCase().trim().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,100);
@@ -186,16 +193,16 @@ export const sellerCreateProduct = createServerFn({method:"POST"})
     return {id};
   });
 
-export const sellerUploadProductPdf = createServerFn({method:"POST"})
-  .validator((input:{accessToken:string;file:File;kind:"pdf"|"preview"}) => {
-    if(!input || typeof input.accessToken!=="string" || !(input.file instanceof File) || !["pdf","preview"].includes(input.kind)) {
-      throw new Error("Invalid file upload.");
+export const sellerCreatePrivateUploadPath = createServerFn({method:"POST"})
+  .validator((input:{accessToken:string;originalName:string;kind:"pdf"|"preview"})=>{
+    if(!input || typeof input.accessToken!=="string" || typeof input.originalName!=="string" || !["pdf","preview"].includes(input.kind) || !input.originalName.toLowerCase().endsWith(".pdf")) {
+      throw new Error("Choose a PDF file.");
     }
-    return input;
+    return {accessToken:input.accessToken,originalName:input.originalName,kind:input.kind};
   })
   .handler(async({data})=>{
     const context=await requireSeller(data.accessToken);
-    return {path:await uploadPrivatePdf(context,data.file,data.kind==="pdf"?20*1024*1024:5*1024*1024)};
+    return {path:await makePrivatePdfPath(context,data.originalName)};
   });
 
 export const sellerDeleteProduct = createServerFn({method:"POST"})
@@ -221,6 +228,8 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
     const {data:existing,error:readError}=await context.client.from("products").select("pdf_file,preview_file")
       .eq("id",data.id).eq("seller_id",context.userId).maybeSingle();
     if(readError || !existing) throw new Error("This product could not be found.");
+    await verifyStoredPdf(context,data.pdfPath,20*1024*1024);
+    if(data.previewPath) await verifyStoredPdf(context,data.previewPath,5*1024*1024);
     const {error}=await context.client.rpc("seller_update_product",{
       p_product_id:data.id,p_title:data.title,
       p_slug:data.title.toLowerCase().trim().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,100)+"-"+crypto.randomUUID().slice(0,8),
