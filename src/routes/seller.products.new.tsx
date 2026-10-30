@@ -21,7 +21,7 @@ const MAX_PDF=20*1024*1024,MAX_PREVIEW=5*1024*1024;
 type Kind="pdf"|"preview";
 function NewSellerProduct(){
  const navigate=useNavigate(),qc=useQueryClient(),lock=useRef(false);
- const [title,setTitle]=useState(""),[description,setDescription]=useState(""),[exam,setExam]=useState(""),[subject,setSubject]=useState(""),[price,setPrice]=useState(""),[coverSourceUrl,setCoverSourceUrl]=useState("");
+ const [title,setTitle]=useState(""),[description,setDescription]=useState(""),[exam,setExam]=useState(""),[subject,setSubject]=useState(""),[price,setPrice]=useState("");
  const [pdf,setPdf]=useState<File|null>(null),[preview,setPreview]=useState<File|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState("");
  const pick=(file:File|null,kind:Kind)=>{
   if(!file){if(kind==="pdf"){setPdf(null);}else{setPreview(null);}return;}
@@ -51,7 +51,7 @@ function NewSellerProduct(){
    const token=await sellerAccessToken();
    mainPath=await upload(pdf,"pdf",token);
    if(preview)previewPath=await upload(preview,"preview",token);
-   await sellerCreateProduct({data:{accessToken:token,title:title.trim(),description:description.trim(),exam,subject:subject.trim(),price:amount,pdfPath:mainPath,previewPath,coverSourceUrl:coverSourceUrl.trim()||null}});
+   await sellerCreateProduct({data:{accessToken:token,title:title.trim(),description:description.trim(),exam,subject:subject.trim(),price:amount,pdfPath:mainPath,previewPath}});
    mainPath=null;previewPath=null;
    await qc.invalidateQueries({queryKey:["seller","products"]});
    toast.success("Product submitted for review.");
