@@ -233,6 +233,7 @@ export interface FileRoutesByFullPath {
   '/admin/free-resources': typeof AdminFreeResourcesRoute
   '/admin/messages': typeof AdminMessagesRoute
   '/admin/reviews': typeof AdminReviewsRoute
+  '/admin/seller-products': typeof AdminSellerProductsRoute
   '/admin/orders': typeof AdminOrdersRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/checkout/$slug': typeof CheckoutSlugRoute
