@@ -71,7 +71,13 @@ jobs:
           NODE
 
       - name: Set server-side Supabase secret
-        run: printf '%s' "$SUPABASE_SERVICE_ROLE_KEY" | npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY --name edu-wallet-hub
+        shell: bash
+        run: |
+          if [[ -n "${SUPABASE_SERVICE_ROLE_KEY:-}" ]]; then
+            printf '%s' "$SUPABASE_SERVICE_ROLE_KEY" | npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY --name edu-wallet-hub
+          else
+            echo "GitHub Actions secret SUPABASE_SERVICE_ROLE_KEY is empty or unavailable; preserving the existing Cloudflare Worker secret."
+          fi
 
       - name: Deploy storefront Worker to Cloudflare
         run: npx wrangler deploy --config .output/server/wrangler.json --name edu-wallet-hub
