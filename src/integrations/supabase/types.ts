@@ -1893,6 +1893,9 @@ export type Database = {
           reviewed_at: string | null
           status: string
           upi_id: string
+          is_suspended: boolean
+          suspended_at: string | null
+          suspension_reason: string | null
           user_id: string
         }
         Insert: {
@@ -1910,6 +1913,9 @@ export type Database = {
           reviewed_at?: string | null
           status?: string
           upi_id: string
+          is_suspended?: boolean
+          suspended_at?: string | null
+          suspension_reason?: string | null
           user_id: string
         }
         Update: {
@@ -1927,6 +1933,9 @@ export type Database = {
           reviewed_at?: string | null
           status?: string
           upi_id?: string
+          is_suspended?: boolean
+          suspended_at?: string | null
+          suspension_reason?: string | null
           user_id?: string
         }
         Relationships: []
