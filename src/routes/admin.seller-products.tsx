@@ -56,7 +56,8 @@ function SellerProductReviewPage() {
   const [confirmApprove, setConfirmApprove] = useState(false);
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
-  const [busy, setBusy] = useState(false);\n  const [coverBusy, setCoverBusy] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [coverBusy, setCoverBusy] = useState(false);
 
   useEffect(() => {
     let active = true;
