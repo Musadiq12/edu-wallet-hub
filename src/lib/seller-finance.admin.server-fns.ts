@@ -52,8 +52,9 @@ const idSchema=z.string().uuid();
 export const adminSellerWallets=createServerFn({method:"POST"})
  .validator((input:{accessToken:string})=>({accessToken:z.string().min(1).parse(input.accessToken)}))
  .handler(async({data})=>{
-  const {adminClient}=await requireFinanceAdmin(data.accessToken);
-  const {data:rows,error}=await adminClient.rpc("admin_seller_wallets");
+  const {userClient}=await requireFinanceAdmin(data.accessToken);
+  // These SECURITY DEFINER RPCs authorize via auth.uid(); preserve the caller JWT.
+  const {data:rows,error}=await userClient.rpc("admin_seller_wallets");
   if(error) throw new Error("Could not load seller accounts.");
   return rows??[];
  });
@@ -66,8 +67,8 @@ export const adminSetSellerSuspension=createServerFn({method:"POST"})
   reason:input.suspended?z.string().trim().min(3).max(1000).parse(input.reason):null,
  }))
  .handler(async({data})=>{
-  const {adminClient}=await requireFinanceAdmin(data.accessToken);
-  const {error}=await adminClient.rpc("admin_set_seller_suspension",{
+  const {userClient}=await requireFinanceAdmin(data.accessToken);
+  const {error}=await userClient.rpc("admin_set_seller_suspension",{
    p_seller_id:data.sellerId,p_suspended:data.suspended,p_reason:data.reason,
   });
   if(error) throw new Error(error.message||"Could not update seller status.");
@@ -77,8 +78,8 @@ export const adminSetSellerSuspension=createServerFn({method:"POST"})
 export const adminWithdrawalQueue=createServerFn({method:"POST"})
  .validator((input:{accessToken:string})=>({accessToken:z.string().min(1).parse(input.accessToken)}))
  .handler(async({data})=>{
-  const {adminClient}=await requireFinanceAdmin(data.accessToken);
-  const {data:rows,error}=await adminClient.rpc("admin_withdrawal_queue");
+  const {userClient}=await requireFinanceAdmin(data.accessToken);
+  const {data:rows,error}=await userClient.rpc("admin_withdrawal_queue");
   if(error) throw new Error("Could not load withdrawal queue.");
   return Array.isArray(rows)?rows:[];
  });
@@ -92,8 +93,8 @@ export const adminTransitionWithdrawal=createServerFn({method:"POST"})
   upiReference:z.string().trim().max(120).optional(),
  }))
  .handler(async({data})=>{
-  const {adminClient}=await requireFinanceAdmin(data.accessToken);
-  const {error}=await adminClient.rpc("admin_transition_withdrawal",{
+  const {userClient}=await requireFinanceAdmin(data.accessToken);
+  const {error}=await userClient.rpc("admin_transition_withdrawal",{
    p_request_id:data.requestId,p_status:data.status,p_reason:data.reason,p_upi_reference:data.upiReference??null,
   });
   if(error) throw new Error(error.message||"Could not update withdrawal status.");
@@ -103,8 +104,8 @@ export const adminTransitionWithdrawal=createServerFn({method:"POST"})
 export const adminGetMarketplaceCommission=createServerFn({method:"POST"})
  .validator((input:{accessToken:string})=>({accessToken:z.string().min(1).parse(input.accessToken)}))
  .handler(async({data})=>{
-  const {adminClient}=await requireFinanceAdmin(data.accessToken);
-  const {data:rows,error}=await adminClient.rpc("admin_get_marketplace_commission");
+  const {userClient}=await requireFinanceAdmin(data.accessToken);
+  const {data:rows,error}=await userClient.rpc("admin_get_marketplace_commission");
   if(error) throw new Error("Could not load commission settings.");
   return Array.isArray(rows)?rows[0]??{commission_rate:0,updated_at:null}:{commission_rate:0,updated_at:null};
  });
@@ -115,8 +116,8 @@ export const adminSetMarketplaceCommission=createServerFn({method:"POST"})
   rate:z.number().finite().min(0).max(100).refine(v=>Math.round(v*100)===v*100,"Use at most two decimal places."),
  }))
  .handler(async({data})=>{
-  const {adminClient}=await requireFinanceAdmin(data.accessToken);
-  const {error}=await adminClient.rpc("admin_set_marketplace_commission",{p_rate:data.rate});
+  const {userClient}=await requireFinanceAdmin(data.accessToken);
+  const {error}=await userClient.rpc("admin_set_marketplace_commission",{p_rate:data.rate});
   if(error) throw new Error(error.message||"Could not update commission.");
   return {ok:true};
  });
