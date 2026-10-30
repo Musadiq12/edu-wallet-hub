@@ -200,8 +200,9 @@ begin
   if not found then raise exception 'seller product not found' using errcode='P0002'; end if;
 
   if p_action='save_notes' then
+    perform set_config('app.marketplace_transition','enabled',true);
     update public.products set admin_notes=nullif(left(btrim(coalesce(p_admin_notes,'')),4000),''),
-      updated_at=now() where id=p_product_id returning * into v_updated;
+      updated_at=now() where id=p_product_id and seller_id is not null and deleted_at is null returning * into v_updated;
     insert into public.admin_activity_logs(actor_id,action,entity_type,entity_id,before_data,after_data)
     values(v_admin,'seller_product_notes','product',p_product_id,
       jsonb_build_object('admin_notes',v_product.admin_notes),
