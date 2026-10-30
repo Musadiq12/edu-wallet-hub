@@ -44,7 +44,7 @@ function safeDrivePreview(value: string | null) {
   try {
     const url = new URL(value);
     const id = url.hostname === "drive.google.com"
-      ? (url.pathname.match(/^\\/file\\/d\\/([A-Za-z0-9_-]{10,})(?:\\/view)?\\/?$/)?.[1] ?? url.searchParams.get("id"))
+      ? (url.pathname.match(/^\/file\/d\/([A-Za-z0-9_-]{10,})(?:\/view)?\/?$/)?.[1] ?? url.searchParams.get("id"))
       : null;
     return url.protocol === "https:" && url.hostname === "drive.google.com" && !url.port && id && /^[A-Za-z0-9_-]{10,}$/.test(id)
       ? `https://drive.google.com/file/d/${id}/preview`
