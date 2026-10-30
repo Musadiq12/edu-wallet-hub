@@ -301,16 +301,16 @@ export const sellerSalesData = createServerFn({method:"POST"})
     try{
       const {client,userId}=await requireSeller(data.accessToken);
       const from=(data.page-1)*20, to=from+19;
-      const {data:rows,error,count}=await client.from("orders")
-        .select("id,created_at,product_title,seller_share,available_on,refunded,full_name",{count:"exact"})
-        .eq("seller_id",userId).not("seller_share","is",null)
+      const {data:rows,error,count}=await client.from("seller_sales")
+        .select("id,created_at,product_title,seller_share,commission_amount,commission_rate,available_on,refunded,buyer_first_name",{count:"exact"})
         .order("created_at",{ascending:false}).range(from,to);
       if(error) throw error;
       return {
         rows:(rows??[]).map(row=>({
           id:row.id,created_at:row.created_at,product_title:row.product_title,
-          seller_share:Number(row.seller_share??0),available_on:row.available_on,
-          refunded:row.refunded,buyer_first_name:(row.full_name??"").trim().split(/\\s+/)[0]||"Customer",
+          seller_share:Number(row.seller_share??0),commission_amount:Number(row.commission_amount??0),
+          commission_rate:Number(row.commission_rate??0),available_on:row.available_on,
+          refunded:row.refunded,buyer_first_name:row.buyer_first_name||"Customer",
         })),
         total:count??0,
       };
