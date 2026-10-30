@@ -72,7 +72,7 @@ export const productsQuery = (opts?: {
         .select(PRODUCT_FIELDS)
         .eq("is_active", true)
         .eq("is_archived", false)
-        .or("seller_id.is.null,status.eq.published")
+        .or("and(seller_id.is.null),and(status.eq.published,revision_of.is.null,deleted_at.is.null)")
         .order("created_at", { ascending: false });
       if (opts?.featured) q = q.eq("is_featured", true);
       if (opts?.free !== undefined) q = q.eq("is_free", opts.free);
@@ -93,7 +93,7 @@ export const productBySlugQuery = (slug: string) =>
         .eq("slug", slug)
         .eq("is_active", true)
         .eq("is_archived", false)
-        .or("seller_id.is.null,status.eq.published")
+        .or("and(seller_id.is.null),and(status.eq.published,revision_of.is.null,deleted_at.is.null)")
         .maybeSingle();
       if (error) throw error;
       return (data ?? null) as unknown as Product | null;
