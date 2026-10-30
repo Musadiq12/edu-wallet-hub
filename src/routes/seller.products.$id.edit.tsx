@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route=createFileRoute("/seller/products/$id/edit")({component:EditSellerProduct});
 const exams=["NEET","JEE","UPSC","SSC","CGL","CLAT","CA","Other"] as const;
-type Product={id:string;title:string;description:string;course_label:string;subject_label:string;price:number;pdf_file:string;preview_file:string|null;status:string;is_archived:boolean;seller_cover_source_url?:string|null;rejection_reason?:string|null;review_feedback?:string|null};
+type Product={id:string;title:string;description:string;course_label:string;subject_label:string;price:number;pdf_file:string;preview_file:string|null;status:string;is_archived:boolean;rejection_reason?:string|null;review_feedback?:string|null};
 type Kind="pdf"|"preview";
 const MAX_PDF=20*1024*1024,MAX_PREVIEW=5*1024*1024;
 function EditSellerProduct(){
@@ -34,7 +34,7 @@ function EditSellerProduct(){
 }
 function ProductEditForm({product}:{product:Product}){
  const navigate=useNavigate(),qc=useQueryClient(),lock=useRef(false);
- const [title,setTitle]=useState(product.title),[description,setDescription]=useState(product.description??""),[exam,setExam]=useState(product.course_label??"Other"),[subject,setSubject]=useState(product.subject_label??""),[price,setPrice]=useState(String(product.price??"")),[coverSourceUrl,setCoverSourceUrl]=useState(product.seller_cover_source_url??"");
+ const [title,setTitle]=useState(product.title),[description,setDescription]=useState(product.description??""),[exam,setExam]=useState(product.course_label??"Other"),[subject,setSubject]=useState(product.subject_label??""),[price,setPrice]=useState(String(product.price??""));
  const [pdf,setPdf]=useState<File|null>(null),[preview,setPreview]=useState<File|null>(null),[removePreview,setRemovePreview]=useState(false);
  const [busy,setBusy]=useState(false),[error,setError]=useState(""),[confirm,setConfirm]=useState(false);
  const [mainPath,setMainPath]=useState(product.pdf_file),[previewPath,setPreviewPath]=useState<string|null>(product.preview_file??null);
@@ -69,7 +69,7 @@ function ProductEditForm({product}:{product:Product}){
    if(preview)newPreview=await upload(preview,"preview",token);
    const nextPdf=newMain??mainPath;
    const nextPreview=newPreview??(removePreview?null:previewPath);
-   await sellerSaveProductEdit({data:{accessToken:token,id:product.id,title:title.trim(),description:description.trim(),exam,subject:subject.trim(),price:amount,pdfPath:nextPdf,previewPath:nextPreview,coverSourceUrl:coverSourceUrl.trim()||null}});
+   await sellerSaveProductEdit({data:{accessToken:token,id:product.id,title:title.trim(),description:description.trim(),exam,subject:subject.trim(),price:amount,pdfPath:nextPdf,previewPath:nextPreview}});
    newMain=null;newPreview=null;
    await qc.invalidateQueries({queryKey:["seller","products"]});await qc.invalidateQueries({queryKey:["seller","product",product.id]});
    toast.success(approved?"Changes submitted as a new review revision.":"Product resubmitted for review.");void navigate({to:"/seller/products",replace:true});
