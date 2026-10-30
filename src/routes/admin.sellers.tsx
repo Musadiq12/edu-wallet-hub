@@ -39,8 +39,9 @@ function AdminSellersPage(){
      <div><p className="text-xs text-muted-foreground">Pending withdrawals</p><p className="text-lg font-semibold tabular-nums">{money(row.pending_withdrawals)}</p></div>
      <div><p className="text-xs text-muted-foreground">Withdrawable</p><p className="text-lg font-semibold tabular-nums">{money(row.withdrawable_balance)}</p></div>
     </div>
-    {!row.is_suspended?<div className="space-y-2 border-t pt-3"><label className="text-xs font-medium text-muted-foreground" htmlFor={"suspend-"+row.seller_id}>Reason to suspend</label><Textarea id={"suspend-"+row.seller_id} value={reason[row.seller_id]??""} onChange={e=>setReason(v=>({...v,[row.seller_id]:e.target.value}))} placeholder="Explain the reason (minimum 3 characters)" rows={2}/><Button variant="destructive" className="w-full" disabled={mutation.isPending||((reason[row.seller_id]??"").trim().length<3)} onClick={()=>mutation.mutate({row,suspended:true})}><ShieldAlert className="mr-2 size-4"/>Suspend seller</Button></div>
-    :<Button variant="outline" className="w-full" disabled={mutation.isPending} onClick={()=>mutation.mutate({row,suspended:false})}><ShieldCheck className="mr-2 size-4"/>Reactivate seller</Button>}
+    {row.verification_status==="approved"&&!row.is_suspended?<div className="space-y-2 border-t pt-3"><label className="text-xs font-medium text-muted-foreground" htmlFor={"suspend-"+row.seller_id}>Reason to suspend</label><Textarea id={"suspend-"+row.seller_id} value={reason[row.seller_id]??""} onChange={e=>setReason(v=>({...v,[row.seller_id]:e.target.value}))} placeholder="Explain the reason (minimum 3 characters)" rows={2}/><Button variant="destructive" className="w-full" disabled={mutation.isPending||((reason[row.seller_id]??"").trim().length<3)} onClick={()=>mutation.mutate({row,suspended:true})}><ShieldAlert className="mr-2 size-4"/>Suspend seller</Button></div>
+    :row.verification_status==="approved"&&row.is_suspended?<Button variant="outline" className="w-full" disabled={mutation.isPending} onClick={()=>mutation.mutate({row,suspended:false})}><ShieldCheck className="mr-2 size-4"/>Reactivate seller</Button>
+    :<p className="border-t pt-3 text-xs text-muted-foreground">Suspension controls are available only after seller verification is approved.</p>}
    </CardContent>
   </Card>)}</div>}
  </div>;
