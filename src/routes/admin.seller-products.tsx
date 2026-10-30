@@ -47,6 +47,8 @@ function SellerProductReviewPage() {
   const [token, setToken] = useState("");
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
   const [status, setStatus] = useState<"pending" | "published" | "rejected" | "unpublished">("pending");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
@@ -85,6 +87,7 @@ function SellerProductReviewPage() {
     const term = search.trim().toLowerCase();
     return (queue.data ?? []).filter(row => (categoryFilter === "all" || (row.course_label ?? "Other") === categoryFilter) && (!term || row.title.toLowerCase().includes(term) || (row.seller_name ?? "").toLowerCase().includes(term)));
   }, [queue.data, search, categoryFilter]);
+  useEffect(() => { setPage(1); }, [search, categoryFilter, status]);
 
   const runAction = async (action: "approve" | "reject" | "unpublish" | "republish" | "save_notes", value?: string) => {
     if (!selectedId || busy) return;
@@ -116,6 +119,8 @@ function SellerProductReviewPage() {
 
   const selected = detail.data;
   const pendingCount = queue.data?.length ?? 0;
+  const pageCount = Math.max(1, Math.ceil(visible.length / pageSize));
+  const pagedRows = visible.slice((page - 1) * pageSize, page * pageSize);
   const categories = useMemo(() => [...new Set((queue.data ?? []).map(row => row.course_label ?? "Other"))].sort(), [queue.data]);
 
   return <div className="space-y-6">
@@ -145,11 +150,12 @@ function SellerProductReviewPage() {
           {queue.isLoading ? <div className="space-y-2 p-3">{Array.from({length:5}).map((_,i)=><Skeleton key={i} className="h-20 w-full"/>)}</div>
           : queue.isError ? <div className="p-5 text-sm text-destructive">Could not load the review queue. Refresh and try again.</div>
           : visible.length === 0 ? <div className="p-8 text-center"><FileText className="mx-auto size-8 text-muted-foreground"/><p className="mt-3 text-sm font-medium">No products in this queue</p><p className="mt-1 text-xs text-muted-foreground">Choose another status or clear the search.</p></div>
-          : <div className="max-h-[72vh] overflow-y-auto divide-y divide-border">{visible.map(row => <button type="button" key={row.id} onClick={() => setSelectedId(row.id)} className={`w-full p-4 text-left transition-colors hover:bg-muted/40 ${selectedId === row.id ? "bg-primary/5 ring-1 ring-inset ring-primary/30" : ""}`}>
+          : <div className="max-h-[72vh] overflow-y-auto divide-y divide-border">{pagedRows.map(row => <button type="button" key={row.id} onClick={() => setSelectedId(row.id)} className={`w-full p-4 text-left transition-colors hover:bg-muted/40 ${selectedId === row.id ? "bg-primary/5 ring-1 ring-inset ring-primary/30" : ""}`}>
             <div className="flex items-start justify-between gap-2"><span className="min-w-0 truncate text-sm font-semibold">{row.title}</span><Badge variant={row.status === "pending" ? "secondary" : "outline"}>{row.revision_of ? "Revision" : row.status}</Badge></div>
             <p className="mt-1 text-xs text-muted-foreground">{row.course_label ?? "Other"} · {row.subject_label ?? "General"} · {money(row.price)}</p>
             <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground"><span className="truncate">{row.seller_name ?? "Seller"}</span><span>{waitingLabel(row.submitted_at ?? row.created_at)}</span></div>
           </button>)}</div>}
+          {visible.length > pageSize && <div className="flex items-center justify-between gap-2 border-t border-border p-3"><span className="text-xs text-muted-foreground">Page {page} of {pageCount} · {visible.length} products</span><div className="flex gap-2"><Button size="sm" variant="outline" disabled={page===1} onClick={()=>setPage(p=>Math.max(1,p-1))}>Previous</Button><Button size="sm" variant="outline" disabled={page>=pageCount} onClick={()=>setPage(p=>Math.min(pageCount,p+1))}>Next</Button></div></div>}
         </CardContent>
       </Card>
 
