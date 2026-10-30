@@ -1508,6 +1508,8 @@ export type Database = {
           reviewed_by: string | null
           revision_of: string | null
           seller_id: string | null
+          seller_cover_source_url: string | null
+          seller_rights_confirmed_at: string | null
           seo_description: string | null
           seo_title: string | null
           slug: string
@@ -1554,6 +1556,8 @@ export type Database = {
           reviewed_by?: string | null
           revision_of?: string | null
           seller_id?: string | null
+          seller_cover_source_url?: string | null
+          seller_rights_confirmed_at?: string | null
           seo_description?: string | null
           seo_title?: string | null
           slug: string
@@ -1600,6 +1604,8 @@ export type Database = {
           reviewed_by?: string | null
           revision_of?: string | null
           seller_id?: string | null
+          seller_cover_source_url?: string | null
+          seller_rights_confirmed_at?: string | null
           seo_description?: string | null
           seo_title?: string | null
           slug?: string
@@ -2494,28 +2500,38 @@ export type Database = {
       }
       seller_create_product: {
         Args: {
+          p_title: string
+          p_slug: string
           p_description: string
           p_exam_label: string
-          p_pdf_path: string
-          p_preview_path?: string
-          p_price: number
-          p_slug: string
           p_subject_label: string
-          p_title: string
+          p_price: number
+          p_pdf_path: string
+          p_preview_path?: string | null
+          p_whats_included: string
+          p_category_id: string | null
+          p_page_count: number
+          p_seller_cover_source_url: string | null
+          p_rights_confirmed: boolean
         }
         Returns: string
       }
       seller_update_product: {
         Args: {
+          p_product_id: string
+          p_title: string
+          p_slug: string
           p_description: string
           p_exam_label: string
-          p_pdf_path: string
-          p_preview_path?: string
-          p_price: number
-          p_product_id: string
-          p_slug: string
           p_subject_label: string
-          p_title: string
+          p_price: number
+          p_pdf_path: string
+          p_preview_path?: string | null
+          p_whats_included: string
+          p_category_id: string | null
+          p_page_count: number
+          p_seller_cover_source_url: string | null
+          p_rights_confirmed: boolean
         }
         Returns: boolean
       }
