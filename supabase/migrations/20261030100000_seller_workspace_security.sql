@@ -162,7 +162,7 @@ begin
   where id=p_product_id and seller_id=v_user;
   return v_has_orders;
 end;
-$;
+$$;
 revoke all on function public.seller_update_product(uuid,text,text,text,text,text,numeric,text,text) from public, anon;
 grant execute on function public.seller_update_product(uuid,text,text,text,text,text,numeric,text,text) to authenticated;
 
