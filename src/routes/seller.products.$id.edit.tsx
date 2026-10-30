@@ -56,11 +56,11 @@ function ProductEditForm({product}:{product:Product}){
  const save=async()=>{
   if(lock.current)return;
   const amount=Number(price);
-  if(title.trim().length<5||title.trim().length>120)return setError("Title must be 5–120 characters.");
-  if(description.trim().length<20||description.trim().length>2000)return setError("Description must be 20–2,000 characters.");
-  if(!exams.includes(exam as typeof exams[number]))return setError("Choose an exam.");
-  if(subject.trim().length<2||subject.trim().length>60)return setError("Subject must be 2–60 characters.");
-  if(!/^(?:\d{1,4})(?:\.\d{1,2})?$/.test(price)||!Number.isFinite(amount)||amount<10||amount>5000)return setError("Enter a price between ₹10 and ₹5,000.");
+  if(title.trim().length<5||title.trim().length>120){setError("Title must be 5–120 characters.");return;}
+  if(description.trim().length<20||description.trim().length>2000){setError("Description must be 20–2,000 characters.");return;}
+  if(!exams.includes(exam as typeof exams[number])){setError("Choose an exam.");return;}
+  if(subject.trim().length<2||subject.trim().length>60){setError("Subject must be 2–60 characters.");return;}
+  if(!/^(?:\d{1,4})(?:\.\d{1,2})?$/.test(price)||!Number.isFinite(amount)||amount<10||amount>5000){setError("Enter a price between ₹10 and ₹5,000.");return;}
   lock.current=true;setBusy(true);setError("");
   let newMain:string|null=null,newPreview:string|null=null;
   try{
