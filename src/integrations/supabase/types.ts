@@ -1369,7 +1369,8 @@ export type Database = {
           title?: string
           updated_at?: string
           whats_included?: string | null
-        }        Relationships: [
+        }
+        Relationships: [
           {
             foreignKeyName: "products_category_id_fkey"
             columns: ["category_id"]
