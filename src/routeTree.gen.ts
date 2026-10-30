@@ -218,6 +218,11 @@ const AdminProductsNewRoute = AdminProductsNewRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/seller/wallet': typeof SellerWalletRoute
+  '/admin/sellers': typeof AdminSellersRoute
+  '/admin/withdrawals': typeof AdminWithdrawalsRoute
+  '/admin/commission': typeof AdminCommissionRoute
+
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
@@ -253,6 +258,11 @@ export interface FileRoutesByFullPath {
   '/admin/products/': typeof AdminProductsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/seller/wallet': typeof SellerWalletRoute
+  '/admin/sellers': typeof AdminSellersRoute
+  '/admin/withdrawals': typeof AdminWithdrawalsRoute
+  '/admin/commission': typeof AdminCommissionRoute
+
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/become-seller': typeof BecomeSellerRoute
@@ -286,6 +296,11 @@ export interface FileRoutesByTo {
   '/admin/products': typeof AdminProductsIndexRoute
 }
 export interface FileRoutesById {
+  '/seller/wallet': typeof SellerWalletRoute
+  '/admin/sellers': typeof AdminSellersRoute
+  '/admin/withdrawals': typeof AdminWithdrawalsRoute
+  '/admin/commission': typeof AdminCommissionRoute
+
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
@@ -691,6 +706,10 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminSellersRoute: typeof AdminSellersRoute
+  AdminWithdrawalsRoute: typeof AdminWithdrawalsRoute
+  AdminCommissionRoute: typeof AdminCommissionRoute
+
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminFreeResourcesRoute: typeof AdminFreeResourcesRoute
   AdminMessagesRoute: typeof AdminMessagesRoute
@@ -722,6 +741,9 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSellersRoute: AdminSellersRoute,
   AdminWithdrawalsRoute: AdminWithdrawalsRoute,
   AdminCommissionRoute: AdminCommissionRoute,
+  AdminSellersRoute: AdminSellersRoute,
+  AdminWithdrawalsRoute: AdminWithdrawalsRoute,
+  AdminCommissionRoute: AdminCommissionRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminProductsIdRoute: AdminProductsIdRoute,
   AdminProductsNewRoute: AdminProductsNewRoute,
@@ -736,6 +758,7 @@ const rootRouteChildren: RootRouteChildren = {
   BecomeSellerRoute: BecomeSellerRoute,
   SellerAgreementRoute: SellerAgreementRoute,
   SellerDashboardRoute: SellerDashboardRoute,
+  SellerWalletRoute: SellerWalletRoute,
   SellerWalletRoute: SellerWalletRoute,
   AdminRoute: AdminRouteWithChildren,
   ContactRoute: ContactRoute,
