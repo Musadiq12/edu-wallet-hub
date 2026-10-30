@@ -131,29 +131,23 @@ export const sellerDashboardData = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { userId, client } = await requireSeller(data.accessToken);
-      // Read the orders table directly, scoped to the authenticated seller.
-      // This avoids relying on the seller_sales view's owner/security-invoker behavior.
-      const [{ count, error: countError }, { data: earnedRows, error: earnedError }, { data: recent, error: recentError }, { data: balance, error: balanceError }] = await Promise.all([
-        client.from("orders").select("id", { count: "exact", head: true }).eq("seller_id", userId).eq("refunded", false).not("seller_share", "is", null),
-        client.from("orders").select("seller_share").eq("seller_id", userId).eq("refunded", false).not("seller_share", "is", null),
+      const [{ count, error: countError }, { data: recent, error: recentError }, { data: walletSummary, error: walletSummaryError }] = await Promise.all([
+        client.from("seller_sales").select("id", { count: "exact", head: true }).eq("refunded", false).not("seller_share", "is", null),
         client.from("seller_sales").select("id,created_at,product_title,seller_share,commission_amount,commission_rate,available_on,refunded")
           .order("created_at", { ascending: false }).limit(5),
-        client.rpc("seller_balance", { p_seller_id: userId }),
-      ]);
-      if (countError || earnedError || recentError || balanceError) throw new Error("Unable to load seller summary.");
-      const orders = recent ?? [];
-      const totalEarned = (earnedRows ?? []).reduce((sum,row)=>sum+Number(row.seller_share??0),0);
-      const [{ data: walletSummary, error: walletSummaryError }] = await Promise.all([
         client.rpc("seller_wallet_summary"),
       ]);
-      if (walletSummaryError) throw new Error("Unable to load seller wallet summary.");
-      const wallet = (walletSummary ?? {}) as { withdrawable_balance?: number; commission_deducted?: number };
+      if (countError || recentError || walletSummaryError) throw new Error("Unable to load seller summary.");
+      const orders = recent ?? [];
+      const wallet = (walletSummary ?? {}) as {
+        lifetime_earnings?: number; pending_balance?: number; withdrawable_balance?: number; commission_deducted?: number;
+      };
       const totals = (Array.isArray(balance) ? balance[0] : balance) as {pending_balance?:number;available_balance?:number} | null;
       return {
         totalSales: count ?? 0,
-        totalEarned,
-        pendingBalance: Number(totals?.pending_balance ?? 0),
-        availableBalance: Number(wallet.withdrawable_balance ?? totals?.available_balance ?? 0),
+        totalEarned: Number(wallet.lifetime_earnings ?? 0),
+        pendingBalance: Number(wallet.pending_balance ?? 0),
+        availableBalance: Number(wallet.withdrawable_balance ?? 0),
         commissionDeducted: Number(wallet.commission_deducted ?? 0),
         recent: orders.map(row => ({
           id: row.id, created_at: row.created_at, product_title: row.product_title,
