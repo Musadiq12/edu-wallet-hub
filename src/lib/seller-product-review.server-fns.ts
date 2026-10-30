@@ -52,7 +52,7 @@ export const listSellerProductReviews = createServerFn({method:"POST"})
   })
   .handler(async({data})=>{
     const {adminClient:admin}=await requireAdmin(data.accessToken);
-    let query=admin.from("products").select("id,title,slug,description,whats_included,course_label,subject_label,price,pdf_file,preview_file,cover_image,page_count,format,is_active,is_archived,status,review_feedback,rejection_reason,admin_notes,submitted_at,reviewed_at,published_at,revision_of,seller_id,created_at,category_id")
+    let query=admin.from("products").select("id,title,slug,description,whats_included,course_label,subject_label,price,pdf_file,preview_file,cover_image,seller_cover_source_url,page_count,format,is_active,is_archived,status,review_feedback,rejection_reason,admin_notes,submitted_at,reviewed_at,published_at,revision_of,seller_id,created_at,category_id")
       .not("seller_id","is",null).is("deleted_at",null).order("submitted_at",{ascending:true,nullsFirst:true});
     if(data.status!=="all") query=query.eq("status",data.status);
     const {data:rows,error}=await query;
@@ -74,7 +74,7 @@ export const getSellerProductReview = createServerFn({method:"POST"})
   .handler(async({data})=>{
     const {adminClient:admin}=await requireAdmin(data.accessToken);
     const {data:product,error}=await admin.from("products")
-      .select("id,title,slug,description,whats_included,course_label,subject_label,price,pdf_file,preview_file,cover_image,page_count,format,is_active,is_archived,status,review_feedback,rejection_reason,admin_notes,submitted_at,reviewed_at,published_at,revision_of,seller_id,created_at,category_id")
+      .select("id,title,slug,description,whats_included,course_label,subject_label,price,pdf_file,preview_file,cover_image,seller_cover_source_url,page_count,format,is_active,is_archived,status,review_feedback,rejection_reason,admin_notes,submitted_at,reviewed_at,published_at,revision_of,seller_id,created_at,category_id")
       .eq("id",data.id).not("seller_id","is",null).is("deleted_at",null).maybeSingle();
     if(error || !product) throw new Error("Seller product not found.");
     const paths=[product.pdf_file,product.preview_file].filter((path):path is string=>typeof path==="string");
