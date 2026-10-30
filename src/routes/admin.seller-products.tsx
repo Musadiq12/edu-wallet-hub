@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { BUCKETS, uploadFile } from "@/lib/admin";
 import { getSellerProductReview, listSellerProductReviews, reviewSellerProduct } from "@/lib/seller-product-review.server-fns";
 
 export const Route = createFileRoute("/admin/seller-products")({ component: SellerProductReviewPage });
@@ -55,7 +56,7 @@ function SellerProductReviewPage() {
   const [confirmApprove, setConfirmApprove] = useState(false);
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(false);\n  const [coverBusy, setCoverBusy] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -117,6 +118,21 @@ function SellerProductReviewPage() {
     } finally { setBusy(false); }
   };
 
+  const uploadApprovedCover = async (file: File) => {
+    if (!selectedId || coverBusy) return;
+    if (!["image/jpeg","image/png","image/webp"].includes(file.type) || file.size > 5 * 1024 * 1024) { toast.error("Choose a JPG, PNG or WebP image up to 5 MB."); return; }
+    setCoverBusy(true);
+    try {
+      const { path } = await uploadFile(BUCKETS.cover, file, "products");
+      const { error } = await supabase.from("products").update({ cover_image: path }).eq("id", selectedId).not("seller_id","is",null);
+      if (error) throw error;
+      await qc.invalidateQueries({ queryKey: ["admin", "seller-product-review-detail", selectedId] });
+      await qc.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Product cover uploaded and saved.");
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Could not upload the cover image."); }
+    finally { setCoverBusy(false); }
+  };
+
   const selected = detail.data;
   const pendingCount = queue.data?.length ?? 0;
   const pageCount = Math.max(1, Math.ceil(visible.length / pageSize));
@@ -171,7 +187,7 @@ function SellerProductReviewPage() {
                 <div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Description</p><p className="mt-1 whitespace-pre-wrap text-sm leading-6">{selected.description||"No description provided."}</p></div>
                 <div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Seller</p><p className="mt-1 font-medium">{selected.seller_name}</p><p className="text-sm text-muted-foreground">{selected.seller_email??"Email unavailable"}</p><p className="mt-2 text-xs text-muted-foreground">Joined {selected.seller_joined_at ? new Date(selected.seller_joined_at).toLocaleDateString("en-IN") : "Unknown"} · {selected.seller_total_products} products · {selected.seller_rejected_products} rejected</p></div>
               </div>
-              {selected.seller_cover_source_url&&<div className="rounded-lg border border-border p-3"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Seller cover image source</p><a className="mt-1 inline-flex text-sm text-primary underline" href={selected.seller_cover_source_url} target="_blank" rel="noreferrer">Open submitted Google Drive image link</a><p className="mt-1 text-xs text-muted-foreground">Download the image and upload the final cover to EduWallet before approving.</p></div>}\n              {selected.whats_included&&<div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">What's included</p><p className="mt-1 whitespace-pre-wrap text-sm">{selected.whats_included}</p></div>}
+              {<div className="rounded-lg border border-border p-3 space-y-2"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Official product cover image</p><label className="inline-flex cursor-pointer items-center rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40">{coverBusy ? "Uploading cover…" : "Upload cover image"}<input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={coverBusy} onChange={event=>{const file=event.target.files?.[0];if(file)void uploadApprovedCover(file);event.currentTarget.value="";}}/></label><p className="text-xs text-muted-foreground">Upload the final cover here. JPG, PNG or WebP · Maximum 5 MB.</p></div>}\n              {selected.seller_cover_source_url&&<div className="rounded-lg border border-border p-3"><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Seller cover image source</p><a className="mt-1 inline-flex text-sm text-primary underline" href={selected.seller_cover_source_url} target="_blank" rel="noreferrer">Open submitted Google Drive image link</a><p className="mt-1 text-xs text-muted-foreground">Download the image and upload the final cover to EduWallet before approving.</p></div>}\n              {selected.whats_included&&<div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">What's included</p><p className="mt-1 whitespace-pre-wrap text-sm">{selected.whats_included}</p></div>}
               <div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" asChild disabled={!selected.pdf_url}><a href={selected.pdf_url??"#"} download target="_blank" rel="noreferrer"><ExternalLink className="mr-2 size-4"/>Download original PDF</a></Button>{selected.preview_url&&<Button variant="outline" size="sm" asChild><a href={selected.preview_url} target="_blank" rel="noreferrer">Open sample PDF</a></Button>}</div>
             </CardContent>
           </Card>
