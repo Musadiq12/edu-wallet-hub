@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
   sellerWalletData, sellerRequestWalletWithdrawal, sellerUpdateWalletUpi,
-} from "@/lib/seller-wallet.server-fns";
+} from "@/lib/seller-workspace.server-fns";
 
 async function accessToken() {
   const { data, error } = await supabase.auth.getSession();
