@@ -190,6 +190,7 @@ export const sellerCreateProduct = createServerFn({method:"POST"})
       await removePrivateFiles(context,[data.pdfPath,data.previewPath]);
       throw new Error(safeMessage(error,"Could not save your product. Please try again."));
     }
+    return {id};
   });
 
 export const sellerCreatePrivateUploadPath = createServerFn({method:"POST"})
@@ -221,6 +222,7 @@ export const sellerDeleteProduct = createServerFn({method:"POST"})
   });
 
 export const sellerSaveProductEdit = createServerFn({method:"POST"})
+  .validator((input:{accessToken:string;id:string;title:string;description:string;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null})=>{
     const parsed=productInputSchema.parse(input);
     return {...parsed,accessToken:z.string().min(1).parse(input.accessToken),id:productIdSchema.parse(input.id)};
   })
@@ -241,6 +243,7 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
       await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? data.pdfPath : null, data.previewPath !== existing.preview_file ? data.previewPath : null]);
       throw new Error(safeMessage(error,"Could not update this product."));
     }
+    // Keep previous files for products with order history and for live-product revisions.
     if(!hasOrders && existing.status!=="approved" && existing.status!=="published") await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? existing.pdf_file : null, data.previewPath !== existing.preview_file ? existing.preview_file : null]);
     return {ok:true,hasOrders};
   });
