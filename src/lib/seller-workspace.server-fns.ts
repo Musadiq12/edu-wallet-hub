@@ -66,6 +66,11 @@ async function requireSeller(accessToken: string): Promise<SellerContext> {
   if (profileError || profile?.role !== "seller") {
     throw new Error("Seller access is no longer available for this account.");
   }
+  const { data: application, error: applicationError } = await client
+    .from("seller_applications").select("status,is_suspended").eq("user_id", userId).maybeSingle();
+  if (applicationError || application?.status !== "approved" || application.is_suspended) {
+    throw new Error(application?.is_suspended ? "Seller access is suspended." : "Seller access is no longer available for this account.");
+  }
   return { userId, client };
 }
 
@@ -126,27 +131,28 @@ export const sellerDashboardData = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { userId, client } = await requireSeller(data.accessToken);
-      // Read the orders table directly, scoped to the authenticated seller.
-      // This avoids relying on the seller_sales view's owner/security-invoker behavior.
-      const [{ count, error: countError }, { data: earnedRows, error: earnedError }, { data: recent, error: recentError }, { data: balance, error: balanceError }] = await Promise.all([
-        client.from("orders").select("id", { count: "exact", head: true }).eq("seller_id", userId).eq("refunded", false).not("seller_share", "is", null),
-        client.from("orders").select("seller_share").eq("seller_id", userId).eq("refunded", false).not("seller_share", "is", null),
-        client.from("orders").select("id,created_at,product_title,seller_share,available_on,refunded")
-          .eq("seller_id", userId).not("seller_share", "is", null).order("created_at", { ascending: false }).limit(5),
-        client.rpc("seller_balance", { p_seller_id: userId }),
+      const [{ count, error: countError }, { data: recent, error: recentError }, { data: walletSummary, error: walletSummaryError }] = await Promise.all([
+        client.from("seller_sales").select("id", { count: "exact", head: true }).eq("refunded", false).not("seller_share", "is", null),
+        client.from("seller_sales").select("id,created_at,product_title,seller_share,commission_amount,commission_rate,available_on,refunded")
+          .order("created_at", { ascending: false }).limit(5),
+        client.rpc("seller_wallet_summary"),
       ]);
-      if (countError || earnedError || recentError || balanceError) throw new Error("Unable to load seller summary.");
+      if (countError || recentError || walletSummaryError) throw new Error("Unable to load seller summary.");
       const orders = recent ?? [];
-      const totalEarned = (earnedRows ?? []).reduce((sum,row)=>sum+Number(row.seller_share??0),0);
+      const wallet = (walletSummary ?? {}) as {
+        lifetime_earnings?: number; pending_balance?: number; withdrawable_balance?: number; commission_deducted?: number;
+      };
       const totals = (Array.isArray(balance) ? balance[0] : balance) as {pending_balance?:number;available_balance?:number} | null;
       return {
         totalSales: count ?? 0,
-        totalEarned,
-        pendingBalance: Number(totals?.pending_balance ?? 0),
-        availableBalance: Number(totals?.available_balance ?? 0),
+        totalEarned: Number(wallet.lifetime_earnings ?? 0),
+        pendingBalance: Number(wallet.pending_balance ?? 0),
+        availableBalance: Number(wallet.withdrawable_balance ?? 0),
+        commissionDeducted: Number(wallet.commission_deducted ?? 0),
         recent: orders.map(row => ({
           id: row.id, created_at: row.created_at, product_title: row.product_title,
           seller_share: Number(row.seller_share ?? 0), refunded: row.refunded,
+          commission_amount: Number(row.commission_amount ?? 0), commission_rate: Number(row.commission_rate ?? 0),
           available_on: row.available_on,
         })),
       };
@@ -292,6 +298,49 @@ export const markSellerNotificationRead = createServerFn({method:"POST"})
     return {ok:true};
   });
 
+
+const walletWithdrawalAmountSchema=z.number().finite().positive().max(1000000)
+  .refine(value=>Math.round(value*100)===value*100,"Amount must have at most two decimal places.");
+const walletUpiSchema=z.string().trim().min(5).max(100)
+  .regex(/^[A-Za-z0-9._-]+@[A-Za-z][A-Za-z0-9.-]{1,63}$/,"Enter a valid UPI ID.");
+
+export const sellerWalletData=createServerFn({method:"POST"})
+ .validator((input:{accessToken:string})=>({accessToken:z.string().min(1).parse(input.accessToken)}))
+ .handler(async({data})=>{
+  const {client}=await requireSeller(data.accessToken);
+  const [{data:summary,error:summaryError},{data:withdrawals,error:historyError},{data:upi,error:upiError}]=await Promise.all([
+   client.rpc("seller_wallet_summary"),client.rpc("seller_withdrawal_history"),client.rpc("seller_wallet_upi"),
+  ]);
+  if(summaryError||historyError||upiError)throw new Error("Could not load your wallet information.");
+  return {
+   summary:(summary??{}) as {lifetime_earnings:number;commission_deducted:number;pending_balance:number;released_earnings:number;pending_withdrawals:number;withdrawable_balance:number},
+   withdrawals:(Array.isArray(withdrawals)?withdrawals:[]) as Array<{id:string;amount:number;status:string;upi_id:string|null;requested_at:string;processing_at:string|null;paid_at:string|null;rejected_at:string|null;rejection_reason:string|null;upi_reference:string|null}>,
+   upiId:typeof upi==="string"?upi:"",
+  };
+ });
+
+export const sellerUpdateWalletUpi=createServerFn({method:"POST"})
+ .validator((input:{accessToken:string;upiId:string})=>({accessToken:z.string().min(1).parse(input.accessToken),upiId:walletUpiSchema.parse(input.upiId).toLowerCase()}))
+ .handler(async({data})=>{
+  const {client}=await requireSeller(data.accessToken);
+  const {error}=await client.rpc("seller_update_upi",{p_upi_id:data.upiId});
+  if(error)throw new Error(error.message||"Could not update your UPI ID.");
+  return {ok:true};
+ });
+
+export const sellerRequestWalletWithdrawal=createServerFn({method:"POST"})
+ .validator((input:{accessToken:string;amount:number;idempotencyKey:string})=>({
+  accessToken:z.string().min(1).parse(input.accessToken),
+  amount:walletWithdrawalAmountSchema.parse(input.amount),
+  idempotencyKey:z.string().uuid().parse(input.idempotencyKey),
+ }))
+ .handler(async({data})=>{
+  const {client}=await requireSeller(data.accessToken);
+  const {data:requestId,error}=await client.rpc("seller_request_withdrawal",{p_amount:data.amount,p_idempotency_key:data.idempotencyKey});
+  if(error)throw new Error(error.message||"Could not submit your withdrawal request.");
+  return {id:requestId as string};
+ });
+
 export const sellerSalesData = createServerFn({method:"POST"})
   .validator((input:{accessToken:string;page:number})=>({
     accessToken:z.string().min(1).parse(input.accessToken),page:pageSchema.parse(input.page),
@@ -300,16 +349,16 @@ export const sellerSalesData = createServerFn({method:"POST"})
     try{
       const {client,userId}=await requireSeller(data.accessToken);
       const from=(data.page-1)*20, to=from+19;
-      const {data:rows,error,count}=await client.from("orders")
-        .select("id,created_at,product_title,seller_share,available_on,refunded,full_name",{count:"exact"})
-        .eq("seller_id",userId).not("seller_share","is",null)
+      const {data:rows,error,count}=await client.from("seller_sales")
+        .select("id,created_at,product_title,seller_share,commission_amount,commission_rate,available_on,refunded,buyer_first_name",{count:"exact"})
         .order("created_at",{ascending:false}).range(from,to);
       if(error) throw error;
       return {
         rows:(rows??[]).map(row=>({
           id:row.id,created_at:row.created_at,product_title:row.product_title,
-          seller_share:Number(row.seller_share??0),available_on:row.available_on,
-          refunded:row.refunded,buyer_first_name:(row.full_name??"").trim().split(/\\s+/)[0]||"Customer",
+          seller_share:Number(row.seller_share??0),commission_amount:Number(row.commission_amount??0),
+          commission_rate:Number(row.commission_rate??0),available_on:row.available_on,
+          refunded:row.refunded,buyer_first_name:row.buyer_first_name||"Customer",
         })),
         total:count??0,
       };

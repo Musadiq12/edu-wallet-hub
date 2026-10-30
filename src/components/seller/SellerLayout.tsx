@@ -1,11 +1,12 @@
 import { Link, useLocation } from "@tanstack/react-router";
-import { BadgeCheck, LayoutDashboard, Package, ShoppingBag } from "lucide-react";
+import { BadgeCheck, LayoutDashboard, Package, ShoppingBag, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { to: "/seller/dashboard", label: "Overview", icon: LayoutDashboard },
   { to: "/seller/products", label: "My products", icon: Package },
   { to: "/seller/sales", label: "Sales", icon: ShoppingBag },
+  { to: "/seller/wallet", label: "Wallet", icon: Wallet },
 ] as const;
 
 export function SellerLayout({ children }: { children: React.ReactNode }) {
