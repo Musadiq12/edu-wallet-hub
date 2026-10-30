@@ -1360,6 +1360,16 @@ export type Database = {
           updated_at?: string
           whats_included?: string | null
         }
+          seller_id?: string | null
+          status?: string
+          submitted_at?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          published_at?: string | null
+          rejection_reason?: string | null
+          admin_notes?: string | null
+          revision_of?: string | null
+          deleted_at?: string | null
         Relationships: [
           {
             foreignKeyName: "products_category_id_fkey"
