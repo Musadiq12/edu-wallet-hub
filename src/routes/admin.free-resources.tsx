@@ -21,7 +21,7 @@ function AdminFreeResources() {
     if (mutationLockRef.current) return;
     mutationLockRef.current = true;
     setBusyId(id);
-    const { error } = await supabase.from("products").update({ is_active: value }).eq("id", id);
+    const { error } = await supabase.from("products").update({ is_active: value }).eq("id", id).is("seller_id", null);
     if (error) {
       toast.error(friendlyError(error, "Could not update this resource."));
       setBusyId(null);
