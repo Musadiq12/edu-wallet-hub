@@ -37,7 +37,7 @@ async function requireAdmin(accessToken: string) {
   if (adminUserError || adminRoleError || (!adminUser && !adminRole)) {
     throw new Error("Administrator access required.");
   }
-  return adminClient;
+  return { adminClient, userClient, userId };
 }
 
 const idSchema = z.string().uuid();
@@ -51,7 +51,7 @@ export const listSellerProductReviews = createServerFn({method:"POST"})
     };
   })
   .handler(async({data})=>{
-    const admin=await requireAdmin(data.accessToken);
+    const {adminClient:admin}=await requireAdmin(data.accessToken);
     let query=admin.from("products").select("id,title,slug,description,whats_included,course_label,subject_label,price,pdf_file,preview_file,cover_image,page_count,format,is_active,is_archived,status,review_feedback,rejection_reason,admin_notes,submitted_at,reviewed_at,published_at,revision_of,seller_id,created_at,category_id")
       .not("seller_id","is",null).is("deleted_at",null).order("submitted_at",{ascending:true,nullsFirst:true});
     if(data.status!=="all") query=query.eq("status",data.status);
@@ -66,7 +66,7 @@ export const getSellerProductReview = createServerFn({method:"POST"})
     id:idSchema.parse(input.id),
   }))
   .handler(async({data})=>{
-    const admin=await requireAdmin(data.accessToken);
+    const {adminClient:admin}=await requireAdmin(data.accessToken);
     const {data:product,error}=await admin.from("products")
       .select("id,title,slug,description,whats_included,course_label,subject_label,price,pdf_file,preview_file,cover_image,page_count,format,is_active,is_archived,status,review_feedback,rejection_reason,admin_notes,submitted_at,reviewed_at,published_at,revision_of,seller_id,created_at,category_id")
       .eq("id",data.id).not("seller_id","is",null).is("deleted_at",null).maybeSingle();
@@ -109,8 +109,8 @@ export const reviewSellerProduct = createServerFn({method:"POST"})
     };
   })
   .handler(async({data})=>{
-    const admin=await requireAdmin(data.accessToken);
-    const {data:updated,error}=await admin.rpc("transition_seller_product",{
+    const {userClient}=await requireAdmin(data.accessToken);
+    const {data:updated,error}=await userClient.rpc("transition_seller_product",{
       p_product_id:data.id,p_action:data.action,p_reason:data.reason,p_admin_notes:data.adminNotes,
     });
     if(error || !updated) throw new Error("Could not update the seller product review. Refresh and try again.");
