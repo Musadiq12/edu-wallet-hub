@@ -17,12 +17,31 @@ const productIdSchema = z.string().uuid();
 const productInputSchema = z.object({
   title: z.string().trim().min(5).max(120),
   description: z.string().trim().min(20).max(2000),
+  whatsIncluded: z.string().trim().min(5).max(2000),
+  categoryId: z.string().uuid().nullable(),
+  pageCount: z.number().int().min(1).max(99999),
+  coverSourceUrl: z.string().trim().max(2048).nullable(),
+  rightsConfirmed: z.literal(true),
   exam: z.enum(["NEET","JEE","UPSC","SSC","CGL","CLAT","CA","Other"]),
   subject: z.string().trim().min(2).max(60),
   price: z.number().finite().min(10).max(5000).refine(v => Math.round(v*100) === v*100),
   pdfPath: z.string().min(1).max(500),
   previewPath: z.string().max(500).nullable().optional(),
 });
+
+function validateCoverSourceUrl(value: string | null) {
+  if (!value) return null;
+  let url: URL;
+  try { url = new URL(value); } catch { throw new Error("Enter a valid Google Drive share link."); }
+  const match = url.hostname === "drive.google.com"
+    ? (url.pathname.match(/^\/file\/d\/([A-Za-z0-9_-]{10,})(?:\/view)?\/?$/)?.[1] ?? url.searchParams.get("id"))
+    : null;
+  if (url.protocol !== "https:" || url.hostname !== "drive.google.com" || url.port || url.username || url.password
+      || !match || !/^[A-Za-z0-9_-]{10,}$/.test(match)) {
+    throw new Error("Use a valid Google Drive file link, not a product PDF link.");
+  }
+  return { source: url.toString(), preview: `https://drive.google.com/file/d/${match}/preview` };
+}
 const listStatusSchema = z.enum(["pending","published","rejected","unpublished","all"]);
 const pageSchema = z.number().int().min(1).max(100000);
 const salesLimitSchema = z.number().int().min(1).max(20);
@@ -160,7 +179,7 @@ export const sellerGetProduct = createServerFn({method:"POST"})
     try {
       const {userId,client}=await requireSeller(data.accessToken);
       const {data:row,error}=await client.from("products")
-        .select("id,title,slug,description,course_label,subject_label,price,pdf_file,preview_file,status,is_archived,is_active,created_at,rejection_reason,review_feedback")
+        .select("id,title,slug,description,whats_included,category_id,page_count,seller_cover_source_url,seller_rights_confirmed_at,course_label,subject_label,price,pdf_file,preview_file,status,is_archived,is_active,created_at,rejection_reason,review_feedback")
         .eq("id",data.id).eq("seller_id",userId).is("deleted_at",null).maybeSingle();
       if(error || !row) throw new Error("product not found");
       return row;
@@ -168,25 +187,23 @@ export const sellerGetProduct = createServerFn({method:"POST"})
   });
 
 export const sellerCreateProduct = createServerFn({method:"POST"})
-  .validator((input:{accessToken:string;title:string;description:string;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null}) => {
+  .validator((input:{accessToken:string;title:string;description:string;whatsIncluded:string;categoryId:string|null;pageCount:number;coverSourceUrl:string|null;rightsConfirmed:true;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null}) => {
     const parsed=productInputSchema.parse(input);
-    return { ...parsed, accessToken:z.string().min(1).parse(input.accessToken) };
+    const cover=validateCoverSourceUrl(parsed.coverSourceUrl);
+    return { ...parsed, cover, accessToken:z.string().min(1).parse(input.accessToken) };
   })
   .handler(async({data})=>{
     const context=await requireSeller(data.accessToken);
-    const {client}=context;
     await verifyStoredPdf(context,data.pdfPath,20*1024*1024);
     if(data.previewPath) await verifyStoredPdf(context,data.previewPath,5*1024*1024);
-    const payload={
-      p_title:data.title,p_slug:await (async()=>{
-        const slug=data.title.toLowerCase().trim().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,100);
-        return slug+"-"+crypto.randomUUID().slice(0,8);
-      })(),
-      p_description:data.description,p_exam_label:data.exam,p_subject_label:data.subject,
-      p_price:data.price,p_pdf_path:data.pdfPath,p_preview_path:data.previewPath ?? null,
-    };
-    const {data:id,error}=await client.rpc("seller_create_product",payload);
-    if(error) {
+    const slug=data.title.toLowerCase().trim().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,100)+"-"+crypto.randomUUID().slice(0,8);
+    const {data:id,error}=await context.client.rpc("seller_create_product",{
+      p_title:data.title,p_slug:slug,p_description:data.description,p_exam_label:data.exam,
+      p_subject_label:data.subject,p_price:data.price,p_pdf_path:data.pdfPath,p_preview_path:data.previewPath??null,
+      p_whats_included:data.whatsIncluded,p_category_id:data.categoryId,p_page_count:data.pageCount,
+      p_seller_cover_source_url:data.cover?.source??null,p_rights_confirmed:data.rightsConfirmed,
+    });
+    if(error){
       await removePrivateFiles(context,[data.pdfPath,data.previewPath]);
       throw new Error(safeMessage(error,"Could not save your product. Please try again."));
     }
@@ -222,29 +239,31 @@ export const sellerDeleteProduct = createServerFn({method:"POST"})
   });
 
 export const sellerSaveProductEdit = createServerFn({method:"POST"})
-  .validator((input:{accessToken:string;id:string;title:string;description:string;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null})=>{
+  .validator((input:{accessToken:string;id:string;title:string;description:string;whatsIncluded:string;categoryId:string|null;pageCount:number;coverSourceUrl:string|null;rightsConfirmed:true;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null})=>{
     const parsed=productInputSchema.parse(input);
-    return {...parsed,accessToken:z.string().min(1).parse(input.accessToken),id:productIdSchema.parse(input.id)};
+    const cover=validateCoverSourceUrl(parsed.coverSourceUrl);
+    return {...parsed,cover,accessToken:z.string().min(1).parse(input.accessToken),id:productIdSchema.parse(input.id)};
   })
   .handler(async({data})=>{
     const context=await requireSeller(data.accessToken);
     const {data:existing,error:readError}=await context.client.from("products").select("pdf_file,preview_file,status")
       .eq("id",data.id).eq("seller_id",context.userId).is("deleted_at",null).maybeSingle();
-    if(readError || !existing) throw new Error("This product could not be found.");
+    if(readError||!existing) throw new Error("This product could not be found.");
     await verifyStoredPdf(context,data.pdfPath,20*1024*1024);
     if(data.previewPath) await verifyStoredPdf(context,data.previewPath,5*1024*1024);
     const {data:hasOrders,error}=await context.client.rpc("seller_update_product",{
       p_product_id:data.id,p_title:data.title,
       p_slug:data.title.toLowerCase().trim().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,100)+"-"+crypto.randomUUID().slice(0,8),
       p_description:data.description,p_exam_label:data.exam,p_subject_label:data.subject,p_price:data.price,
-      p_pdf_path:data.pdfPath,p_preview_path:data.previewPath ?? null,
+      p_pdf_path:data.pdfPath,p_preview_path:data.previewPath??null,
+      p_whats_included:data.whatsIncluded,p_category_id:data.categoryId,p_page_count:data.pageCount,
+      p_seller_cover_source_url:data.cover?.source??null,p_rights_confirmed:data.rightsConfirmed,
     });
-    if(error) {
-      await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? data.pdfPath : null, data.previewPath !== existing.preview_file ? data.previewPath : null]);
+    if(error){
+      await removePrivateFiles(context,[data.pdfPath!==existing.pdf_file?data.pdfPath:null,data.previewPath!==existing.preview_file?data.previewPath:null]);
       throw new Error(safeMessage(error,"Could not update this product."));
     }
-    // Keep previous files for products with order history and for live-product revisions.
-    if(!hasOrders && existing.status!=="approved" && existing.status!=="published") await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? existing.pdf_file : null, data.previewPath !== existing.preview_file ? existing.preview_file : null]);
+    if(!hasOrders&&existing.status!=="approved"&&existing.status!=="published") await removePrivateFiles(context,[data.pdfPath!==existing.pdf_file?existing.pdf_file:null,data.previewPath!==existing.preview_file?existing.preview_file:null]);
     return {ok:true,hasOrders};
   });
 
