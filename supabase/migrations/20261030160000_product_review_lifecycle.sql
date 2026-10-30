@@ -1,4 +1,4 @@
--- Product review lifecycle v2. Keep legacy/admin products intact; seller rows receive the expanded state machine.
+-- Canonical review lifecycle for seller-owned products. Legacy admin catalogue rows remain compatible.
 begin;
 
 alter table public.products
@@ -11,19 +11,16 @@ alter table public.products
   add column if not exists revision_of uuid references public.products(id) on delete set null,
   add column if not exists deleted_at timestamptz;
 
--- Keep old status labels for legacy admin-managed catalog rows; seller products use the new canonical values.
 alter table public.products drop constraint if exists products_marketplace_status_check;
-alter table public.products add constraint products_marketplace_status_check
-  check (
-    (seller_id is null and status in ('pending','approved','rejected'))
-    or (seller_id is not null and status in ('pending','published','rejected','unpublished'))
-  ) not valid;
+alter table public.products add constraint products_marketplace_status_check check (
+  (seller_id is null and status in ('pending','approved','rejected'))
+  or (seller_id is not null and status in ('pending','published','rejected','unpublished'))
+) not valid;
 alter table public.products validate constraint products_marketplace_status_check;
 
 update public.products
 set submitted_at=coalesce(submitted_at,created_at)
 where seller_id is not null;
-
 update public.products
 set status=case when is_active and not is_archived then 'published' else 'unpublished' end,
     published_at=case when is_active and not is_archived then coalesce(published_at,created_at) else published_at end
@@ -33,23 +30,45 @@ create index if not exists products_seller_review_queue_idx
   on public.products(status,submitted_at) where seller_id is not null and deleted_at is null;
 create index if not exists products_revision_of_idx on public.products(revision_of) where revision_of is not null;
 
--- The original seller RPCs are replaced so all status changes happen through this database transition function.
+create table if not exists public.seller_notifications (
+  id uuid primary key default gen_random_uuid(),
+  seller_id uuid not null references auth.users(id) on delete cascade,
+  product_id uuid references public.products(id) on delete set null,
+  event_type text not null check (event_type in ('approved','rejected','unpublished','republished')),
+  title text not null,
+  message text not null,
+  target_url text,
+  read_at timestamptz,
+  created_at timestamptz not null default now()
+);
+alter table public.seller_notifications enable row level security;
+drop policy if exists seller_notifications_read_own on public.seller_notifications;
+create policy seller_notifications_read_own on public.seller_notifications
+for select to authenticated using (seller_id=(select auth.uid()) and public.current_user_is_seller());
+drop policy if exists seller_notifications_update_own on public.seller_notifications;
+create policy seller_notifications_update_own on public.seller_notifications
+for update to authenticated using (seller_id=(select auth.uid()) and public.current_user_is_seller())
+with check (seller_id=(select auth.uid()) and public.current_user_is_seller());
+revoke all on public.seller_notifications from anon,authenticated;
+grant select,update on public.seller_notifications to authenticated;
+create index if not exists seller_notifications_unread_idx on public.seller_notifications(seller_id,created_at desc) where read_at is null;
+
+-- All seller status transitions are centralized here. Direct table status writes are rejected by the guard trigger.
 create or replace function public.transition_seller_product(
-  p_product_id uuid,
-  p_action text,
-  p_reason text default null,
-  p_admin_notes text default null
+  p_product_id uuid,p_action text,p_reason text default null,p_admin_notes text default null
 )
 returns public.products
-language plpgsql
-security definer
-set search_path = ''
+language plpgsql security definer set search_path=''
 as $$
 declare
-  v_admin uuid := auth.uid();
+  v_admin uuid:=auth.uid();
   v_product public.products%rowtype;
   v_updated public.products%rowtype;
   v_new_status text;
+  v_event text;
+  v_title text;
+  v_message text;
+  v_target text;
 begin
   if v_admin is null or not public.is_admin_staff() then
     raise exception 'administrator access required' using errcode='42501';
@@ -58,56 +77,63 @@ begin
     raise exception 'invalid moderation action' using errcode='22023';
   end if;
   select * into v_product from public.products
-    where id=p_product_id and seller_id is not null and deleted_at is null for update;
+  where id=p_product_id and seller_id is not null and deleted_at is null for update;
   if not found then raise exception 'seller product not found' using errcode='P0002'; end if;
 
   if p_action='save_notes' then
-    update public.products set admin_notes=nullif(left(btrim(coalesce(p_admin_notes,'')),4000),''),
-      updated_at=now() where id=p_product_id returning * into v_updated;
+    update public.products
+    set admin_notes=nullif(left(btrim(coalesce(p_admin_notes,'')),4000),''),
+        updated_at=now()
+    where id=p_product_id returning * into v_updated;
     return v_updated;
   end if;
 
-  v_new_status := case p_action
+  v_new_status:=case p_action
     when 'approve' then 'published'
     when 'reject' then 'rejected'
     when 'unpublish' then 'unpublished'
     when 'republish' then 'published'
   end;
-
   if (p_action='approve' and v_product.status<>'pending')
-     or (p_action='reject' and v_product.status<>'pending')
-     or (p_action='unpublish' and v_product.status<>'published')
-     or (p_action='republish' and v_product.status<>'unpublished') then
+    or (p_action='reject' and v_product.status<>'pending')
+    or (p_action='unpublish' and v_product.status<>'published')
+    or (p_action='republish' and v_product.status<>'unpublished') then
     raise exception 'invalid product status transition' using errcode='22023';
   end if;
   if p_action='reject' and length(btrim(coalesce(p_reason,'')))<10 then
     raise exception 'Rejection reason must contain at least 10 characters' using errcode='22023';
   end if;
 
+  -- A revision approval replaces the live listing's content atomically but preserves its product id/order history.
   if p_action='approve' and v_product.revision_of is not null then
-    update public.products
-    set title=v_product.title,slug=v_product.slug,description=v_product.description,
-        whats_included=v_product.whats_included,course_label=v_product.course_label,
-        subject_label=v_product.subject_label,keywords=v_product.keywords,price=v_product.price,
-        discounted_price=v_product.discounted_price,cover_image=v_product.cover_image,
-        pdf_file=v_product.pdf_file,preview_file=v_product.preview_file,page_count=v_product.page_count,
-        format=v_product.format,is_free=v_product.is_free,product_type=v_product.product_type,
-        stock_quantity=v_product.stock_quantity,stock_status=v_product.stock_status,
-        is_active=true,is_archived=false,updated_at=now()
-    where id=v_product.revision_of and seller_id=v_product.seller_id and status='published';
-    if not found then raise exception 'live product revision target is not published' using errcode='22023'; end if;
+    update public.products set
+      title=v_product.title,slug=v_product.slug,description=v_product.description,
+      whats_included=v_product.whats_included,course_label=v_product.course_label,
+      subject_label=v_product.subject_label,keywords=v_product.keywords,price=v_product.price,
+      discounted_price=v_product.discounted_price,cover_image=v_product.cover_image,
+      pdf_file=v_product.pdf_file,preview_file=v_product.preview_file,page_count=v_product.page_count,
+      format=v_product.format,is_free=v_product.is_free,product_type=v_product.product_type,
+      stock_quantity=v_product.stock_quantity,stock_status=v_product.stock_status,
+      updated_at=now()
+    where id=v_product.revision_of and seller_id=v_product.seller_id
+      and status='published' and deleted_at is null;
+    if not found then
+      raise exception 'live product revision target is not published' using errcode='22023';
+    end if;
   end if;
 
-  update public.products
-  set status=v_new_status,
-      is_active=(v_new_status='published'),
-      is_archived=false,
-      reviewed_at=now(),
-      reviewed_by=v_admin,
-      published_at=case when v_new_status='published' then coalesce(published_at,now()) else published_at end,
-      rejection_reason=case when v_new_status='rejected' then left(btrim(p_reason),1000) else null end,
-      review_feedback=case when v_new_status='rejected' then left(btrim(p_reason),1000) else null end,
-      updated_at=now()
+  perform set_config('app.marketplace_transition','enabled',true);
+  update public.products set
+    status=v_new_status,
+    is_active=(v_new_status='published' and revision_of is null),
+    is_archived=false,
+    reviewed_at=now(),
+    reviewed_by=v_admin,
+    published_at=case when v_new_status='published' then coalesce(published_at,now()) else published_at end,
+    rejection_reason=case when v_new_status='rejected' then left(btrim(p_reason),1000) else null end,
+    review_feedback=case when v_new_status='rejected' then left(btrim(p_reason),1000) else null end,
+    deleted_at=case when p_action='approve' and revision_of is not null then now() else deleted_at end,
+    updated_at=now()
   where id=p_product_id returning * into v_updated;
 
   insert into public.admin_activity_logs(actor_id,action,entity_type,entity_id,before_data,after_data)
@@ -115,16 +141,25 @@ begin
     jsonb_build_object('status',v_product.status),
     jsonb_build_object('status',v_updated.status,'reason',v_updated.rejection_reason,'revision_of',v_updated.revision_of));
 
+  v_event:=case p_action when 'approve' then 'approved' when 'reject' then 'rejected' when 'unpublish' then 'unpublished' else 'republished' end;
+  v_title:=case v_event when 'approved' then 'Your product is live' when 'rejected' then 'Product needs changes' when 'unpublished' then 'Product taken down by admin' else 'Your product is live again' end;
+  v_message:=case v_event
+    when 'approved' then 'Your product "'||v_product.title||'" has been approved and is now live.'
+    when 'rejected' then 'Your product "'||v_product.title||'" was not approved. Reason: '||left(btrim(p_reason),1000)
+    when 'unpublished' then 'Your product "'||v_product.title||'" was taken down by an administrator.'
+    else 'Your product "'||v_product.title||'" has been republished.'
+  end;
+  v_target:=case when v_event in ('approved','republished') then '/shop/'||v_product.slug else '/seller/products' end;
+  insert into public.seller_notifications(seller_id,product_id,event_type,title,message,target_url)
+  values(v_product.seller_id,p_product_id,v_event,v_title,v_message,v_target);
+
   return v_updated;
 end;
 $$;
 revoke all on function public.transition_seller_product(uuid,text,text,text) from public,anon;
 grant execute on function public.transition_seller_product(uuid,text,text,text) to authenticated;
 
--- Compatibility function used by existing admin review UI; it delegates all status changes centrally.
-create or replace function public.admin_review_seller_product(
-  p_product_id uuid,p_status text,p_review_feedback text default null
-)
+create or replace function public.admin_review_seller_product(p_product_id uuid,p_status text,p_review_feedback text default null)
 returns void language plpgsql security definer set search_path=''
 as $$
 begin
@@ -140,13 +175,12 @@ $$;
 revoke all on function public.admin_review_seller_product(uuid,text,text) from public,anon;
 grant execute on function public.admin_review_seller_product(uuid,text,text) to authenticated;
 
--- Make product transitions impossible through direct table updates by ordinary users.
--- Existing admin table policies remain, but status updates are reserved for the transition RPC.
 create or replace function public.guard_marketplace_product_fields()
 returns trigger language plpgsql security invoker set search_path=''
 as $$
 begin
-  if tg_op='UPDATE' and old.seller_id is not null and new.status is distinct from old.status
+  if tg_op='UPDATE' and old.seller_id is not null
+     and new.status is distinct from old.status
      and current_setting('app.marketplace_transition',true) is distinct from 'enabled' then
     raise exception 'Use the product review transition function to change seller product status' using errcode='42501';
   end if;
@@ -169,72 +203,14 @@ begin
 end;
 $$;
 
--- Ensure the central transition function sets its transaction-local capability before its only status update.
-create or replace function public.transition_seller_product(
-  p_product_id uuid,p_action text,p_reason text default null,p_admin_notes text default null
-)
-returns public.products language plpgsql security definer set search_path=''
-as $$
-declare
-  v_admin uuid:=auth.uid();
-  v_product public.products%rowtype;
-  v_updated public.products%rowtype;
-  v_new_status text;
-begin
-  if v_admin is null or not public.is_admin_staff() then raise exception 'administrator access required' using errcode='42501'; end if;
-  if p_action not in ('approve','reject','unpublish','republish','save_notes') then raise exception 'invalid moderation action' using errcode='22023'; end if;
-  select * into v_product from public.products where id=p_product_id and seller_id is not null and deleted_at is null for update;
-  if not found then raise exception 'seller product not found' using errcode='P0002'; end if;
-  if p_action='save_notes' then
-    update public.products set admin_notes=nullif(left(btrim(coalesce(p_admin_notes,'')),4000),''),updated_at=now()
-    where id=p_product_id returning * into v_updated;
-    return v_updated;
-  end if;
-  v_new_status:=case p_action when 'approve' then 'published' when 'reject' then 'rejected' when 'unpublish' then 'unpublished' when 'republish' then 'published' end;
-  if (p_action='approve' and v_product.status<>'pending') or (p_action='reject' and v_product.status<>'pending')
-    or (p_action='unpublish' and v_product.status<>'published') or (p_action='republish' and v_product.status<>'unpublished') then
-    raise exception 'invalid product status transition' using errcode='22023';
-  end if;
-  if p_action='reject' and length(btrim(coalesce(p_reason,'')))<10 then raise exception 'Rejection reason must contain at least 10 characters' using errcode='22023'; end if;
-
-  if p_action='approve' and v_product.revision_of is not null then
-    update public.products set title=v_product.title,slug=v_product.slug,description=v_product.description,
-      whats_included=v_product.whats_included,course_label=v_product.course_label,subject_label=v_product.subject_label,
-      keywords=v_product.keywords,price=v_product.price,discounted_price=v_product.discounted_price,cover_image=v_product.cover_image,
-      pdf_file=v_product.pdf_file,preview_file=v_product.preview_file,page_count=v_product.page_count,format=v_product.format,
-      is_free=v_product.is_free,product_type=v_product.product_type,stock_quantity=v_product.stock_quantity,
-      stock_status=v_product.stock_status,is_active=true,is_archived=false,updated_at=now()
-    where id=v_product.revision_of and seller_id=v_product.seller_id and status='published';
-    if not found then raise exception 'live product revision target is not published' using errcode='22023'; end if;
-  end if;
-
-  perform set_config('app.marketplace_transition','enabled',true);
-  update public.products set status=v_new_status,is_active=(v_new_status='published'),is_archived=false,
-    reviewed_at=now(),reviewed_by=v_admin,
-    published_at=case when v_new_status='published' then coalesce(published_at,now()) else published_at end,
-    rejection_reason=case when v_new_status='rejected' then left(btrim(p_reason),1000) else null end,
-    review_feedback=case when v_new_status='rejected' then left(btrim(p_reason),1000) else null end,
-    updated_at=now()
-  where id=p_product_id returning * into v_updated;
-  insert into public.admin_activity_logs(actor_id,action,entity_type,entity_id,before_data,after_data)
-  values(v_admin,'seller_product_'||p_action,'product',p_product_id,jsonb_build_object('status',v_product.status),
-    jsonb_build_object('status',v_updated.status,'reason',v_updated.rejection_reason,'revision_of',v_updated.revision_of));
-  return v_updated;
-end;
-$$;
-revoke all on function public.transition_seller_product(uuid,text,text,text) from public,anon;
-grant execute on function public.transition_seller_product(uuid,text,text,text) to authenticated;
-
--- Admin general product list and public queries use status; legacy product statuses are preserved through is_active.
 drop policy if exists marketplace_public_read_approved_products on public.products;
 create policy marketplace_public_read_approved_products on public.products
 for select to anon,authenticated
 using (
   (seller_id is null and status='approved' and is_active=true and not is_archived and deleted_at is null)
-  or (seller_id is not null and status='published' and is_active=true and not is_archived and deleted_at is null)
+  or (seller_id is not null and status='published' and revision_of is null and is_active=true and not is_archived and deleted_at is null)
   or public.is_admin_staff()
   or (seller_id=(select auth.uid()))
 );
 
--- Private storage files remain inaccessible publicly; the owner and admin policies are kept.
 commit;
