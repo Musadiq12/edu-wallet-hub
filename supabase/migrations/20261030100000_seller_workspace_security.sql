@@ -13,12 +13,6 @@ set public = false,
     allowed_mime_types = array['application/pdf']
 where id = 'product-files';
 
--- Explicit seller product read policy remains scoped to the authenticated owner.
-drop policy if exists seller_read_own_products on public.products;
-create policy seller_read_own_products on public.products
-for select to authenticated
-using (seller_id = (select auth.uid()) and public.current_user_is_seller());
-
 -- Seller mutations use the RPCs below. Existing table grants remain available to
 -- administrators, while no seller INSERT/UPDATE/DELETE policy is retained.
 drop policy if exists seller_insert_own_pending_products on public.products;
