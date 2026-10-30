@@ -1845,6 +1845,17 @@ export type Database = {
         Returns: boolean
       }
       is_admin_staff: { Args: never; Returns: boolean }
+      current_user_is_seller: { Args: never; Returns: boolean }
+      seller_create_product: {
+        Args: { p_title: string; p_slug: string; p_description: string; p_exam_label: string; p_subject_label: string; p_price: number; p_pdf_path: string; p_preview_path?: string | null }
+        Returns: string
+      }
+      seller_update_product: {
+        Args: { p_product_id: string; p_title: string; p_slug: string; p_description: string; p_exam_label: string; p_subject_label: string; p_price: number; p_pdf_path: string; p_preview_path?: string | null }
+        Returns: undefined
+      }
+      seller_archive_or_delete_product: { Args: { p_product_id: string }; Returns: string }
+      seller_balance: { Args: { p_seller_id: string }; Returns: { pending_balance: number; available_balance: number }[] }
       strip_html_tags: { Args: { input: string }; Returns: string }
     }
     Enums: {
