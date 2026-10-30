@@ -338,6 +338,7 @@ export interface FileRouteTypes {
     | '/admin/free-resources'
     | '/admin/messages'
     | '/admin/reviews'
+    | '/admin/seller-products'
     | '/admin/orders'
     | '/admin/settings'
     | '/checkout/$slug'
@@ -370,6 +371,7 @@ export interface FileRouteTypes {
     | '/admin/free-resources'
     | '/admin/messages'
     | '/admin/reviews'
+    | '/admin/seller-products'
     | '/admin/orders'
     | '/admin/settings'
     | '/checkout/$slug'
@@ -401,6 +403,7 @@ export interface FileRouteTypes {
     | '/admin/free-resources'
     | '/admin/messages'
     | '/admin/reviews'
+    | '/admin/seller-products'
     | '/admin/orders'
     | '/admin/settings'
     | '/checkout/$slug'
@@ -596,6 +599,13 @@ declare module '@tanstack/react-router' {
       path: '/reviews'
       fullPath: '/admin/reviews'
       preLoaderRoute: typeof AdminReviewsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/seller-products': {
+      id: '/admin/seller-products'
+      path: '/seller-products'
+      fullPath: '/admin/seller-products'
+      preLoaderRoute: typeof AdminSellerProductsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/seller-products': {
