@@ -70,18 +70,23 @@ create or replace function public.seller_update_product(
   p_subject_label text,p_price numeric,p_pdf_path text,p_preview_path text default null
 )
 returns boolean language plpgsql security definer set search_path=''
-as $
+as $$
 declare
   v_user uuid:=auth.uid();
   v_product public.products%rowtype;
   v_has_orders boolean:=false;
   v_new_id uuid;
 begin
-  if v_user is null or not public.current_user_is_seller() then raise exception 'seller access required' using errcode='42501'; end if;
-  select * into v_product from public.products where id=p_product_id and seller_id=v_user and deleted_at is null for update;
+  if v_user is null or not public.current_user_is_seller() then
+    raise exception 'seller access required' using errcode='42501';
+  end if;
+  select * into v_product from public.products
+  where id=p_product_id and seller_id=v_user and deleted_at is null for update;
   if not found then raise exception 'product not found' using errcode='P0002'; end if;
   if v_product.is_archived then raise exception 'archived products are read only' using errcode='42501'; end if;
-  if v_product.status not in ('pending','rejected','published') then raise exception 'product status cannot be edited' using errcode='42501'; end if;
+  if v_product.status not in ('pending','rejected','published') then
+    raise exception 'product status cannot be edited' using errcode='42501';
+  end if;
   if length(btrim(coalesce(p_title,''))) not between 5 and 120
     or length(btrim(coalesce(p_description,''))) not between 20 and 2000
     or length(btrim(coalesce(p_subject_label,''))) not between 2 and 60
@@ -89,7 +94,50 @@ begin
     or p_price<10 or p_price>5000 or round(p_price,2)<>p_price then
     raise exception 'invalid product details' using errcode='22023';
   end if;
-  if p_pdf_path !~ ('^'||v_user::text||'/[0-9a-f-]{36}/[A-Za-z0-9._-]+\\.pdf
+  if p_pdf_path !~ ('^'||v_user::text||'/[0-9a-f-]{36}/[A-Za-z0-9._-]+\.pdf$')
+    or (p_preview_path is not null and p_preview_path !~ ('^'||v_user::text||'/[0-9a-f-]{36}/[A-Za-z0-9._-]+\.pdf$')) then
+    raise exception 'invalid product file path' using errcode='22023';
+  end if;
+
+  select exists(select 1 from public.orders o where o.product_id=p_product_id) into v_has_orders;
+  if v_product.status='published' then
+    perform set_config('app.seller_product_write','enabled',true);
+    insert into public.products(
+      title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,
+      discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,
+      is_demo,stock_quantity,stock_status,low_stock_threshold,is_archived,created_by,seller_id,status,
+      submitted_at,revision_of
+    ) values(
+      btrim(p_title),p_slug,btrim(p_description),v_product.whats_included,v_product.category_id,
+      p_exam_label,btrim(p_subject_label),v_product.keywords,p_price,v_product.discounted_price,
+      v_product.cover_image,p_pdf_path,p_preview_path,v_product.page_count,v_product.format,v_product.is_free,
+      v_product.is_featured,false,v_product.is_demo,v_product.stock_quantity,v_product.stock_status,
+      v_product.low_stock_threshold,false,v_user,v_user,'pending',now(),p_product_id
+    ) returning id into v_new_id;
+    return true;
+  end if;
+
+  perform set_config('app.seller_product_write','enabled',true);
+  if v_product.status='rejected' then
+    perform set_config('app.marketplace_transition','enabled',true);
+  end if;
+  update public.products set
+    title=btrim(p_title),slug=p_slug,description=btrim(p_description),
+    course_label=p_exam_label,subject_label=btrim(p_subject_label),price=p_price,
+    pdf_file=p_pdf_path,preview_file=p_preview_path,
+    status=case when v_product.status='rejected' then 'pending' else status end,
+    review_feedback=case when v_product.status='rejected' then null else review_feedback end,
+    rejection_reason=case when v_product.status='rejected' then null else rejection_reason end,
+    submitted_at=case when v_product.status='rejected' then now() else submitted_at end,
+    reviewed_at=case when v_product.status='rejected' then null else reviewed_at end,
+    reviewed_by=case when v_product.status='rejected' then null else reviewed_by end,
+    updated_at=now()
+  where id=p_product_id and seller_id=v_user;
+  return v_has_orders;
+end;
+$$;
+revoke all on function public.seller_update_product(uuid,text,text,text,text,text,numeric,text,text) from public,anon;
+grant execute on function public.seller_update_product(uuid,text,text,text,text,text,numeric,text,text) to authenticated;
 
 create table if not exists public.seller_notifications (
   id uuid primary key default gen_random_uuid(),
