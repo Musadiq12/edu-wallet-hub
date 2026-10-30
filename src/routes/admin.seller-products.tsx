@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
@@ -137,7 +138,7 @@ function SellerProductReviewPage() {
       <Card className="overflow-hidden shadow-none">
         <div className="border-b border-border p-3">
           <div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"/><Input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search product or seller name" className="pl-9"/></div>
-          <div className="mt-2 flex items-center gap-2"><span className="text-xs text-muted-foreground">Category</span><select value={categoryFilter} onChange={event=>setCategoryFilter(event.target.value)} className="h-9 flex-1 rounded-md border border-input bg-background px-3 text-sm"><option value="all">All categories</option>{categories.map(value=><option key={value} value={value}>{value}</option>)}</select></div>
+          <div className="mt-2 flex items-center gap-2"><span className="text-xs text-muted-foreground">Category</span><Select value={categoryFilter} onValueChange={setCategoryFilter}><SelectTrigger className="flex-1"><SelectValue placeholder="All categories"/></SelectTrigger><SelectContent><SelectItem value="all">All categories</SelectItem>{categories.map(value=><SelectItem key={value} value={value}>{value}</SelectItem>)}</SelectContent></Select></div>
           <p className="mt-2 text-xs text-muted-foreground">Oldest submissions appear first.</p>
         </div>
         <CardContent className="p-0">
