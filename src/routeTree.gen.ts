@@ -25,6 +25,10 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as BecomeSellerRouteImport } from './routes/become-seller'
 import { Route as SellerAgreementRouteImport } from './routes/seller-agreement'
 import { Route as SellerDashboardRouteImport } from './routes/seller.dashboard'
+import { Route as SellerWalletRouteImport } from './routes/seller.wallet'
+import { Route as AdminSellersRouteImport } from './routes/admin.sellers'
+import { Route as AdminWithdrawalsRouteImport } from './routes/admin.withdrawals'
+import { Route as AdminCommissionRouteImport } from './routes/admin.commission'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminFreeResourcesRouteImport } from './routes/admin.free-resources'
@@ -138,6 +142,10 @@ const SellerDashboardRoute = SellerDashboardRouteImport.update({
   path: '/seller/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SellerWalletRoute = SellerWalletRouteImport.update({ id: '/seller/wallet', path: '/seller/wallet', getParentRoute: () => rootRouteImport } as any)
+const AdminSellersRoute = AdminSellersRouteImport.update({ id: '/sellers', path: '/sellers', getParentRoute: () => AdminRoute } as any)
+const AdminWithdrawalsRoute = AdminWithdrawalsRouteImport.update({ id: '/withdrawals', path: '/withdrawals', getParentRoute: () => AdminRoute } as any)
+const AdminCommissionRoute = AdminCommissionRouteImport.update({ id: '/commission', path: '/commission', getParentRoute: () => AdminRoute } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -692,6 +700,9 @@ interface AdminRouteChildren {
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
   AdminApplicationsRoute: typeof AdminApplicationsRoute
+  AdminSellersRoute: typeof AdminSellersRoute
+  AdminWithdrawalsRoute: typeof AdminWithdrawalsRoute
+  AdminCommissionRoute: typeof AdminCommissionRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminProductsIdRoute: typeof AdminProductsIdRoute
   AdminProductsNewRoute: typeof AdminProductsNewRoute
@@ -708,6 +719,9 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSettingsRoute: AdminSettingsRoute,
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
   AdminApplicationsRoute: AdminApplicationsRoute,
+  AdminSellersRoute: AdminSellersRoute,
+  AdminWithdrawalsRoute: AdminWithdrawalsRoute,
+  AdminCommissionRoute: AdminCommissionRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminProductsIdRoute: AdminProductsIdRoute,
   AdminProductsNewRoute: AdminProductsNewRoute,
@@ -722,6 +736,7 @@ const rootRouteChildren: RootRouteChildren = {
   BecomeSellerRoute: BecomeSellerRoute,
   SellerAgreementRoute: SellerAgreementRoute,
   SellerDashboardRoute: SellerDashboardRoute,
+  SellerWalletRoute: SellerWalletRoute,
   AdminRoute: AdminRouteWithChildren,
   ContactRoute: ContactRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
