@@ -305,9 +305,15 @@ begin
      and current_setting('app.marketplace_transition',true) is distinct from 'enabled' then
     raise exception 'Product status must be changed through the marketplace transition function' using errcode='42501';
   end if;
+  if tg_op='UPDATE' and old.seller_id is not null
+     and new.admin_notes is distinct from old.admin_notes
+     and current_setting('app.marketplace_transition',true) is distinct from 'enabled' then
+    raise exception 'Internal notes can only be changed by marketplace administrators' using errcode='42501';
+  end if;
   if tg_op='UPDATE' and current_setting('app.seller_product_write',true)='enabled'
      and old.seller_id=auth.uid() and public.current_user_is_seller()
-     and new.status is not distinct from old.status then
+     and new.status is not distinct from old.status
+     and new.admin_notes is not distinct from old.admin_notes then
     return new;
   end if;
   if tg_op='INSERT' and new.seller_id is not null and not public.is_admin_staff() then
