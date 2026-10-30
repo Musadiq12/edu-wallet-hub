@@ -171,9 +171,10 @@ grant execute on function public.seller_archive_or_delete_product(uuid) to authe
 -- Permit the RPCs above to change the moderation state only inside the current transaction.
 create or replace function public.guard_marketplace_product_fields()
 returns trigger language plpgsql security invoker set search_path = ''
-as $$
+as $
 begin
-  if current_setting('app.seller_product_write', true) = 'enabled'
+  if tg_op = 'UPDATE'
+     and current_setting('app.seller_product_write', true) = 'enabled'
      and old.seller_id = auth.uid()
      and public.current_user_is_seller() then
     return new;
