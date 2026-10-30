@@ -89,7 +89,7 @@ function SellerWalletPage() {
           ["Marked paid","The admin marks the request Paid after completing the transfer."],
         ].map(([label,detail],i)=><li key={label} className="rounded-xl border border-border bg-muted/30 p-3"><span className="inline-flex size-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">{i+1}</span><p className="mt-2 text-sm font-semibold">{label}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p></li>)}
       </ol>
-      <p className="mt-4 rounded-lg bg-muted/50 p-3 text-xs leading-5 text-muted-foreground">The seven-day hold and ₹500 minimum reserve are controlled independently by EduWallet administrators. Withdrawal payments are manual UPI transfers: submit a request, receive payment within 24 hours, and see it marked Paid after the transfer is completed.</p>
+      <p className="mt-4 rounded-lg bg-muted/50 p-3 text-xs leading-5 text-muted-foreground">The seven-day hold and ₹500 minimum reserve are optional settings controlled independently by EduWallet administrators. They are currently disabled. After you request a withdrawal, EduWallet will transfer the amount to your saved UPI ID within 24 hours and mark it Paid after the transfer is completed.</p>
     </CardContent></Card>
     <div className="grid gap-4 lg:grid-cols-[minmax(0,.9fr)_minmax(0,1.1fr)]">
       <Card className="rounded-2xl shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2 text-base"><Banknote className="size-5"/> Payout UPI ID</CardTitle><p className="text-sm text-muted-foreground">EduWallet uses this saved UPI ID as the destination for manual payouts.</p></CardHeader><CardContent className="space-y-3">
