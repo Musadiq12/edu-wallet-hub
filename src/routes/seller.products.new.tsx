@@ -43,9 +43,9 @@ function NewSellerProduct(){
   if(title.trim().length<5||title.trim().length>120){setError("Title must be 5–120 characters.");return;}
   if(description.trim().length<20||description.trim().length>2000){setError("Description must be 20–2000 characters.");return;}
   if(included.trim().length<5||included.trim().length>2000){setError("Explain what the product includes (5–2,000 characters).");return;}
-  if(!/^[1-9]\\d{0,4}$/.test(pageCount)){setError("Enter the PDF page count (1–99,999).");return;}
+  if(!/^[1-9]\d{0,4}$/.test(pageCount)){setError("Enter the PDF page count (1–99,999).");return;}
   if(!rightsConfirmed){setError("Confirm that you have the right to sell and distribute this material.");return;}
-  if(coverUrl.trim()&&!/^https:\\/\\/drive\\.google\\.com\\/(?:file\\/d\\/[A-Za-z0-9_-]{10,}|open\\?id=[A-Za-z0-9_-]{10,})/i.test(coverUrl.trim())){setError("Enter a share link from Google Drive.");return;}
+  if(coverUrl.trim()&&!/^https:\/\/drive\.google\.com\/(?:file\/d\/[A-Za-z0-9_-]{10,}|open\?id=[A-Za-z0-9_-]{10,})/i.test(coverUrl.trim())){setError("Enter a share link from Google Drive.");return;}
   if(!exams.includes(exam as typeof exams[number])){setError("Choose an exam.");return;}
   if(subject.trim().length<2||subject.trim().length>60){setError("Subject must be 2–60 characters.");return;}
   if(!/^(?:\d{1,4})(?:\.\d{1,2})?$/.test(price)||!Number.isFinite(amount)||amount<10||amount>5000){setError("Enter a price between ₹10 and ₹5,000 with up to 2 decimals.");return;}
