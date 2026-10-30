@@ -138,12 +138,18 @@ export const sellerDashboardData = createServerFn({ method: "POST" })
       if (countError || earnedError || recentError || balanceError) throw new Error("Unable to load seller summary.");
       const orders = recent ?? [];
       const totalEarned = (earnedRows ?? []).reduce((sum,row)=>sum+Number(row.seller_share??0),0);
+      const [{ data: walletSummary, error: walletSummaryError }] = await Promise.all([
+        client.rpc("seller_wallet_summary"),
+      ]);
+      if (walletSummaryError) throw new Error("Unable to load seller wallet summary.");
+      const wallet = (walletSummary ?? {}) as { withdrawable_balance?: number; commission_deducted?: number };
       const totals = (Array.isArray(balance) ? balance[0] : balance) as {pending_balance?:number;available_balance?:number} | null;
       return {
         totalSales: count ?? 0,
         totalEarned,
         pendingBalance: Number(totals?.pending_balance ?? 0),
-        availableBalance: Number(totals?.available_balance ?? 0),
+        availableBalance: Number(wallet.withdrawable_balance ?? totals?.available_balance ?? 0),
+        commissionDeducted: Number(wallet.commission_deducted ?? 0),
         recent: orders.map(row => ({
           id: row.id, created_at: row.created_at, product_title: row.product_title,
           seller_share: Number(row.seller_share ?? 0), refunded: row.refunded,
