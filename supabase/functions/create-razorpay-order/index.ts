@@ -418,14 +418,15 @@ Deno.serve(withSupabase({ auth: "user" }, async (req, ctx) => {
 
   const { data: product, error: productError } = await ctx.supabaseAdmin
     .from("products")
-    .select("id,title,price,discounted_price,is_free,is_active,product_type")
+    .select("id,title,price,discounted_price,is_free,is_active,product_type,seller_id,status")
     .eq("id", body.productId.trim())
     .maybeSingle();
   if (productError) {
     console.error("Razorpay product lookup failed:", productError);
     return json(req, { error: "Could not load this product." }, 500);
   }
-  if (!product || !product.is_active || product.is_free || !["pdf", "physical"].includes(product.product_type)) {
+  if (!product || !product.is_active || product.is_free || !["pdf", "physical"].includes(product.product_type) ||
+      (product.seller_id && product.status !== "published")) {
     return json(req, { error: "This product is unavailable for purchase." }, 404);
   }
 
