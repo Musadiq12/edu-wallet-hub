@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import {
-  BarChart3, BookOpen, FileText, Gift, Globe2, HelpCircle, Layers3,
+  BadgeCheck, BarChart3, BookOpen, FileText, Gift, Globe2, HelpCircle, Layers3,
   Menu, RotateCcw, Search, Shield, Target, UserPlus, Users, X, ChevronRight, ChevronDown, LogOut, Store,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -182,6 +182,7 @@ export function SiteHeader() {
             {user ? (
               <>
                 <Button variant="ghost" size="sm" asChild><Link to="/library">My Library</Link></Button>
+                {marketplaceRole === "seller" && !isAdmin && <Button variant="outline" size="sm" asChild><Link to="/seller/dashboard"><Store className="mr-1.5 size-4" />Seller Dashboard</Link></Button>}
                 {(marketplaceRole === "buyer" || marketplaceRole === null) && !isAdmin && <Button variant="outline" size="sm" asChild><Link to="/become-seller"><Store className="mr-1.5 size-4" />Become a Seller</Link></Button>}
                 {isAdmin && <Button variant="ghost" size="sm" asChild><Link to="/admin">Admin</Link></Button>}
                 <Button variant="outline" size="sm" onClick={() => void signOutCleanly()}>Logout</Button>
@@ -303,6 +304,7 @@ export function SiteHeader() {
             <div className="mx-auto flex w-full max-w-lg flex-col gap-2">
               {user ? (
                 <>
+                  {marketplaceRole === "seller" && !isAdmin && <Link to="/seller/dashboard" onClick={closeMenu} className="flex min-h-12 items-center justify-between rounded-md px-3 py-3 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-500/10 dark:text-emerald-300"><span className="flex items-center gap-2"><BadgeCheck aria-hidden="true" className="size-4" />Seller Dashboard</span><ChevronRight aria-hidden="true" className="size-4" /></Link>}
                   {(marketplaceRole === "buyer" || marketplaceRole === null) && !isAdmin && <Link to="/become-seller" onClick={closeMenu} className="flex min-h-12 items-center justify-between rounded-md px-3 py-3 text-sm font-medium text-primary transition-colors hover:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"><span className="flex items-center gap-2"><Store aria-hidden="true" className="size-4" />Become a Seller</span><ChevronRight aria-hidden="true" className="size-4" /></Link>}
                   {isAdmin && <Link to="/admin" onClick={closeMenu} className="flex min-h-12 items-center justify-between rounded-md px-3 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset">Admin <ChevronRight aria-hidden="true" className="size-4" /></Link>}
                   <Button className="min-h-12 w-full justify-center border border-red-200 bg-[#FEE2E2] px-4 text-red-900 shadow-none hover:bg-[#FECACA] hover:text-red-950 focus-visible:ring-2 focus-visible:ring-red-700 focus-visible:ring-offset-2 dark:border-red-900 dark:bg-red-950 dark:text-red-100 dark:hover:bg-red-900" onClick={() => { closeMenu(); void signOutCleanly(); }}>

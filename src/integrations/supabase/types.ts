@@ -1268,6 +1268,7 @@ export type Database = {
           stock_status: string
           low_stock_threshold: number | null
           product_type: string
+          review_feedback: string | null
           slug: string
           subject_id: string | null
           subject_label: string | null
@@ -1301,6 +1302,7 @@ export type Database = {
           stock_status?: string
           low_stock_threshold?: number | null
           product_type?: string
+          review_feedback?: string | null
           slug: string
           subject_id?: string | null
           subject_label?: string | null
@@ -1786,6 +1788,18 @@ export type Database = {
       }
     }
     Views: {
+      seller_sales: {
+        Row: {
+          id: string
+          created_at: string
+          product_title: string
+          seller_share: number | null
+          available_on: string | null
+          refunded: boolean
+          buyer_first_name: string
+        }
+        Relationships: []
+      }
       my_library: {
         Row: {
           amount: number | null
@@ -1845,6 +1859,17 @@ export type Database = {
         Returns: boolean
       }
       is_admin_staff: { Args: never; Returns: boolean }
+      current_user_is_seller: { Args: never; Returns: boolean }
+      seller_create_product: {
+        Args: { p_title: string; p_slug: string; p_description: string; p_exam_label: string; p_subject_label: string; p_price: number; p_pdf_path: string; p_preview_path?: string | null }
+        Returns: string
+      }
+      seller_update_product: {
+        Args: { p_product_id: string; p_title: string; p_slug: string; p_description: string; p_exam_label: string; p_subject_label: string; p_price: number; p_pdf_path: string; p_preview_path?: string | null }
+        Returns: boolean
+      }
+      seller_archive_or_delete_product: { Args: { p_product_id: string }; Returns: string }
+      seller_balance: { Args: { p_seller_id: string }; Returns: { pending_balance: number; available_balance: number }[] }
       strip_html_tags: { Args: { input: string }; Returns: string }
     }
     Enums: {
