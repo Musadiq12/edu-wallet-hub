@@ -218,8 +218,8 @@ begin
 end;
 $$;
 
--- Orders are not selected from the broad orders table by seller clients. This projection
--- contains only display-safe columns and relies on invoker RLS plus a live seller predicate.
+-- Orders are not selected from the broad orders table by seller clients. The restricted
+-- view exposes only seller-safe columns and scopes by the request's signed-in seller identity.
 create or replace view public.seller_sales with (security_barrier=true) as
 select
   o.id, o.created_at, o.product_title, o.seller_share, o.available_on, o.refunded,
