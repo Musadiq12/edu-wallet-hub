@@ -102,16 +102,16 @@ export const sellerDashboardData = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { userId, client } = await requireSeller(data.accessToken);
-      const [{ count, error: countError }, { data: recent, error: recentError }, { data: balance, error: balanceError }] = await Promise.all([
+      const [{ count, error: countError }, { data: earnedRows, error: earnedError }, { data: recent, error: recentError }, { data: balance, error: balanceError }] = await Promise.all([
         client.from("orders").select("id", { count: "exact", head: true }).eq("seller_id", userId).eq("refunded", false).not("seller_share", "is", null),
+        client.from("orders").select("seller_share").eq("seller_id", userId).eq("refunded", false).not("seller_share", "is", null),
         client.from("orders").select("id,created_at,product_title,seller_share,available_on,refunded")
           .eq("seller_id", userId).not("seller_share", "is", null).order("created_at", { ascending: false }).limit(5),
         client.rpc("seller_balance", { p_seller_id: userId }),
       ]);
-      if (countError || recentError || balanceError) throw new Error("Unable to load seller summary.");
+      if (countError || earnedError || recentError || balanceError) throw new Error("Unable to load seller summary.");
       const orders = recent ?? [];
-      const totalEarned = orders.length ? (await client.from("orders").select("seller_share")
-        .eq("seller_id",userId).eq("refunded",false).not("seller_share","is",null)).data?.reduce((sum,row)=>sum+Number(row.seller_share??0),0) ?? 0 : 0;
+      const totalEarned = (earnedRows ?? []).reduce((sum,row)=>sum+Number(row.seller_share??0),0);
       const totals = (Array.isArray(balance) ? balance[0] : balance) as {pending_balance?:number;available_balance?:number} | null;
       return {
         totalSales: count ?? 0,
@@ -245,7 +245,7 @@ export const sellerSalesData = createServerFn({method:"POST"})
       const from=(data.page-1)*20, to=from+19;
       const {data:rows,error,count}=await client.from("seller_sales")
         .select("id,created_at,product_title,seller_share,available_on,refunded,buyer_first_name",{count:"exact"})
-        .eq("seller_id",userId).order("created_at",{ascending:false}).range(from,to);
+        .order("created_at",{ascending:false}).range(from,to);
       if(error) throw error;
       return {rows:rows??[],total:count??0};
     }catch(error){throw new Error(safeMessage(error,"Could not load seller sales."));}
