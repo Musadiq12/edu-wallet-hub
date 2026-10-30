@@ -240,7 +240,8 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
       await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? data.pdfPath : null, data.previewPath !== existing.preview_file ? data.previewPath : null]);
       throw new Error(safeMessage(error,"Could not update this product."));
     }
-    // Preserve previous files while orders may reference them through the buyer library.
+    // The new private file references are committed; remove replaced objects only now.
+    await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? existing.pdf_file : null, data.previewPath !== existing.preview_file ? existing.preview_file : null]);
     return {ok:true};
   });
 
