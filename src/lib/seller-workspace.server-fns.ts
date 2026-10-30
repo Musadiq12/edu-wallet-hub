@@ -137,7 +137,7 @@ export const sellerListProducts = createServerFn({ method: "POST" })
   .handler(async ({data}) => {
     try {
       const {userId,client}=await requireSeller(data.accessToken);
-      let query=client.from("products").select("id,title,slug,course_label,subject_label,price,description,pdf_file,preview_file,status,is_archived,is_active,created_at")
+      let query=client.from("products").select("id,title,slug,course_label,subject_label,price,description,pdf_file,preview_file,status,is_archived,is_active,review_feedback,created_at")
         .eq("seller_id",userId).order("created_at",{ascending:false});
       if(data.status!=="all") query=query.eq("status",data.status);
       const {data:rows,error}=await query;
