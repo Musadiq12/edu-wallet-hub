@@ -228,8 +228,8 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
   })
   .handler(async({data})=>{
     const context=await requireSeller(data.accessToken);
-    const {data:existing,error:readError}=await context.client.from("products").select("pdf_file,preview_file")
-      .eq("id",data.id).eq("seller_id",context.userId).maybeSingle();
+    const {data:existing,error:readError}=await context.client.from("products").select("pdf_file,preview_file,status")
+      .eq("id",data.id).eq("seller_id",context.userId).is("deleted_at",null).maybeSingle();
     if(readError || !existing) throw new Error("This product could not be found.");
     await verifyStoredPdf(context,data.pdfPath,20*1024*1024);
     if(data.previewPath) await verifyStoredPdf(context,data.previewPath,5*1024*1024);
