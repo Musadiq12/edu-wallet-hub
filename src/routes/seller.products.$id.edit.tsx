@@ -19,7 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route=createFileRoute("/seller/products/$id/edit")({component:EditSellerProduct});
 const exams=["NEET","JEE","UPSC","SSC","CGL","CLAT","CA","Other"] as const;
-type Product={id:string;title:string;description:string;course_label:string;subject_label:string;price:number;pdf_file:string;preview_file:string|null;status:string;is_archived:boolean;rejection_reason?:string|null;review_feedback?:string|null};
+type Product={id:string;title:string;description:string;course_label:string;subject_label:string;price:number;pdf_file:string;preview_file:string|null;status:string;is_archived:boolean;seller_cover_source_url?:string|null;rejection_reason?:string|null;review_feedback?:string|null};
 type Kind="pdf"|"preview";
 const MAX_PDF=20*1024*1024,MAX_PREVIEW=5*1024*1024;
 function EditSellerProduct(){
@@ -34,7 +34,7 @@ function EditSellerProduct(){
 }
 function ProductEditForm({product}:{product:Product}){
  const navigate=useNavigate(),qc=useQueryClient(),lock=useRef(false);
- const [title,setTitle]=useState(product.title),[description,setDescription]=useState(product.description??""),[exam,setExam]=useState(product.course_label??"Other"),[subject,setSubject]=useState(product.subject_label??""),[price,setPrice]=useState(String(product.price??""));
+ const [title,setTitle]=useState(product.title),[description,setDescription]=useState(product.description??""),[exam,setExam]=useState(product.course_label??"Other"),[subject,setSubject]=useState(product.subject_label??""),[price,setPrice]=useState(String(product.price??"")),[coverSourceUrl,setCoverSourceUrl]=useState(product.seller_cover_source_url??"");
  const [pdf,setPdf]=useState<File|null>(null),[preview,setPreview]=useState<File|null>(null),[removePreview,setRemovePreview]=useState(false);
  const [busy,setBusy]=useState(false),[error,setError]=useState(""),[confirm,setConfirm]=useState(false);
  const [mainPath,setMainPath]=useState(product.pdf_file),[previewPath,setPreviewPath]=useState<string|null>(product.preview_file??null);
@@ -69,7 +69,7 @@ function ProductEditForm({product}:{product:Product}){
    if(preview)newPreview=await upload(preview,"preview",token);
    const nextPdf=newMain??mainPath;
    const nextPreview=newPreview??(removePreview?null:previewPath);
-   await sellerSaveProductEdit({data:{accessToken:token,id:product.id,title:title.trim(),description:description.trim(),exam,subject:subject.trim(),price:amount,pdfPath:nextPdf,previewPath:nextPreview}});
+   await sellerSaveProductEdit({data:{accessToken:token,id:product.id,title:title.trim(),description:description.trim(),exam,subject:subject.trim(),price:amount,pdfPath:nextPdf,previewPath:nextPreview,coverSourceUrl:coverSourceUrl.trim()||null}});
    newMain=null;newPreview=null;
    await qc.invalidateQueries({queryKey:["seller","products"]});await qc.invalidateQueries({queryKey:["seller","product",product.id]});
    toast.success(approved?"Changes submitted as a new review revision.":"Product resubmitted for review.");void navigate({to:"/seller/products",replace:true});
@@ -86,7 +86,7 @@ function ProductEditForm({product}:{product:Product}){
    <div className="space-y-2"><Label htmlFor="edit-description">Description</Label><Textarea id="edit-description" rows={5} value={description} maxLength={2000} onChange={e=>setDescription(e.target.value)} required/></div>
    <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Exam</Label><Select value={exam} onValueChange={setExam}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{exams.map(x=><SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="edit-subject">Subject</Label><Input id="edit-subject" value={subject} maxLength={60} onChange={e=>setSubject(e.target.value)} required/></div></div>
    <div className="space-y-2"><Label htmlFor="edit-price">Price (INR ₹)</Label><Input id="edit-price" type="number" min="10" max="5000" step="0.01" value={price} onChange={e=>setPrice(e.target.value)} required/></div>
-   <div className="space-y-2"><Label htmlFor="edit-pdf">Replace notes PDF (optional)</Label><label htmlFor="edit-pdf" className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-border p-4"><UploadCloud className="size-5"/><span className="min-w-0 text-sm">{pdf?.name??"Choose a new PDF (max 20 MB)"}</span></label><input id="edit-pdf" type="file" accept="application/pdf,.pdf" className="sr-only" onChange={e=>pick(e.target.files?.[0]??null,"pdf")}/><p className="text-xs text-muted-foreground">Current file: {product.pdf_file?.split("/").pop()}</p></div>
+   <div className="space-y-2"><Label htmlFor="edit-cover-source">Google Drive cover image link (optional)</Label><Input id="edit-cover-source" type="url" value={coverSourceUrl} onChange={e=>setCoverSourceUrl(e.target.value)} placeholder="https://drive.google.com/file/d/…/view"/><p className="text-xs text-muted-foreground">An administrator will review the link and upload the final cover image.</p></div>\n   <div className="space-y-2"><Label htmlFor="edit-pdf">Replace notes PDF (optional)</Label><label htmlFor="edit-pdf" className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-border p-4"><UploadCloud className="size-5"/><span className="min-w-0 text-sm">{pdf?.name??"Choose a new PDF (max 20 MB)"}</span></label><input id="edit-pdf" type="file" accept="application/pdf,.pdf" className="sr-only" onChange={e=>pick(e.target.files?.[0]??null,"pdf")}/><p className="text-xs text-muted-foreground">Current file: {product.pdf_file?.split("/").pop()}</p></div>
    <div className="space-y-2"><Label htmlFor="edit-preview">Preview PDF (optional)</Label><Input id="edit-preview" type="file" accept="application/pdf,.pdf" onChange={e=>pick(e.target.files?.[0]??null,"preview")}/>{preview&&<p className="text-xs text-muted-foreground">{preview.name}</p>}{previewPath&&!removePreview&&<button type="button" className="text-xs text-destructive underline" onClick={()=>setRemovePreview(true)}>Remove current preview</button>}</div>
    {error&&<p role="alert" className="rounded-lg bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
    <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end"><Button variant="outline" asChild disabled={busy}><Link to="/seller/products">Cancel</Link></Button><Button type="submit" disabled={busy}>{busy&&<Loader2 className="size-4 animate-spin"/>}{busy?"Saving…":"Save changes"}</Button></div>
