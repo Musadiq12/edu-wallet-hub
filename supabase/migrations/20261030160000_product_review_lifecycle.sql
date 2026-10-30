@@ -80,7 +80,7 @@ begin
     raise exception 'seller access required' using errcode='42501';
   end if;
   select * into v_product from public.products
-  where id=p_product_id and seller_id=v_user and deleted_at is null for update;
+    where id=p_product_id and seller_id=v_user and deleted_at is null for update;
   if not found then raise exception 'product not found' using errcode='P0002'; end if;
   if v_product.is_archived then raise exception 'archived products are read only' using errcode='42501'; end if;
   if v_product.status not in ('pending','rejected','published') then
@@ -93,7 +93,8 @@ begin
     or p_price<10 or p_price>5000 or round(p_price,2)<>p_price then
     raise exception 'invalid product details' using errcode='22023';
   end if;
-  if p_pdf_path !~ ('^'||v_user::text||'/[0-9a-f-]{36}/[A-Za-z0-9._-]+[.]pdf
+  if p_pdf_path !~ ('^'||v_user::text||'/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+[.]pdf$')
+    or (p_preview_path is not null and p_preview_path !~ ('^'||v_user::text||'/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+[.]pdf$')) then
     raise exception 'invalid product file path' using errcode='22023';
   end if;
 
