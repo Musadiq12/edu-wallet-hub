@@ -24,7 +24,7 @@ export const Route = createFileRoute("/sitemap.xml")({
 
         const sb = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
         const [{ data: products, error: productError }, { data: posts, error: blogError }] = await Promise.all([
-          sb.from("products").select("slug,updated_at").eq("is_active", true).eq("is_archived", false).eq("is_demo", false).or("seller_id.is.null,and(status.eq.published,revision_of.is.null,deleted_at.is.null)").range(0, 4999),
+          sb.from("products").select("slug,updated_at").eq("is_active", true).eq("is_archived", false).eq("is_demo", false).or("and(seller_id.is.null),and(status.eq.published,revision_of.is.null,deleted_at.is.null)").range(0, 4999),
           sb.from("blog_posts").select("slug,updated_at").eq("status", "published").range(0, 4999),
         ]);
         if (productError || blogError) return new Response("Sitemap unavailable", { status: 500 });
