@@ -317,7 +317,7 @@ $$;
 -- Immutable ledger: record first sale credit/fee and a compensating event for refunds.
 create or replace function public.append_seller_sale_ledger()
 returns trigger language plpgsql security definer set search_path = ''
-as $
+as $$
 begin
   if tg_op='INSERT' and new.seller_id is not null and new.seller_share is not null then
     insert into public.seller_ledger(seller_id,order_id,entry_type,amount,description)
@@ -358,7 +358,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 
 drop trigger if exists sync_seller_order_accounting on public.orders;
 create trigger sync_seller_order_accounting
