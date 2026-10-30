@@ -131,8 +131,8 @@ export const sellerDashboardData = createServerFn({ method: "POST" })
       const [{ count, error: countError }, { data: earnedRows, error: earnedError }, { data: recent, error: recentError }, { data: balance, error: balanceError }] = await Promise.all([
         client.from("orders").select("id", { count: "exact", head: true }).eq("seller_id", userId).eq("refunded", false).not("seller_share", "is", null),
         client.from("orders").select("seller_share").eq("seller_id", userId).eq("refunded", false).not("seller_share", "is", null),
-        client.from("orders").select("id,created_at,product_title,seller_share,available_on,refunded")
-          .eq("seller_id", userId).not("seller_share", "is", null).order("created_at", { ascending: false }).limit(5),
+        client.from("seller_sales").select("id,created_at,product_title,seller_share,commission_amount,commission_rate,available_on,refunded")
+          .order("created_at", { ascending: false }).limit(5),
         client.rpc("seller_balance", { p_seller_id: userId }),
       ]);
       if (countError || earnedError || recentError || balanceError) throw new Error("Unable to load seller summary.");
@@ -147,6 +147,7 @@ export const sellerDashboardData = createServerFn({ method: "POST" })
         recent: orders.map(row => ({
           id: row.id, created_at: row.created_at, product_title: row.product_title,
           seller_share: Number(row.seller_share ?? 0), refunded: row.refunded,
+          commission_amount: Number(row.commission_amount ?? 0), commission_rate: Number(row.commission_rate ?? 0),
           available_on: row.available_on,
         })),
       };
