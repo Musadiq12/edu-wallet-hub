@@ -30,6 +30,7 @@ import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminFreeResourcesRouteImport } from './routes/admin.free-resources'
 import { Route as AdminMessagesRouteImport } from './routes/admin.messages'
 import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
+import { Route as AdminSellerProductsRouteImport } from './routes/admin.seller-products'
 import { Route as AdminOrdersRouteImport } from './routes/admin.orders'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminAnnouncementsRouteImport } from './routes/admin.announcements'
@@ -160,6 +161,11 @@ const AdminMessagesRoute = AdminMessagesRouteImport.update({
 const AdminReviewsRoute = AdminReviewsRouteImport.update({
   id: '/reviews',
   path: '/reviews',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSellerProductsRoute = AdminSellerProductsRouteImport.update({
+  id: '/seller-products',
+  path: '/seller-products',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminOrdersRoute = AdminOrdersRouteImport.update({
@@ -592,6 +598,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReviewsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/seller-products': {
+      id: '/admin/seller-products'
+      path: '/seller-products'
+      fullPath: '/admin/seller-products'
+      preLoaderRoute: typeof AdminSellerProductsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/messages': {
       id: '/admin/messages'
       path: '/messages'
@@ -663,6 +676,7 @@ interface AdminRouteChildren {
   AdminFreeResourcesRoute: typeof AdminFreeResourcesRoute
   AdminMessagesRoute: typeof AdminMessagesRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
+  AdminSellerProductsRoute: typeof AdminSellerProductsRoute
   AdminOrdersRoute: typeof AdminOrdersRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminAnnouncementsRoute: typeof AdminAnnouncementsRoute
@@ -678,6 +692,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminFreeResourcesRoute: AdminFreeResourcesRoute,
   AdminMessagesRoute: AdminMessagesRoute,
   AdminReviewsRoute: AdminReviewsRoute,
+  AdminSellerProductsRoute: AdminSellerProductsRoute,
   AdminOrdersRoute: AdminOrdersRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminAnnouncementsRoute: AdminAnnouncementsRoute,
