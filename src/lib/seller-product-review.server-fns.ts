@@ -30,8 +30,13 @@ async function requireAdmin(accessToken: string) {
     throw new Error("Please sign in to continue.");
   }
   const adminClient = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: profile, error: profileError } = await adminClient.from("profiles").select("role").eq("id", userId).maybeSingle();
-  if (profileError || profile?.role !== "admin") throw new Error("Administrator access required.");
+  const [{ data: adminUser, error: adminUserError }, { data: adminRole, error: adminRoleError }] = await Promise.all([
+    adminClient.from("admin_users").select("user_id").eq("user_id", userId).eq("is_active", true).maybeSingle(),
+    adminClient.from("user_roles").select("user_id").eq("user_id", userId).eq("role", "admin").maybeSingle(),
+  ]);
+  if (adminUserError || adminRoleError || (!adminUser && !adminRole)) {
+    throw new Error("Administrator access required.");
+  }
   return adminClient;
 }
 
