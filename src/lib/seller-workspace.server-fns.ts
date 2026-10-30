@@ -245,6 +245,29 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
     return {ok:true};
   });
 
+export const sellerNotifications = createServerFn({method:"POST"})
+  .validator((input:{accessToken:string})=>({accessToken:z.string().min(1).parse(input.accessToken)}))
+  .handler(async({data})=>{
+    const {userId,client}=await requireSeller(data.accessToken);
+    const {data:rows,error}=await client.from("seller_notifications")
+      .select("id,product_id,event_type,title,message,target_url,read_at,created_at")
+      .eq("seller_id",userId).order("created_at",{ascending:false}).limit(30);
+    if(error) throw new Error("Could not load seller notifications.");
+    return rows??[];
+  });
+
+export const markSellerNotificationRead = createServerFn({method:"POST"})
+  .validator((input:{accessToken:string;id:string})=>({
+    accessToken:z.string().min(1).parse(input.accessToken),id:productIdSchema.parse(input.id),
+  }))
+  .handler(async({data})=>{
+    const {userId,client}=await requireSeller(data.accessToken);
+    const {error}=await client.from("seller_notifications").update({read_at:new Date().toISOString()})
+      .eq("id",data.id).eq("seller_id",userId);
+    if(error) throw new Error("Could not update notification.");
+    return {ok:true};
+  });
+
 export const sellerSalesData = createServerFn({method:"POST"})
   .validator((input:{accessToken:string;page:number})=>({
     accessToken:z.string().min(1).parse(input.accessToken),page:pageSchema.parse(input.page),
