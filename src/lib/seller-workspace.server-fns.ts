@@ -22,6 +22,7 @@ const productInputSchema = z.object({
   price: z.number().finite().min(10).max(5000).refine(v => Math.round(v*100) === v*100),
   pdfPath: z.string().min(1).max(500),
   previewPath: z.string().max(500).nullable().optional(),
+  coverSourceUrl: z.string().trim().max(1000).url().nullable().optional(),
 });
 const listStatusSchema = z.enum(["pending","published","rejected","unpublished","all"]);
 const pageSchema = z.number().int().min(1).max(100000);
@@ -160,7 +161,7 @@ export const sellerGetProduct = createServerFn({method:"POST"})
     try {
       const {userId,client}=await requireSeller(data.accessToken);
       const {data:row,error}=await client.from("products")
-        .select("id,title,slug,description,course_label,subject_label,price,pdf_file,preview_file,status,is_archived,is_active,created_at,rejection_reason,review_feedback")
+        .select("id,title,slug,description,course_label,subject_label,price,pdf_file,preview_file,seller_cover_source_url,status,is_archived,is_active,created_at,rejection_reason,review_feedback")
         .eq("id",data.id).eq("seller_id",userId).is("deleted_at",null).maybeSingle();
       if(error || !row) throw new Error("product not found");
       return row;
@@ -168,7 +169,7 @@ export const sellerGetProduct = createServerFn({method:"POST"})
   });
 
 export const sellerCreateProduct = createServerFn({method:"POST"})
-  .validator((input:{accessToken:string;title:string;description:string;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null}) => {
+  .validator((input:{accessToken:string;title:string;description:string;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null;coverSourceUrl?:string|null}) => {
     const parsed=productInputSchema.parse(input);
     return { ...parsed, accessToken:z.string().min(1).parse(input.accessToken) };
   })
@@ -222,7 +223,7 @@ export const sellerDeleteProduct = createServerFn({method:"POST"})
   });
 
 export const sellerSaveProductEdit = createServerFn({method:"POST"})
-  .validator((input:{accessToken:string;id:string;title:string;description:string;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null})=>{
+  .validator((input:{accessToken:string;id:string;title:string;description:string;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null;coverSourceUrl?:string|null})=>{
     const parsed=productInputSchema.parse(input);
     return {...parsed,accessToken:z.string().min(1).parse(input.accessToken),id:productIdSchema.parse(input.id)};
   })
