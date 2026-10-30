@@ -63,8 +63,8 @@ begin
      or p_price is null or p_price<10 or p_price>5000 or round(p_price,2)<>p_price then
     raise exception 'invalid product details' using errcode='22023';
   end if;
-  if p_pdf_path !~ ('^'||v_user::text||'/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+_[A-Za-z0-9_-]+[.]pdf$')
-     or (p_preview_path is not null and p_preview_path !~ ('^'||v_user::text||'/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+_[A-Za-z0-9_-]+[.]pdf$')) then
+  if p_pdf_path !~ ('^'||v_user::text||'/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+[.]pdf$')
+     or (p_preview_path is not null and p_preview_path !~ ('^'||v_user::text||'/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+[.]pdf$')) then
     raise exception 'invalid product file path' using errcode='22023';
   end if;
   insert into public.products(title,slug,description,course_label,subject_label,price,pdf_file,preview_file,product_type,format,is_free,is_active,is_archived,is_demo,is_featured,created_by,seller_id,status,submitted_at)
@@ -94,8 +94,8 @@ begin
      or p_price is null or p_price<10 or p_price>5000 or round(p_price,2)<>p_price then
     raise exception 'invalid product details' using errcode='22023';
   end if;
-  if p_pdf_path !~ ('^'||v_user::text||'/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+_[A-Za-z0-9_-]+[.]pdf$')
-     or (p_preview_path is not null and p_preview_path !~ ('^'||v_user::text||'/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+_[A-Za-z0-9_-]+[.]pdf$')) then
+  if p_pdf_path !~ ('^'||v_user::text||'/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+[.]pdf$')
+     or (p_preview_path is not null and p_preview_path !~ ('^'||v_user::text||'/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+[.]pdf$')) then
     raise exception 'invalid product file path' using errcode='22023';
   end if;
   select exists(select 1 from public.orders where product_id=p_product_id) into v_has_orders;
