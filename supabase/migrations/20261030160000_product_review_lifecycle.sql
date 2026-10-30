@@ -55,6 +55,7 @@ with check (seller_id=(select auth.uid()) and public.current_user_is_seller());
 revoke all on public.seller_notifications from anon,authenticated;
 grant select on public.seller_notifications to authenticated;
 grant update(read_at) on public.seller_notifications to authenticated;
+grant insert,update,delete on public.seller_notifications to service_role;
 create index if not exists seller_notifications_unread_idx
   on public.seller_notifications(seller_id,created_at desc) where read_at is null;
 
@@ -324,7 +325,7 @@ end;
 $function$;
 drop trigger if exists guard_marketplace_product_fields on public.products;
 create trigger guard_marketplace_product_fields
-before insert or update of seller_id,status on public.products
+before insert or update of seller_id,status,admin_notes on public.products
 for each row execute function public.guard_marketplace_product_fields();
 
 drop policy if exists marketplace_public_read_approved_products on public.products;
