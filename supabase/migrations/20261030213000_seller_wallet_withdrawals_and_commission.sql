@@ -452,8 +452,7 @@ begin
   from public.seller_applications a
   join public.profiles p on p.id=a.user_id
   left join order_totals ot on ot.seller_id=a.user_id
-  left join withdrawal_totals wt on wt.seller_id=a.user_id
-  where a.status='approved';
+  left join withdrawal_totals wt on wt.seller_id=a.user_id;
 end;
 $$;
 revoke all on function public.admin_seller_wallets() from public, anon;
