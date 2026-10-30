@@ -30,6 +30,7 @@ async function requireFinanceAdmin(accessToken: string) {
     adminClient.from("user_roles").select("user_id").eq("user_id",userId).eq("role","admin").maybeSingle(),
   ]);
   if(adminUserError||adminRoleError||(!adminUser&&!adminRole)) throw new Error("Administrator access required.");
+  // Use the user's JWT-bound client so SECURITY DEFINER RPCs still evaluate auth.uid().
   return userClient;
 }
 
