@@ -27,6 +27,7 @@ import { Route as SellerAgreementRouteImport } from './routes/seller-agreement'
 import { Route as SellerDashboardRouteImport } from './routes/seller.dashboard'
 import { Route as SellerWalletRouteImport } from './routes/seller.wallet'
 import { Route as AdminSellersRouteImport } from './routes/admin.sellers'
+import { Route as AdminSellerDetailRouteImport } from './routes/admin.sellers.$sellerId'
 import { Route as AdminWithdrawalsRouteImport } from './routes/admin.withdrawals'
 import { Route as AdminCommissionRouteImport } from './routes/admin.commission'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -144,6 +145,7 @@ const SellerDashboardRoute = SellerDashboardRouteImport.update({
 } as any)
 const SellerWalletRoute = SellerWalletRouteImport.update({ id: '/seller/wallet', path: '/seller/wallet', getParentRoute: () => rootRouteImport } as any)
 const AdminSellersRoute = AdminSellersRouteImport.update({ id: '/sellers', path: '/sellers', getParentRoute: () => AdminRoute } as any)
+const AdminSellerDetailRoute = AdminSellerDetailRouteImport.update({ id: '/sellers/$sellerId', path: '/sellers/$sellerId', getParentRoute: () => AdminRoute } as any)
 const AdminWithdrawalsRoute = AdminWithdrawalsRouteImport.update({ id: '/withdrawals', path: '/withdrawals', getParentRoute: () => AdminRoute } as any)
 const AdminCommissionRoute = AdminCommissionRouteImport.update({ id: '/commission', path: '/commission', getParentRoute: () => AdminRoute } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -218,6 +220,7 @@ const AdminProductsNewRoute = AdminProductsNewRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/admin/sellers/$sellerId': typeof AdminSellerDetailRoute
   '/seller/wallet': typeof SellerWalletRoute
   '/admin/sellers': typeof AdminSellersRoute
   '/admin/withdrawals': typeof AdminWithdrawalsRoute
@@ -258,6 +261,7 @@ export interface FileRoutesByFullPath {
   '/admin/products/': typeof AdminProductsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/admin/sellers/$sellerId': typeof AdminSellerDetailRoute
   '/seller/wallet': typeof SellerWalletRoute
   '/admin/sellers': typeof AdminSellersRoute
   '/admin/withdrawals': typeof AdminWithdrawalsRoute
@@ -296,6 +300,7 @@ export interface FileRoutesByTo {
   '/admin/products': typeof AdminProductsIndexRoute
 }
 export interface FileRoutesById {
+  '/admin/sellers/$sellerId': typeof AdminSellerDetailRoute
   '/seller/wallet': typeof SellerWalletRoute
   '/admin/sellers': typeof AdminSellersRoute
   '/admin/withdrawals': typeof AdminWithdrawalsRoute
@@ -583,6 +588,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CookiesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/sellers/$sellerId': {
+      id: '/admin/sellers/$sellerId'
+      path: '/sellers/$sellerId'
+      fullPath: '/admin/sellers/$sellerId'
+      preLoaderRoute: typeof AdminSellerDetailRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/announcements': {
       id: '/admin/announcements'
       path: '/announcements'
@@ -623,13 +635,6 @@ declare module '@tanstack/react-router' {
       path: '/reviews'
       fullPath: '/admin/reviews'
       preLoaderRoute: typeof AdminReviewsRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/seller-products': {
-      id: '/admin/seller-products'
-      path: '/seller-products'
-      fullPath: '/admin/seller-products'
-      preLoaderRoute: typeof AdminSellerProductsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/seller-products': {
@@ -706,6 +711,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminRouteChildren {
+  AdminSellerDetailRoute: typeof AdminSellerDetailRoute
   AdminSellersRoute: typeof AdminSellersRoute
   AdminWithdrawalsRoute: typeof AdminWithdrawalsRoute
   AdminCommissionRoute: typeof AdminCommissionRoute
@@ -729,6 +735,7 @@ interface AdminRouteChildren {
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
+  AdminSellerDetailRoute: AdminSellerDetailRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminFreeResourcesRoute: AdminFreeResourcesRoute,
   AdminMessagesRoute: AdminMessagesRoute,
@@ -767,8 +774,6 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
-  BecomeSellerRoute: BecomeSellerRoute,
-  SellerAgreementRoute: SellerAgreementRoute,
   CookiesRoute: CookiesRoute,
   CheckoutSlugRoute: CheckoutSlugRoute,
   ShopSlugRoute: ShopSlugRoute,
