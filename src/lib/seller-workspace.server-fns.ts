@@ -228,6 +228,9 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
     const {data:existing,error:readError}=await context.client.from("products").select("pdf_file,preview_file")
       .eq("id",data.id).eq("seller_id",context.userId).maybeSingle();
     if(readError || !existing) throw new Error("This product could not be found.");
+    const {count:orderCount,error:orderCountError}=await context.client.from("seller_sales")
+      .select("id",{count:"exact",head:true}).eq("product_title",data.title);
+    if(orderCountError) throw new Error("Could not verify the product's order history.");
     await verifyStoredPdf(context,data.pdfPath,20*1024*1024);
     if(data.previewPath) await verifyStoredPdf(context,data.previewPath,5*1024*1024);
     const {error}=await context.client.rpc("seller_update_product",{
@@ -240,8 +243,8 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
       await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? data.pdfPath : null, data.previewPath !== existing.preview_file ? data.previewPath : null]);
       throw new Error(safeMessage(error,"Could not update this product."));
     }
-    // The new private file references are committed; remove replaced objects only now.
-    await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? existing.pdf_file : null, data.previewPath !== existing.preview_file ? existing.preview_file : null]);
+    // Preserve previously purchased files. With no order history, replaced objects can be removed.
+    if(!orderCount) await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? existing.pdf_file : null, data.previewPath !== existing.preview_file ? existing.preview_file : null]);
     return {ok:true};
   });
 
