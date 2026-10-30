@@ -122,12 +122,13 @@ create or replace function public.seller_update_product(
   p_pdf_path text,
   p_preview_path text default null
 )
-returns void
+returns boolean
 language plpgsql security definer set search_path = ''
-as $$
+as $
 declare
   v_user uuid := auth.uid();
   v_product public.products%rowtype;
+  v_has_orders boolean := false;
 begin
   if v_user is null or not public.current_user_is_seller() then
     raise exception 'seller access required' using errcode='42501';
@@ -152,14 +153,16 @@ begin
   end if;
 
   -- Rejected records are resubmitted; approved records return to moderation when content changes.
+  select exists(select 1 from public.orders o where o.product_id=p_product_id) into v_has_orders;
   perform set_config('app.seller_product_write','enabled',true);
   update public.products
   set title=btrim(p_title), slug=p_slug, description=btrim(p_description),
       course_label=p_exam_label, subject_label=btrim(p_subject_label), price=p_price,
       pdf_file=p_pdf_path, preview_file=p_preview_path, status='pending', is_active=false
   where id=p_product_id and seller_id=v_user;
+  return v_has_orders;
 end;
-$$;
+$;
 revoke all on function public.seller_update_product(uuid,text,text,text,text,text,numeric,text,text) from public, anon;
 grant execute on function public.seller_update_product(uuid,text,text,text,text,text,numeric,text,text) to authenticated;
 
