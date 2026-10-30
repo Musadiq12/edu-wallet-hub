@@ -2379,6 +2379,8 @@ export type Database = {
         Update: {
           available_on?: string | null
           buyer_first_name?: never
+          commission_amount?: number | null
+          commission_rate?: number | null
           created_at?: string | null
           id?: string | null
           product_title?: string | null
