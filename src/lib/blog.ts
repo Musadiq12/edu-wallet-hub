@@ -3,7 +3,30 @@ export type BlogPost={id:string;slug:string;title:string;excerpt:string;content:
 export const publishedPostsQuery=(o:{search?:string;category?:string}={})=>queryOptions({queryKey:["blog","published",o],queryFn:async()=>{const pageSize=1000;const all:BlogPostListItem[]=[];for(let from=0;;from+=pageSize){let q=supabase.from("blog_posts").select(F).eq("status","published").order("published_at",{ascending:false}).range(from,from+pageSize-1);const s=(o.search??"").trim().replace(/[%_,]/g,"");if(s)q=q.or(`title.ilike.%${s}%,excerpt.ilike.%${s}%,content.ilike.%${s}%`);if(o.category)q=q.eq("category",o.category);const{data,error}=await q;if(error)throw error;const page=(data??[]) as unknown as BlogPostListItem[];all.push(...page);if(page.length<pageSize)break;}return all}});
 export const postCategoriesQuery=()=>queryOptions({queryKey:["blog","categories"],queryFn:async()=>{const{data,error}=await supabase.from("blog_posts").select("category").eq("status","published");if(error)throw error;const m=new Map<string,number>();for(const r of data??[])if(r.category)m.set(r.category,(m.get(r.category)??0)+1);return[...m].map(([name,count])=>({name,count}))}});
 export const postBySlugQuery=(s:string)=>queryOptions({queryKey:["blog","post",s],queryFn:async()=>{const{data,error}=await supabase.from("blog_posts").select("*").eq("slug",s).eq("status","published").maybeSingle();if(error)throw error;return(data??null) as unknown as BlogPost|null}});
-export const relatedProductsQuery=(p:BlogPost|undefined)=>queryOptions({queryKey:["blog","related",p?.id],enabled:!!p,queryFn:async()=>{if(!p)return[] as Product[];for(const t of[p.category,...p.tags].filter(Boolean)){const{data,error}=await supabase.from("products").select("id,product_type,title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,created_at").eq("is_active",true).eq("is_archived",false).eq("is_demo",false).or(`and(seller_id.is.null),and(status.eq.published,revision_of.is.null,deleted_at.is.null)`).or(`course_label.ilike.%${t}%,keywords.ilike.%${t}%`).limit(4);if(error)throw error;if(data?.length)return data as unknown as Product[]}const{data,error}=await supabase.from("products").select("id,product_type,title,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,created_at").eq("is_active",true).eq("is_archived",false).eq("is_demo",false).eq("is_featured",true).or("and(seller_id.is.null),and(status.eq.published,revision_of.is.null,deleted_at.is.null)").limit(4);if(error)throw error;return(data??[]) as unknown as Product[]}});
+export const relatedProductsQuery=(p:BlogPost|undefined)=>queryOptions({
+  queryKey:["blog","related",p?.id],
+  enabled:!!p,
+  queryFn:async()=>{
+    if(!p)return[] as Product[];
+    const terms=[p.category,...p.tags].filter(Boolean);
+    for(const term of terms){
+      const pattern=`course_label.ilike.%${term}%,keywords.ilike.%${term}%`;
+      const {data,error}=await supabase.from("products").select(PRODUCT_FIELDS)
+        .eq("is_active",true).eq("is_archived",false).eq("is_demo",false)
+        .or("seller_id.is.null,and(status.eq.published,revision_of.is.null,deleted_at.is.null)")
+        .filter("course_label","ilike",`%${term}%`)
+        .limit(4);
+      if(error)throw error;
+      if(data?.length)return data as unknown as Product[];
+    }
+    const {data,error}=await supabase.from("products").select(PRODUCT_FIELDS)
+      .eq("is_active",true).eq("is_archived",false).eq("is_demo",false).eq("is_featured",true)
+      .or("seller_id.is.null,and(status.eq.published,revision_of.is.null,deleted_at.is.null)")
+      .limit(4);
+    if(error)throw error;
+    return (data??[]) as unknown as Product[];
+  },
+});
 export const adminPostsQuery=(t:"all"|"draft"|"published")=>queryOptions({queryKey:["admin","blog",t],queryFn:async()=>{let q=supabase.from("blog_posts").select(F).order("created_at",{ascending:false});if(t!=="all")q=q.eq("status",t);const{data,error}=await q;if(error)throw error;return(data??[]) as unknown as BlogPostListItem[]}});
 export const adminPostQuery=(id:string)=>queryOptions({queryKey:["admin","blog","post",id],queryFn:async()=>{const{data,error}=await supabase.from("blog_posts").select("*").eq("id",id).maybeSingle();if(error)throw error;return(data??null) as unknown as BlogPost|null}});
 export async function uniqueSlugCheck(s:string,id?:string){let q=supabase.from("blog_posts").select("id",{count:"exact",head:true}).eq("slug",s);if(id)q=q.neq("id",id);const{count,error}=await q;if(error)throw error;return(count??0)===0}
