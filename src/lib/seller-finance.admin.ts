@@ -1,7 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import {
   adminGetMarketplaceCommission, adminSetMarketplaceCommission, adminSellerWallets,
-  adminSetSellerSuspension, adminTransitionWithdrawal, adminWithdrawalQueue,\n  adminGetSellerPayoutPolicy, adminSetSellerPayoutPolicy,
+  adminSetSellerSuspension, adminTransitionWithdrawal, adminWithdrawalQueue,
+  adminGetSellerPayoutPolicy, adminSetSellerPayoutPolicy,
 } from "@/lib/seller-finance.admin.server-fns";
 
 async function token(){
