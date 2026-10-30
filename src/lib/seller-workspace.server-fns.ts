@@ -142,7 +142,6 @@ export const sellerDashboardData = createServerFn({ method: "POST" })
       const wallet = (walletSummary ?? {}) as {
         lifetime_earnings?: number; pending_balance?: number; withdrawable_balance?: number; commission_deducted?: number;
       };
-      const totals = (Array.isArray(balance) ? balance[0] : balance) as {pending_balance?:number;available_balance?:number} | null;
       return {
         totalSales: count ?? 0,
         totalEarned: Number(wallet.lifetime_earnings ?? 0),
