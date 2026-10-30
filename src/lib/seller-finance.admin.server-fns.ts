@@ -24,15 +24,8 @@ async function requireFinanceAdmin(accessToken: string) {
   const {data:claims,error:claimsError}=await userClient.auth.getClaims(accessToken);
   const userId=claims?.claims?.sub;
   if(claimsError||typeof userId!=="string"||!z.string().uuid().safeParse(userId).success) throw new Error("Please sign in to continue.");
-  const adminClient=createClient(url,publishableKey,{
-    global:{headers:{Authorization:"Bearer "+accessToken}},
-    auth:{persistSession:false,autoRefreshToken:false},
-  });
-  const [{data:adminUser,error:adminUserError},{data:adminRole,error:adminRoleError}] = await Promise.all([
-    adminClient.from("admin_users").select("user_id").eq("user_id",userId).eq("is_active",true).maybeSingle(),
-    adminClient.from("user_roles").select("user_id").eq("user_id",userId).eq("role","admin").maybeSingle(),
-  ]);
-  if(adminUserError||adminRoleError||(!adminUser&&!adminRole)) throw new Error("Administrator access required.");
+  const {data:isAdmin,error:adminError}=await userClient.rpc("is_admin_staff");
+  if(adminError||isAdmin!==true) throw new Error("Administrator access required.");
   return userClient;
 }
 
