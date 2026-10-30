@@ -90,7 +90,7 @@ export const adminTransitionWithdrawal=createServerFn({method:"POST"})
   requestId:idSchema.parse(input.requestId),
   status:z.enum(["processing","paid","rejected"]).parse(input.status),
   reason:input.status==="rejected"?z.string().trim().min(3).max(1000).parse(input.reason):null,
-  upiReference:z.string().trim().max(120).optional(),
+  upiReference:z.string().trim().max(120).optional().parse(input.upiReference),
  }))
  .handler(async({data})=>{
   const {userClient}=await requireFinanceAdmin(data.accessToken);
@@ -113,7 +113,7 @@ export const adminGetMarketplaceCommission=createServerFn({method:"POST"})
 export const adminSetMarketplaceCommission=createServerFn({method:"POST"})
  .validator((input:{accessToken:string;rate:number})=>({
   accessToken:z.string().min(1).parse(input.accessToken),
-  rate:z.number().finite().min(0).max(100).refine(v=>Math.round(v*100)===v*100,"Use at most two decimal places."),
+  rate:z.number().finite().min(0).max(100).refine(v=>Math.round(v*100)===v*100,"Use at most two decimal places.").parse(input.rate),
  }))
  .handler(async({data})=>{
   const {userClient}=await requireFinanceAdmin(data.accessToken);
