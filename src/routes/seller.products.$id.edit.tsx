@@ -41,11 +41,11 @@ function ProductEditForm({product}:{product:Product}){
  const approved=product.status==="published"||product.status==="approved";
  if(product.is_archived)return <Card><CardContent className="space-y-2 p-5"><p className="font-semibold">This product is archived and cannot be edited.</p><Button asChild variant="outline"><Link to="/seller/products">Back to products</Link></Button></CardContent></Card>;
  const pick=(file:File|null,kind:Kind)=>{
-  if(!file){kind==="pdf"?setPdf(null):setPreview(null);return;}
+  if(!file){if(kind==="pdf"){setPdf(null);}else{setPreview(null);}return;}
   const max=kind==="pdf"?MAX_PDF:MAX_PREVIEW;
   if(file.type!=="application/pdf"||!file.name.toLowerCase().endsWith(".pdf")){setError("Choose a valid PDF file.");return;}
   if(file.size>max){setError(kind==="pdf"?"Main PDF must be 20 MB or smaller.":"Preview must be 5 MB or smaller.");return;}
-  kind==="pdf"?setPdf(file):setPreview(file);setError("");
+  if(kind==="pdf"){setPdf(file);}else{setPreview(file);}setError("");
  };
  const upload=async(file:File,kind:Kind,token:string)=>{
   const {path}=await sellerCreatePrivateUploadPath({data:{accessToken:token,originalName:file.name,kind}});
