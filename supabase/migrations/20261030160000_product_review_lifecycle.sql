@@ -860,15 +860,18 @@ commit;
   end if;
 
   perform set_config('app.marketplace_transition','enabled',true);
+  if v_product.status='rejected' then
+    perform set_config('app.marketplace_transition','enabled',true);
+  end if;
   update public.products set title=btrim(p_title),slug=p_slug,description=btrim(p_description),
     course_label=p_exam_label,subject_label=btrim(p_subject_label),price=p_price,pdf_file=p_pdf_path,
     preview_file=p_preview_path,
     status=case when v_product.status='rejected' then 'pending' else status end,
-    review_feedback=null,rejection_reason=null,
+    review_feedback=case when v_product.status='rejected' then null else review_feedback end,
+    rejection_reason=case when v_product.status='rejected' then null else rejection_reason end,
     submitted_at=case when v_product.status='rejected' then now() else submitted_at end,
     reviewed_at=case when v_product.status='rejected' then null else reviewed_at end,
     reviewed_by=case when v_product.status='rejected' then null else reviewed_by end,
-    is_active=false,
     updated_at=now()
   where id=p_product_id and seller_id=v_user;
   return v_has_orders;
