@@ -299,6 +299,49 @@ export const markSellerNotificationRead = createServerFn({method:"POST"})
     return {ok:true};
   });
 
+
+const walletWithdrawalAmountSchema=z.number().finite().positive().max(1000000)
+  .refine(value=>Math.round(value*100)===value*100,"Amount must have at most two decimal places.");
+const walletUpiSchema=z.string().trim().min(5).max(100)
+  .regex(/^[A-Za-z0-9._-]+@[A-Za-z][A-Za-z0-9.-]{1,63}$/,"Enter a valid UPI ID.");
+
+export const sellerWalletData=createServerFn({method:"POST"})
+ .validator((input:{accessToken:string})=>({accessToken:z.string().min(1).parse(input.accessToken)}))
+ .handler(async({data})=>{
+  const {client}=await requireSeller(data.accessToken);
+  const [{data:summary,error:summaryError},{data:withdrawals,error:historyError},{data:upi,error:upiError}]=await Promise.all([
+   client.rpc("seller_wallet_summary"),client.rpc("seller_withdrawal_history"),client.rpc("seller_wallet_upi"),
+  ]);
+  if(summaryError||historyError||upiError)throw new Error("Could not load your wallet information.");
+  return {
+   summary:(summary??{}) as {lifetime_earnings:number;commission_deducted:number;pending_balance:number;released_earnings:number;pending_withdrawals:number;withdrawable_balance:number},
+   withdrawals:(Array.isArray(withdrawals)?withdrawals:[]) as Array<{id:string;amount:number;status:string;upi_id:string|null;requested_at:string;processing_at:string|null;paid_at:string|null;rejected_at:string|null;rejection_reason:string|null;upi_reference:string|null}>,
+   upiId:typeof upi==="string"?upi:"",
+  };
+ });
+
+export const sellerUpdateWalletUpi=createServerFn({method:"POST"})
+ .validator((input:{accessToken:string;upiId:string})=>({accessToken:z.string().min(1).parse(input.accessToken),upiId:walletUpiSchema.parse(input.upiId).toLowerCase()}))
+ .handler(async({data})=>{
+  const {client}=await requireSeller(data.accessToken);
+  const {error}=await client.rpc("seller_update_upi",{p_upi_id:data.upiId});
+  if(error)throw new Error(error.message||"Could not update your UPI ID.");
+  return {ok:true};
+ });
+
+export const sellerRequestWalletWithdrawal=createServerFn({method:"POST"})
+ .validator((input:{accessToken:string;amount:number;idempotencyKey:string})=>({
+  accessToken:z.string().min(1).parse(input.accessToken),
+  amount:walletWithdrawalAmountSchema.parse(input.amount),
+  idempotencyKey:z.string().uuid().parse(input.idempotencyKey),
+ }))
+ .handler(async({data})=>{
+  const {client}=await requireSeller(data.accessToken);
+  const {data:requestId,error}=await client.rpc("seller_request_withdrawal",{p_amount:data.amount,p_idempotency_key:data.idempotencyKey});
+  if(error)throw new Error(error.message||"Could not submit your withdrawal request.");
+  return {id:requestId as string};
+ });
+
 export const sellerSalesData = createServerFn({method:"POST"})
   .validator((input:{accessToken:string;page:number})=>({
     accessToken:z.string().min(1).parse(input.accessToken),page:pageSchema.parse(input.page),
