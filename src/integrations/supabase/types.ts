@@ -1353,13 +1353,6 @@ export type Database = {
           preview_file?: string | null
           price?: number
           product_type?: string
-          slug?: string
-          subject_id?: string | null
-          subject_label?: string | null
-          title?: string
-          updated_at?: string
-          whats_included?: string | null
-        }
           seller_id?: string | null
           status?: string
           submitted_at?: string | null
@@ -1370,7 +1363,13 @@ export type Database = {
           admin_notes?: string | null
           revision_of?: string | null
           deleted_at?: string | null
-        Relationships: [
+          slug?: string
+          subject_id?: string | null
+          subject_label?: string | null
+          title?: string
+          updated_at?: string
+          whats_included?: string | null
+        }        Relationships: [
           {
             foreignKeyName: "products_category_id_fkey"
             columns: ["category_id"]
