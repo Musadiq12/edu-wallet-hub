@@ -142,10 +142,15 @@ begin
   if not found then raise exception 'seller product not found' using errcode='P0002'; end if;
 
   if p_action='save_notes' then
+    perform set_config('app.marketplace_transition','enabled',true);
     update public.products
     set admin_notes=nullif(left(btrim(coalesce(p_admin_notes,'')),4000),''),
         updated_at=now()
     where id=p_product_id returning * into v_updated;
+    insert into public.admin_activity_logs(actor_id,action,entity_type,entity_id,before_data,after_data)
+    values(v_admin,'seller_product_notes','product',p_product_id,
+      jsonb_build_object('admin_notes',v_product.admin_notes),
+      jsonb_build_object('admin_notes',v_updated.admin_notes));
     return v_updated;
   end if;
 
@@ -165,22 +170,19 @@ begin
     raise exception 'Rejection reason must contain at least 10 characters' using errcode='22023';
   end if;
 
-  -- A revision approval replaces the live listing's content atomically but preserves its product id/order history.
   if p_action='approve' and v_product.revision_of is not null then
     update public.products set
       title=v_product.title,slug=v_product.slug,description=v_product.description,
-      whats_included=v_product.whats_included,course_label=v_product.course_label,
-      subject_label=v_product.subject_label,keywords=v_product.keywords,price=v_product.price,
-      discounted_price=v_product.discounted_price,cover_image=v_product.cover_image,
+      whats_included=v_product.whats_included,category_id=v_product.category_id,
+      course_label=v_product.course_label,subject_label=v_product.subject_label,keywords=v_product.keywords,
+      price=v_product.price,discounted_price=v_product.discounted_price,cover_image=v_product.cover_image,
       pdf_file=v_product.pdf_file,preview_file=v_product.preview_file,page_count=v_product.page_count,
       format=v_product.format,is_free=v_product.is_free,product_type=v_product.product_type,
       stock_quantity=v_product.stock_quantity,stock_status=v_product.stock_status,
       updated_at=now()
     where id=v_product.revision_of and seller_id=v_product.seller_id
       and status='published' and deleted_at is null;
-    if not found then
-      raise exception 'live product revision target is not published' using errcode='22023';
-    end if;
+    if not found then raise exception 'live product revision target is not published' using errcode='22023'; end if;
   end if;
 
   perform set_config('app.marketplace_transition','enabled',true);
@@ -210,7 +212,7 @@ begin
     when 'unpublished' then 'Your product "'||v_product.title||'" was taken down by an administrator.'
     else 'Your product "'||v_product.title||'" has been republished.'
   end;
-  v_target:=case when v_event in ('approved','republished') then '/shop/'||v_product.slug else '/seller/products' end;
+  v_target:=case when v_event in ('approved','republished') and v_product.revision_of is null then '/shop/'||v_product.slug else '/seller/products' end;
   insert into public.seller_notifications(seller_id,product_id,event_type,title,message,target_url)
   values(v_product.seller_id,p_product_id,v_event,v_title,v_message,v_target);
 
@@ -486,7 +488,6 @@ commit;
     return true;
   end if;
 
-  perform set_config('app.marketplace_transition','enabled',true);
   if v_product.status='rejected' then
     perform set_config('app.marketplace_transition','enabled',true);
   end if;
