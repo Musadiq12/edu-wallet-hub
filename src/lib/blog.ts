@@ -10,11 +10,10 @@ export const relatedProductsQuery=(p:BlogPost|undefined)=>queryOptions({
     if(!p)return[] as Product[];
     const terms=[p.category,...p.tags].filter(Boolean);
     for(const term of terms){
-      const pattern=`course_label.ilike.%${term}%,keywords.ilike.%${term}%`;
+      const pattern=term.replace(/[%_,]/g,"");
       const {data,error}=await supabase.from("products").select(PRODUCT_FIELDS)
         .eq("is_active",true).eq("is_archived",false).eq("is_demo",false)
-        .or("seller_id.is.null,and(status.eq.published,revision_of.is.null,deleted_at.is.null)")
-        .filter("course_label","ilike",`%${term}%`)
+        .or(`and(seller_id.is.null),and(status.eq.published,revision_of.is.null,deleted_at.is.null),and(course_label.ilike.%${pattern}%,keywords.ilike.%${pattern}%)`)
         .limit(4);
       if(error)throw error;
       if(data?.length)return data as unknown as Product[];
