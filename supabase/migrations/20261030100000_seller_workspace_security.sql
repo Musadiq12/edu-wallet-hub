@@ -118,7 +118,7 @@ create or replace function public.seller_update_product(
 )
 returns boolean
 language plpgsql security definer set search_path = ''
-as $
+as $$
 declare
   v_user uuid := auth.uid();
   v_product public.products%rowtype;
