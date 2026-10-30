@@ -126,11 +126,13 @@ export const sellerDashboardData = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { userId, client } = await requireSeller(data.accessToken);
+      // Read the orders table directly, scoped to the authenticated seller.
+      // This avoids relying on the seller_sales view's owner/security-invoker behavior.
       const [{ count, error: countError }, { data: earnedRows, error: earnedError }, { data: recent, error: recentError }, { data: balance, error: balanceError }] = await Promise.all([
-        client.from("seller_sales").select("id", { count: "exact", head: true }).eq("refunded", false).not("seller_share", "is", null),
-        client.from("seller_sales").select("seller_share").eq("refunded", false).not("seller_share", "is", null),
-        client.from("seller_sales").select("id,created_at,product_title,seller_share,available_on,refunded")
-          .not("seller_share", "is", null).order("created_at", { ascending: false }).limit(5),
+        client.from("orders").select("id", { count: "exact", head: true }).eq("seller_id", userId).eq("refunded", false).not("seller_share", "is", null),
+        client.from("orders").select("seller_share").eq("seller_id", userId).eq("refunded", false).not("seller_share", "is", null),
+        client.from("orders").select("id,created_at,product_title,seller_share,available_on,refunded")
+          .eq("seller_id", userId).not("seller_share", "is", null).order("created_at", { ascending: false }).limit(5),
         client.rpc("seller_balance", { p_seller_id: userId }),
       ]);
       if (countError || earnedError || recentError || balanceError) throw new Error("Unable to load seller summary.");
@@ -298,10 +300,18 @@ export const sellerSalesData = createServerFn({method:"POST"})
     try{
       const {client,userId}=await requireSeller(data.accessToken);
       const from=(data.page-1)*20, to=from+19;
-      const {data:rows,error,count}=await client.from("seller_sales")
-        .select("id,created_at,product_title,seller_share,available_on,refunded,buyer_first_name",{count:"exact"})
+      const {data:rows,error,count}=await client.from("orders")
+        .select("id,created_at,product_title,seller_share,available_on,refunded,full_name",{count:"exact"})
+        .eq("seller_id",userId).not("seller_share","is",null)
         .order("created_at",{ascending:false}).range(from,to);
       if(error) throw error;
-      return {rows:rows??[],total:count??0};
+      return {
+        rows:(rows??[]).map(row=>({
+          id:row.id,created_at:row.created_at,product_title:row.product_title,
+          seller_share:Number(row.seller_share??0),available_on:row.available_on,
+          refunded:row.refunded,buyer_first_name:(row.full_name??"").trim().split(/\\s+/)[0]||"Customer",
+        })),
+        total:count??0,
+      };
     }catch(error){throw new Error(safeMessage(error,"Could not load seller sales."));}
   });
