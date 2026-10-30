@@ -205,6 +205,9 @@ begin
   end if;
   if tg_op='UPDATE' and current_setting('app.seller_product_write',true)='enabled'
      and old.seller_id=auth.uid() and public.current_user_is_seller() then
+    if new.status is distinct from old.status and current_setting('app.marketplace_transition',true) is distinct from 'enabled' then
+      raise exception 'Seller updates cannot change product status' using errcode='42501';
+    end if;
     return new;
   end if;
   if tg_op='INSERT' and new.seller_id is not null and not public.is_admin_staff() then
