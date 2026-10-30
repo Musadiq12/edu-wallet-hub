@@ -852,15 +852,21 @@ commit;
       v_product.is_featured,false,v_product.is_demo,v_product.stock_quantity,v_product.stock_status,
       v_product.low_stock_threshold,false,v_user,v_user,'pending',now(),p_product_id
     ) returning id into v_new_id;
-    -- Return true to retain old file objects because both live product and revision may reference them.
+    -- Return true to signal that existing file references must be retained for live/revision history.
     return true;
   end if;
 
+  perform set_config('app.marketplace_transition','enabled',true);
   update public.products set title=btrim(p_title),slug=p_slug,description=btrim(p_description),
     course_label=p_exam_label,subject_label=btrim(p_subject_label),price=p_price,pdf_file=p_pdf_path,
-    preview_file=p_preview_path,status='pending',review_feedback=null,rejection_reason=null,
-    submitted_at=case when v_product.status='rejected' then now() else coalesce(submitted_at,created_at) end,
-    reviewed_at=null,reviewed_by=null,updated_at=now()
+    preview_file=p_preview_path,
+    status=case when v_product.status='rejected' then 'pending' else status end,
+    review_feedback=null,rejection_reason=null,
+    submitted_at=case when v_product.status='rejected' then now() else submitted_at end,
+    reviewed_at=case when v_product.status='rejected' then null else reviewed_at end,
+    reviewed_by=case when v_product.status='rejected' then null else reviewed_by end,
+    is_active=false,
+    updated_at=now()
   where id=p_product_id and seller_id=v_user;
   return v_has_orders;
 end;
