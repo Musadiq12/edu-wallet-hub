@@ -245,7 +245,7 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
     }
     // Keep previous files for products with order history and for live-product revisions.
     if(!hasOrders && existing.status!=="approved" && existing.status!=="published") await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? existing.pdf_file : null, data.previewPath !== existing.preview_file ? existing.preview_file : null]);
-    return {ok:true};
+    return {ok:true,hasOrders};
   });
 
 export const sellerNotifications = createServerFn({method:"POST"})
