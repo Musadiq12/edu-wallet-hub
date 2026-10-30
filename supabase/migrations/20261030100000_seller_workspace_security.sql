@@ -16,12 +16,11 @@ create policy seller_read_own_products on public.products
 for select to authenticated
 using (seller_id = (select auth.uid()) and public.current_user_is_seller());
 
--- The seller UI uses server-only RPCs for all writes. Remove direct seller table writes,
--- while retaining existing admin policies and public/buyer reads.
+-- Seller mutations use the RPCs below. Existing table grants remain available to
+-- administrators, while no seller INSERT/UPDATE/DELETE policy is retained.
 drop policy if exists seller_insert_own_pending_products on public.products;
 drop policy if exists seller_update_own_pending_products on public.products;
 drop policy if exists seller_delete_own_products on public.products;
-revoke insert, update, delete on public.products from authenticated;
 
 -- Helper: resolve live role using profiles, not user-editable auth metadata.
 create or replace function public.current_user_is_seller()
@@ -35,6 +34,25 @@ as $$
 $$;
 revoke all on function public.current_user_is_seller() from public, anon;
 grant execute on function public.current_user_is_seller() to authenticated;
+
+-- seller_balance retains its signature and its single source of payout logic, but runs
+-- as a definer after binding the requested ID to auth.uid() and checking the live seller role.
+create or replace function public.seller_balance(p_seller_id uuid)
+returns table(pending_balance numeric,available_balance numeric)
+language sql stable security definer set search_path = ''
+as $
+  select
+    coalesce(sum(o.seller_share) filter (where o.available_on>now() and not o.refunded),0)::numeric(12,2),
+    (coalesce(sum(o.seller_share) filter (where o.available_on<=now() and not o.refunded),0)
+     - coalesce((select sum(w.amount) from public.withdrawal_requests w
+                 where w.seller_id=p_seller_id and w.status in ('requested','paid')),0)
+    )::numeric(12,2)
+  from public.orders o
+  where o.seller_id=p_seller_id and p_seller_id=(select auth.uid())
+    and public.current_user_is_seller() and o.seller_share is not null
+$;
+revoke all on function public.seller_balance(uuid) from public, anon;
+grant execute on function public.seller_balance(uuid) to authenticated;
 
 -- RLS-safe owner-only product list. Keep column projection limited to seller UI fields.
 drop policy if exists seller_read_own_products on public.products;
@@ -115,6 +133,9 @@ begin
   where id=p_product_id and seller_id=v_user for update;
   if not found then raise exception 'product not found' using errcode='P0002'; end if;
   if v_product.is_archived then raise exception 'archived products are read only' using errcode='42501'; end if;
+  if v_product.status not in ('pending','rejected','approved') then
+    raise exception 'product status cannot be edited' using errcode='42501';
+  end if;
   if length(btrim(coalesce(p_title,''))) not between 5 and 120
      or length(btrim(coalesce(p_description,''))) not between 20 and 2000
      or length(btrim(coalesce(p_subject_label,''))) not between 2 and 60
@@ -196,22 +217,19 @@ $$;
 
 -- Orders are not selected from the broad orders table by seller clients. This projection
 -- contains only display-safe columns and relies on invoker RLS plus a live seller predicate.
-create or replace view public.seller_sales with (security_invoker=true) as
+create or replace view public.seller_sales with (security_barrier=true) as
 select
   o.id, o.created_at, o.product_title, o.seller_share, o.available_on, o.refunded,
-  coalesce(nullif(split_part(btrim(p.full_name),' ',1),''),'Customer') as buyer_first_name
+  coalesce(nullif(split_part(btrim(o.full_name),' ',1),''),'Customer') as buyer_first_name
 from public.orders o
-left join public.profiles p on p.id=o.user_id
 where o.seller_id=(select auth.uid()) and public.current_user_is_seller();
 
+-- The view owner supplies privileged row access, but only the columns above are exposed.
+-- Sellers receive no SELECT policy on orders itself, preventing access to buyer/payment fields.
+revoke all on public.seller_sales from public, anon;
 grant select on public.seller_sales to authenticated;
 
--- Seller sales require orders row access only through seller_id. A separate SELECT policy
--- remains OR-combined with the buyer/admin policy, preserving all existing buyer queries.
 drop policy if exists seller_read_own_orders on public.orders;
-create policy seller_read_own_orders on public.orders
-for select to authenticated
-using (seller_id=(select auth.uid()) and public.current_user_is_seller());
 
 -- Revoke public schema-wide table access only for seller-sensitive operations above.
 -- Public product read and buyer order policies remain untouched.
