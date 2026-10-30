@@ -147,7 +147,7 @@ export const adminProductsQuery = (includeArchived = false) =>
   queryOptions({
     queryKey: ["admin", "products", includeArchived],
     queryFn: async (): Promise<AdminProduct[]> => {
-      let q = supabase.from("products").select(ADMIN_PRODUCT_FIELDS).is("seller_id", null).order("created_at", { ascending: false });
+      let q = supabase.from("products").select(ADMIN_PRODUCT_FIELDS).is("seller_id", null).neq("status", "pending").order("created_at", { ascending: false });
       if (!includeArchived) q = q.eq("is_archived", false);
       const { data, error } = await q;
       if (error) throw error;
