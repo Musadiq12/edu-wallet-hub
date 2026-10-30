@@ -317,29 +317,48 @@ $$;
 -- Immutable ledger: record first sale credit/fee and a compensating event for refunds.
 create or replace function public.append_seller_sale_ledger()
 returns trigger language plpgsql security definer set search_path = ''
-as $$
+as $
 begin
-  if new.seller_id is not null and new.seller_share is not null
-     and (tg_op = 'INSERT' or old.seller_id is distinct from new.seller_id
-       or old.seller_share is distinct from new.seller_share
-       or old.commission_amount is distinct from new.commission_amount) then
+  if tg_op='INSERT' and new.seller_id is not null and new.seller_share is not null then
     insert into public.seller_ledger(seller_id,order_id,entry_type,amount,description)
-    values (new.seller_id,new.id,'sale_credit',new.seller_share,'Seller net sale credit')
-    on conflict (order_id,entry_type) do nothing;
-    if new.commission_amount > 0 then
+    values(new.seller_id,new.id,'sale_credit',new.seller_share,'Seller net sale credit');
+    insert into public.seller_ledger(seller_id,order_id,entry_type,amount,description)
+    values(new.seller_id,new.id,'commission_debit',coalesce(new.commission_amount,0),'Marketplace commission captured at order time');
+  elsif tg_op='UPDATE' then
+    if old.refunded is false and new.refunded is true and old.seller_id is not null and old.seller_share is not null then
       insert into public.seller_ledger(seller_id,order_id,entry_type,amount,description)
-      values (new.seller_id,new.id,'commission_debit',new.commission_amount,'Marketplace commission at order time')
-      on conflict (order_id,entry_type) do nothing;
+      values(old.seller_id,old.id,'sale_reversal',old.seller_share,'Refund reversal of seller sale credit');
+      insert into public.seller_ledger(seller_id,order_id,entry_type,amount,description)
+      values(old.seller_id,old.id,'commission_adjustment_credit',coalesce(old.commission_amount,0),'Commission reversed on refunded order');
+    elsif new.seller_id is not null and new.seller_share is not null
+      and (old.seller_id is distinct from new.seller_id
+        or old.seller_share is distinct from new.seller_share
+        or old.commission_amount is distinct from new.commission_amount) then
+      if old.seller_id is distinct from new.seller_id or old.seller_share is distinct from new.seller_share then
+        if old.seller_id is not null and old.seller_share is not null then
+          insert into public.seller_ledger(seller_id,order_id,entry_type,amount,description)
+          values(old.seller_id,old.id,'sale_reversal',old.seller_share,'Prior seller sale allocation reversed by order correction');
+        end if;
+        insert into public.seller_ledger(seller_id,order_id,entry_type,amount,description)
+        values(new.seller_id,new.id,'sale_adjustment_credit',new.seller_share,'Corrected seller sale allocation credited');
+      elsif old.seller_share is distinct from new.seller_share then
+        insert into public.seller_ledger(seller_id,order_id,entry_type,amount,description)
+        values(new.seller_id,new.id,'sale_adjustment_credit',abs(new.seller_share-old.seller_share),'Seller sale allocation adjustment');
+      end if;
+      if old.commission_amount is distinct from new.commission_amount then
+        if new.commission_amount > old.commission_amount then
+          insert into public.seller_ledger(seller_id,order_id,entry_type,amount,description)
+          values(new.seller_id,new.id,'commission_adjustment_debit',new.commission_amount-old.commission_amount,'Additional commission adjustment');
+        else
+          insert into public.seller_ledger(seller_id,order_id,entry_type,amount,description)
+          values(new.seller_id,new.id,'commission_adjustment_credit',old.commission_amount-new.commission_amount,'Commission adjustment credit');
+        end if;
+      end if;
     end if;
-  elsif tg_op = 'UPDATE' and old.refunded = false and new.refunded = true
-        and old.seller_id is not null and old.seller_share is not null then
-    insert into public.seller_ledger(seller_id,order_id,entry_type,amount,description)
-    values (old.seller_id,old.id,'sale_reversal',old.seller_share,'Refund reversal of seller sale credit')
-    on conflict (order_id,entry_type) do nothing;
   end if;
   return new;
 end;
-$$;
+$;
 
 drop trigger if exists sync_seller_order_accounting on public.orders;
 create trigger sync_seller_order_accounting
