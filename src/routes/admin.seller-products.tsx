@@ -18,7 +18,7 @@ export const Route = createFileRoute("/admin/seller-products")({ component: Sell
 type QueueRow = {
   id: string; title: string; slug: string; course_label: string | null; subject_label: string | null;
   price: number | string; status: "pending" | "published" | "rejected" | "unpublished";
-  submitted_at: string | null; revision_of: string | null; seller_id: string; created_at: string;
+  submitted_at: string | null; revision_of: string | null; seller_id: string; seller_name?: string; created_at: string;
   category_id: string | null;
 };
 type Detail = QueueRow & {
@@ -81,7 +81,7 @@ function SellerProductReviewPage() {
 
   const visible = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return (queue.data ?? []).filter(row => !term || row.title.toLowerCase().includes(term) || row.seller_id.toLowerCase().includes(term));
+    return (queue.data ?? []).filter(row => !term || row.title.toLowerCase().includes(term) || (row.seller_name ?? "").toLowerCase().includes(term));
   }, [queue.data, search]);
 
   const runAction = async (action: "approve" | "reject" | "unpublish" | "republish" | "save_notes", value?: string) => {
@@ -144,7 +144,7 @@ function SellerProductReviewPage() {
           : <div className="max-h-[72vh] overflow-y-auto divide-y divide-border">{visible.map(row => <button type="button" key={row.id} onClick={() => setSelectedId(row.id)} className={`w-full p-4 text-left transition-colors hover:bg-muted/40 ${selectedId === row.id ? "bg-primary/5 ring-1 ring-inset ring-primary/30" : ""}`}>
             <div className="flex items-start justify-between gap-2"><span className="min-w-0 truncate text-sm font-semibold">{row.title}</span><Badge variant={row.status === "pending" ? "secondary" : "outline"}>{row.revision_of ? "Revision" : row.status}</Badge></div>
             <p className="mt-1 text-xs text-muted-foreground">{row.course_label ?? "Other"} · {row.subject_label ?? "General"} · {money(row.price)}</p>
-            <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground"><span className="truncate">Seller {row.seller_id.slice(0,8)}…</span><span>{waitingLabel(row.submitted_at ?? row.created_at)}</span></div>
+            <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground"><span className="truncate">{row.seller_name ?? "Seller"}</span><span>{waitingLabel(row.submitted_at ?? row.created_at)}</span></div>
           </button>)}</div>}
         </CardContent>
       </Card>
