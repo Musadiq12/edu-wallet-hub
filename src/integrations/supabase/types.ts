@@ -1268,6 +1268,7 @@ export type Database = {
           stock_status: string
           low_stock_threshold: number | null
           product_type: string
+          review_feedback: string | null
           slug: string
           subject_id: string | null
           subject_label: string | null
@@ -1301,6 +1302,7 @@ export type Database = {
           stock_status?: string
           low_stock_threshold?: number | null
           product_type?: string
+          review_feedback?: string | null
           slug: string
           subject_id?: string | null
           subject_label?: string | null
@@ -1786,6 +1788,18 @@ export type Database = {
       }
     }
     Views: {
+      seller_sales: {
+        Row: {
+          id: string
+          created_at: string
+          product_title: string
+          seller_share: number | null
+          available_on: string | null
+          refunded: boolean
+          buyer_first_name: string
+        }
+        Relationships: []
+      }
       my_library: {
         Row: {
           amount: number | null
