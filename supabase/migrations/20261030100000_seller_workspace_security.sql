@@ -3,6 +3,9 @@
 
 begin;
 
+-- Product review feedback is nullable and preserves all existing catalog rows.
+alter table public.products add column if not exists review_feedback text;
+
 -- product-files stays private and is limited to PDF uploads from the seller workspace.
 update storage.buckets
 set public = false,
@@ -230,6 +233,16 @@ revoke all on public.seller_sales from public, anon;
 grant select on public.seller_sales to authenticated;
 
 drop policy if exists seller_read_own_orders on public.orders;
+
+-- Seller file deletion is permitted only for the current approved seller's own folder.
+drop policy if exists seller_product_files_owner_delete on storage.objects;
+create policy seller_product_files_owner_delete on storage.objects
+for delete to authenticated
+using (
+  bucket_id = 'product-files'
+  and (storage.foldername(name))[1] = (select auth.uid())::text
+  and public.current_user_is_seller()
+);
 
 -- Revoke public schema-wide table access only for seller-sensitive operations above.
 -- Public product read and buyer order policies remain untouched.
