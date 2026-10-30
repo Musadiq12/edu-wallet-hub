@@ -121,3 +121,26 @@ export const adminSetMarketplaceCommission=createServerFn({method:"POST"})
   if(error) throw new Error(error.message||"Could not update commission.");
   return {ok:true};
  });
+
+export const adminGetSellerPayoutPolicy=createServerFn({method:"POST"})
+ .validator((input:{accessToken:string})=>({accessToken:z.string().min(1).parse(input.accessToken)}))
+ .handler(async({data})=>{
+  const {userClient}=await requireFinanceAdmin(data.accessToken);
+  const {data:rows,error}=await userClient.rpc("admin_get_seller_payout_policy");
+  if(error) throw new Error(error.message||"Could not load withdrawal policy.");
+  return Array.isArray(rows)?rows[0]??{seven_day_hold_enabled:false,minimum_reserve_enabled:false,minimum_reserve_amount:500}:{seven_day_hold_enabled:false,minimum_reserve_enabled:false,minimum_reserve_amount:500};
+ });
+export const adminSetSellerPayoutPolicy=createServerFn({method:"POST"})
+ .validator((input:{accessToken:string;holdEnabled:boolean;reserveEnabled:boolean})=>({
+  accessToken:z.string().min(1).parse(input.accessToken),
+  holdEnabled:z.boolean().parse(input.holdEnabled),
+  reserveEnabled:z.boolean().parse(input.reserveEnabled),
+ }))
+ .handler(async({data})=>{
+  const {userClient}=await requireFinanceAdmin(data.accessToken);
+  const {error}=await userClient.rpc("admin_set_seller_payout_policy",{
+   p_hold_enabled:data.holdEnabled,p_reserve_enabled:data.reserveEnabled,
+  });
+  if(error) throw new Error(error.message||"Could not update withdrawal policy.");
+  return {ok:true};
+ });
