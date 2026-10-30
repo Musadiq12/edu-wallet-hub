@@ -22,7 +22,6 @@ const productInputSchema = z.object({
   price: z.number().finite().min(10).max(5000).refine(v => Math.round(v*100) === v*100),
   pdfPath: z.string().min(1).max(500),
   previewPath: z.string().max(500).nullable().optional(),
-  coverSourceUrl: z.string().trim().max(1000).url().refine(v => { try { const u = new URL(v); return u.protocol === "https:" && ["drive.google.com","docs.google.com"].includes(u.hostname.toLowerCase()); } catch { return false; } }).nullable().optional(),
 });
 const listStatusSchema = z.enum(["pending","published","rejected","unpublished","all"]);
 const pageSchema = z.number().int().min(1).max(100000);
@@ -191,7 +190,6 @@ export const sellerCreateProduct = createServerFn({method:"POST"})
       await removePrivateFiles(context,[data.pdfPath,data.previewPath]);
       throw new Error(safeMessage(error,"Could not save your product. Please try again."));
     }
-    if (data.coverSourceUrl) {\n      const { error: linkError } = await client.from("products").update({ seller_cover_source_url: data.coverSourceUrl }).eq("id", id).eq("seller_id", context.userId);\n      if (linkError) throw new Error("Product saved, but the cover image link could not be saved.");\n    }\n    return {id};
   });
 
 export const sellerCreatePrivateUploadPath = createServerFn({method:"POST"})
@@ -223,7 +221,6 @@ export const sellerDeleteProduct = createServerFn({method:"POST"})
   });
 
 export const sellerSaveProductEdit = createServerFn({method:"POST"})
-  .validator((input:{accessToken:string;id:string;title:string;description:string;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null;coverSourceUrl?:string|null})=>{
     const parsed=productInputSchema.parse(input);
     return {...parsed,accessToken:z.string().min(1).parse(input.accessToken),id:productIdSchema.parse(input.id)};
   })
@@ -244,7 +241,6 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
       await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? data.pdfPath : null, data.previewPath !== existing.preview_file ? data.previewPath : null]);
       throw new Error(safeMessage(error,"Could not update this product."));
     }
-    const { error: linkError } = await context.client.from("products").update({ seller_cover_source_url: data.coverSourceUrl ?? null }).eq("id", data.id).eq("seller_id", context.userId);\n    if (linkError) throw new Error("Product updated, but the cover image link could not be saved.");\n    // Keep previous files for products with order history and for live-product revisions.
     if(!hasOrders && existing.status!=="approved" && existing.status!=="published") await removePrivateFiles(context,[data.pdfPath !== existing.pdf_file ? existing.pdf_file : null, data.previewPath !== existing.preview_file ? existing.preview_file : null]);
     return {ok:true,hasOrders};
   });
