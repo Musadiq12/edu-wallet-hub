@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BadgeCheck, Bell, CircleHelp, LayoutDashboard, Package, ShoppingBag, Wallet,
@@ -127,7 +127,7 @@ function NotificationBell() {
           )}
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" sideOffset={10} className="w-[min( calc(100vw - 2rem), 390px)] overflow-hidden rounded-2xl p-0 shadow-xl">
+      <DropdownMenuContent align="end" sideOffset={10} className="w-[min(100vw-2rem,390px)] overflow-hidden rounded-2xl p-0 shadow-xl">
         <div className="flex items-center justify-between gap-3 px-4 py-3.5">
           <div><p className="text-sm font-semibold">Notifications</p><p className="mt-0.5 text-xs text-muted-foreground">{unreadCount ? `${unreadCount} unread update${unreadCount===1?"":"s"}` : "You're all caught up"}</p></div>
           <Button variant="ghost" size="sm" className="h-8 px-2 text-xs" disabled={!unreadCount || markAll.isPending} onClick={() => markAll.mutate()}>
