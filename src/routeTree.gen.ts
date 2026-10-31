@@ -25,6 +25,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as BecomeSellerRouteImport } from './routes/become-seller'
 import { Route as SellerAgreementRouteImport } from './routes/seller-agreement'
 import { Route as SellerDashboardRouteImport } from './routes/seller.dashboard'
+import { Route as SellerNotificationsRouteImport } from './routes/seller.notifications'
 import { Route as SellerWalletRouteImport } from './routes/seller.wallet'
 import { Route as AdminSellersRouteImport } from './routes/admin.sellers'
 import { Route as AdminSellerDetailRouteImport } from './routes/admin.sellers.$sellerId'
@@ -138,6 +139,7 @@ const SellerAgreementRoute = SellerAgreementRouteImport.update({
   path: '/seller-agreement',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SellerNotificationsRoute = SellerNotificationsRouteImport.update({ id: '/seller/notifications', path: '/seller/notifications', getParentRoute: () => rootRouteImport } as any)
 const SellerDashboardRoute = SellerDashboardRouteImport.update({
   id: '/seller/dashboard',
   path: '/seller/dashboard',
@@ -241,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/become-seller': typeof BecomeSellerRoute
   '/seller-agreement': typeof SellerAgreementRoute
+  '/seller/notifications': typeof SellerNotificationsRoute
   '/seller/dashboard': typeof SellerDashboardRoute
   '/cookies': typeof CookiesRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
@@ -347,6 +350,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/become-seller'
     | '/seller-agreement'
+    | '/seller/notifications'
     | '/seller/dashboard'
     | '/admin'
     | '/contact'
@@ -449,6 +453,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   BecomeSellerRoute: typeof BecomeSellerRoute
   SellerAgreementRoute: typeof SellerAgreementRoute
+  SellerNotificationsRoute: typeof SellerNotificationsRoute
   SellerDashboardRoute: typeof SellerDashboardRoute
   AdminRoute: typeof AdminRouteWithChildren
   ContactRoute: typeof ContactRoute
@@ -572,6 +577,13 @@ declare module '@tanstack/react-router' {
       path: '/seller-agreement'
       fullPath: '/seller-agreement'
       preLoaderRoute: typeof SellerAgreementRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/seller/notifications': {
+      id: '/seller/notifications'
+      path: '/seller/notifications'
+      fullPath: '/seller/notifications'
+      preLoaderRoute: typeof SellerNotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/seller/dashboard': {
@@ -761,6 +773,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   BecomeSellerRoute: BecomeSellerRoute,
   SellerAgreementRoute: SellerAgreementRoute,
+  SellerNotificationsRoute: SellerNotificationsRoute,
   SellerDashboardRoute: SellerDashboardRoute,
   SellerWalletRoute: SellerWalletRoute,
   AdminRoute: AdminRouteWithChildren,
