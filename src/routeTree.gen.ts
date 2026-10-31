@@ -244,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/become-seller': typeof BecomeSellerRoute
   '/seller-agreement': typeof SellerAgreementRoute
   '/seller/notifications': typeof SellerNotificationsRoute
+  '/seller/notifications': typeof SellerNotificationsRoute
   '/seller/dashboard': typeof SellerDashboardRoute
   '/cookies': typeof CookiesRoute
   '/admin/announcements': typeof AdminAnnouncementsRoute
