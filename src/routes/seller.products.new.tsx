@@ -72,7 +72,8 @@ function NewSellerProduct(){
   if(!exams.includes(exam as typeof exams[number])){setError("Choose an exam or course.");return;}
   if(subject.trim().length<2||subject.trim().length>60){setError("Subject must be 2–60 characters.");return;}
   if(!/^(?:\d{1,4})(?:\.\d{1,2})?$/.test(price)||!Number.isFinite(amount)||amount<10||amount>5000){setError("Enter a price between ₹10 and ₹5,000 with up to 2 decimals.");return;}
-  if(discountedPrice.trim()!==""&&(!/^(?:\\d{1,4})(?:\\.\\d{1,2})?$/.test(discountedPrice)||!Number.isFinite(discountAmount)||discountAmount!<1||discountAmount!>=amount)){setError("Discounted price must be at least ₹1 and lower than the original price.");return;}\n  if(!pdf){setError("Upload your main notes PDF.");return;}
+  if(discountedPrice.trim()!==""&&(!/^(?:\d{1,4})(?:\.\d{1,2})?$/.test(discountedPrice)||!Number.isFinite(discountAmount)||discountAmount!<1||discountAmount!>=amount)){setError("Discounted price must be at least ₹1 and lower than the original price.");return;}
+  if(!pdf){setError("Upload your main notes PDF.");return;}
   lock.current=true;setBusy(true);setError("");
   let mainPath:string|null=null,previewPath:string|null=null;
   try{
