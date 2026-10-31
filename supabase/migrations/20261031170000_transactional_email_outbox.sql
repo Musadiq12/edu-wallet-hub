@@ -66,12 +66,12 @@ create or replace function public.enqueue_seller_sale_email()
 returns trigger language plpgsql security definer set search_path='' as $$
 declare v_email text; v_name text; v_sale_count integer;
 begin
- if new.seller_id is not null and new.seller_share is not null and (tg_op='INSERT' or old.seller_id is distinct from new.seller_id or old.seller_share is distinct from new.seller_share) then
+ if new.seller_id is not null and new.seller_share is not null and new.payment_status='verified' and (tg_op='INSERT' or (old.seller_id is null and new.seller_id is not null and new.verified_at is not null) or (old.seller_id is not distinct from new.seller_id and old.seller_share is null and new.seller_share is not null and new.verified_at is not null)) then
   select coalesce(nullif(p.email,''),u.email),coalesce(nullif(p.full_name,''),u.raw_user_meta_data->>'full_name','Seller')
    into v_email,v_name from auth.users u left join public.profiles p on p.id=u.id where u.id=new.seller_id;
-  select count(*) into v_sale_count from public.orders where seller_id=new.seller_id and seller_share is not null and refunded=false;
+  select count(*) into v_sale_count from public.orders where seller_id=new.seller_id and seller_share is not null and refunded=false and payment_status='verified' and id<>new.id;
   perform public.enqueue_transactional_email('seller-sale:'||new.id::text||':'||new.seller_id::text,v_email,v_name,
-   case when v_sale_count<=1 then 'seller.first_sale' else 'seller.new_sale' end,
+   case when v_sale_count=0 then 'seller.first_sale' else 'seller.new_sale' end,
    jsonb_build_object('product_title',new.product_title,'seller_share',new.seller_share,'order_id',new.id,'dashboard_url','https://eduwallethub.in/seller/sales'));
  end if; return new;
 end; $$;
