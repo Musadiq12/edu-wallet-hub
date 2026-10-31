@@ -292,8 +292,18 @@ export const markSellerNotificationRead = createServerFn({method:"POST"})
   .handler(async({data})=>{
     const {userId,client}=await requireSeller(data.accessToken);
     const {error}=await client.from("seller_notifications").update({read_at:new Date().toISOString()})
-      .eq("id",data.id).eq("seller_id",userId);
+      .eq("id",data.id).eq("seller_id",userId).is("read_at",null);
     if(error) throw new Error("Could not update notification.");
+    return {ok:true};
+  });
+
+export const markAllSellerNotificationsRead = createServerFn({method:"POST"})
+  .validator((input:{accessToken:string})=>({accessToken:z.string().min(1).parse(input.accessToken)}))
+  .handler(async({data})=>{
+    const {userId,client}=await requireSeller(data.accessToken);
+    const {error}=await client.from("seller_notifications").update({read_at:new Date().toISOString()})
+      .eq("seller_id",userId).is("read_at",null);
+    if(error) throw new Error("Could not mark notifications as read.");
     return {ok:true};
   });
 
