@@ -168,6 +168,8 @@ drop trigger if exists notify_seller_order_events on public.orders;
 create trigger notify_seller_order_events
 after insert or update of seller_id, seller_share, refunded
 on public.orders for each row execute function public.notify_seller_order_events();
+revoke all on function public.notify_seller_order_events() from public, anon, authenticated;
+grant execute on function public.notify_seller_order_events() to service_role;
 
 -- Payout lifecycle notifications are written atomically alongside the admin transition.
 create or replace function public.admin_transition_withdrawal(
@@ -254,6 +256,8 @@ drop trigger if exists notify_seller_withdrawal_request on public.withdrawal_req
 create trigger notify_seller_withdrawal_request
 after insert on public.withdrawal_requests
 for each row execute function public.notify_seller_withdrawal_request();
+revoke all on function public.notify_seller_withdrawal_request() from public, anon, authenticated;
+grant execute on function public.notify_seller_withdrawal_request() to service_role;
 
 -- Suspension and reinstatement change seller access and deserve explicit notice.
 create or replace function public.notify_seller_account_status()
@@ -279,6 +283,8 @@ drop trigger if exists notify_seller_account_status on public.seller_application
 create trigger notify_seller_account_status
 after update of is_suspended on public.seller_applications
 for each row execute function public.notify_seller_account_status();
+revoke all on function public.notify_seller_account_status() from public, anon, authenticated;
+grant execute on function public.notify_seller_account_status() to service_role;
 
 -- Low stock is useful for physical seller products only. Send once on threshold crossing.
 create or replace function public.notify_seller_low_stock()
@@ -303,5 +309,7 @@ drop trigger if exists notify_seller_low_stock on public.products;
 create trigger notify_seller_low_stock
 after insert or update of stock_quantity on public.products
 for each row execute function public.notify_seller_low_stock();
+revoke all on function public.notify_seller_low_stock() from public, anon, authenticated;
+grant execute on function public.notify_seller_low_stock() to service_role;
 
 commit;
