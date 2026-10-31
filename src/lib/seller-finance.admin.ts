@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   adminGetMarketplaceCommission, adminSetMarketplaceCommission, adminSellerWallets,
   adminSetSellerSuspension, adminTransitionWithdrawal, adminWithdrawalQueue,
+  adminGetSellerPayoutPolicy, adminSetSellerPayoutPolicy,
 } from "@/lib/seller-finance.admin.server-fns";
 
 async function token(){
@@ -29,4 +30,12 @@ export async function transitionWithdrawal(requestId:string,status:"processing"|
 }
 export async function setMarketplaceCommission(rate:number){
  return adminSetMarketplaceCommission({data:{accessToken:await token(),rate}});
+}
+
+export const sellerPayoutPolicyQuery=()=>({
+ queryKey:["admin","seller-payout-policy"],
+ queryFn:async()=>adminGetSellerPayoutPolicy({data:{accessToken:await token()}}),
+});
+export async function setSellerPayoutPolicy(holdEnabled:boolean,reserveEnabled:boolean){
+ return adminSetSellerPayoutPolicy({data:{accessToken:await token(),holdEnabled,reserveEnabled}});
 }
