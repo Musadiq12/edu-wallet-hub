@@ -163,8 +163,11 @@ export const approveSellerApplication = createServerFn({ method: "POST" })
       .select("id,status")
       .eq("id", data.id)
       .maybeSingle();
-    if (rowError || !row) throw new Error("Application not found.");
-    if (row.status !== "pending") throw new Error("Only pending applications can be approved.");
+    if (rowError) throw new Error("Could not verify the application's current status.");
+    if (!row) throw new Error("Application not found. Refresh the list and try again.");
+    if (row.status !== "pending") {
+      throw new Error(`This application is already ${row.status}. Refresh the list to see its current state.`);
+    }
 
     // This database function atomically updates the application and profile role.
     const { error } = await adminClient.rpc("server_review_seller_application", {
@@ -172,7 +175,17 @@ export const approveSellerApplication = createServerFn({ method: "POST" })
       p_status: "approved",
       p_rejection_reason: null,
     });
-    if (error) throw new Error("Could not approve this application. It may already have been reviewed.");
+    if (error) {
+      const { data: latest, error: refreshError } = await adminClient
+        .from("seller_applications")
+        .select("status")
+        .eq("id", data.id)
+        .maybeSingle();
+      if (!refreshError && latest && latest.status !== "pending") {
+        throw new Error(`This application was already ${latest.status}. The list has been refreshed.`);
+      }
+      throw new Error(`Approval failed: ${error.message}`);
+    }
     return { ok: true };
   });
 
@@ -216,7 +229,7 @@ export const rejectSellerApplication = createServerFn({ method: "POST" })
       if (!refreshError && latest && latest.status !== "pending") {
         throw new Error(`This application was already ${latest.status}. The list has been refreshed.`);
       }
-      throw new Error("The application could not be rejected. Please refresh and try again.");
+      throw new Error(`Rejection failed: ${error.message}`);
     }
     return { ok: true };
   });
