@@ -200,7 +200,7 @@ export const sellerGetProduct = createServerFn({method:"POST"})
   });
 
 export const sellerCreateProduct = createServerFn({method:"POST"})
-  .validator((input:{accessToken:string;title:string;description:string;whatsIncluded:string;categoryId:string|null;pageCount:number;coverSourceUrl:string|null;rightsConfirmed:true;exam:string;subject:string;price:number;discountedPrice:number|null;pdfPath:string;previewPath?:string|null}) => {
+  .validator((input:{accessToken:string;title:string;description:string;whatsIncluded:string;categoryId:string|null;pageCount:number;coverSourceUrl:string|null;rightsConfirmed:true;exam:string;subject:string;price:number;discountedPrice?:number|null;pdfPath:string;previewPath?:string|null}) => {
     const parsed=productInputSchema.parse(input);
     const cover=validateCoverSourceUrl(parsed.coverSourceUrl);
     return { ...parsed, cover, accessToken:z.string().min(1).parse(input.accessToken) };
