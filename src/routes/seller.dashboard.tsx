@@ -39,30 +39,9 @@ function DashboardPage(){
     <section aria-label="Earnings summary" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {statItems.map(item=>{const Icon=item.icon;return <Card key={item.label} className="rounded-2xl shadow-sm"><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{item.label}</CardTitle><Icon className={`size-4 ${item.tone}`} aria-hidden="true"/></CardHeader><CardContent><div className="text-2xl font-bold tabular-nums tracking-tight">{query.isLoading?<Skeleton className="h-8 w-28"/>:item.value}</div><p className="mt-1 text-xs leading-5 text-muted-foreground">{item.sub}</p></CardContent></Card>})}
     </section>
-    <Card className="rounded-2xl shadow-sm">
-      <CardHeader className="space-y-1"><CardTitle className="text-base">How your earnings move</CardTitle><p className="text-sm text-muted-foreground">Every verified sale follows the same settlement and withdrawal rules.</p></CardHeader>
-      <CardContent>
-        <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          {[
-            ["01","Sale verified","A buyer's payment is verified and your seller share is recorded."],
-            ["02","7-day hold","The earning stays pending for 7 days from verification."],
-            ["03","Released","After the hold, the amount moves into released earnings."],
-            ["04","₹500 reserve","The wallet keeps the minimum reserve; existing withdrawals are also accounted for."],
-            ["05","UPI payout","Request a withdrawal. EduWallet processes it manually within 24 hours."],
-          ].map(([step,title,detail],i)=><li key={step} className="relative rounded-xl border border-border bg-muted/30 p-3.5">
-            <div className="flex items-center gap-2"><span className="inline-flex size-7 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">{step}</span>{i===4?<CheckCircle2 className="size-4 text-emerald-700 dark:text-emerald-300"/>:<span className="h-px flex-1 bg-border"/>}</div>
-            <p className="mt-3 text-sm font-semibold">{title}</p><p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p>
-          </li>)}
-        </ol>
-        <p className="mt-4 flex items-start gap-2 rounded-lg bg-muted/50 p-3 text-xs leading-5 text-muted-foreground"><CircleHelp className="mt-0.5 size-4 shrink-0"/> Pending earnings are not available for withdrawal yet. The sale date and release date are shown against each order in Sales.</p>
-      </CardContent>
-    </Card>
+    
     <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(300px,.9fr)]">
-      <Card className="rounded-2xl shadow-sm"><CardHeader className="flex flex-row items-center justify-between gap-3"><div><CardTitle className="flex items-center gap-2 text-base"><Wallet className="size-4"/> Wallet snapshot</CardTitle><p className="mt-1 text-sm text-muted-foreground">Balances from your seller wallet ledger.</p></div><Button asChild variant="outline" size="sm"><Link to="/seller/wallet">View wallet <ArrowRight className="ml-1 size-4"/></Link></Button></CardHeader><CardContent className="space-y-3">
-        <div className="flex items-center justify-between gap-3 rounded-xl bg-emerald-50 p-4 dark:bg-emerald-950/30"><div><p className="text-xs font-medium text-emerald-800 dark:text-emerald-200">Available to withdraw</p><p className="mt-1 text-2xl font-bold tabular-nums text-emerald-900 dark:text-emerald-100">{query.isLoading?<Skeleton className="h-8 w-28"/>:money(data?.availableBalance??0)}</p></div><Wallet className="size-7 text-emerald-700 dark:text-emerald-300"/></div>
-        <div className="grid gap-3 sm:grid-cols-2"><div className="rounded-xl border border-border p-3"><p className="text-xs text-muted-foreground">Pending release</p><p className="mt-1 font-semibold tabular-nums">{query.isLoading?<Skeleton className="h-6 w-24"/>:money(data?.pendingBalance??0)}</p><p className="mt-1 text-xs text-muted-foreground">Waiting for the 7-day hold to end</p></div><div className="rounded-xl border border-border p-3"><p className="text-xs text-muted-foreground">Commission deducted</p><p className="mt-1 font-semibold tabular-nums">{query.isLoading?<Skeleton className="h-6 w-24"/>:money(data?.commissionDeducted??0)}</p><p className="mt-1 text-xs text-muted-foreground">Shown separately in each sale</p></div></div>
-        <p className="text-xs leading-5 text-muted-foreground">The ₹500 minimum reserve and pending or completed withdrawals are included in the withdrawable-balance calculation.</p>
-      </CardContent></Card>
+      
       <Card className="rounded-2xl shadow-sm"><CardHeader className="flex flex-row items-center justify-between gap-3"><div><CardTitle className="flex items-center gap-2 text-base"><CalendarClock className="size-4"/> Product updates</CardTitle><p className="mt-1 text-sm text-muted-foreground">Review decisions and changes to your listings.</p></div><Button asChild variant="outline" size="sm"><Link to="/seller/products">Products <ArrowRight className="ml-1 size-4"/></Link></Button></CardHeader><CardContent>
         {notifications.isLoading?<Skeleton className="h-16 w-full"/>:notifications.isError?<p className="text-sm text-muted-foreground">Notifications could not be loaded. Refresh to try again.</p>:(notifications.data??[]).length===0?<div className="py-6 text-center"><Package className="mx-auto size-7 text-muted-foreground"/><p className="mt-2 text-sm font-medium">No product updates yet</p><p className="mt-1 text-xs text-muted-foreground">Review decisions will appear here when a product is checked.</p></div>:<div className="divide-y divide-border">{(notifications.data??[]).slice(0,5).map(item=><div key={item.id} className="flex items-start justify-between gap-3 py-3"><div className="min-w-0"><p className="text-sm font-medium">{item.title}</p><p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">{item.message}</p><p className="mt-1 text-xs text-muted-foreground">{date(item.created_at)}</p></div><span className={item.read_at?"size-2 shrink-0 rounded-full bg-muted":"mt-1 size-2 shrink-0 rounded-full bg-primary"} aria-label={item.read_at?"Read":"Unread"}/></div>)}</div>}
       </CardContent></Card>
