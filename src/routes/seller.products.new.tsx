@@ -44,7 +44,7 @@ function Field({label,htmlFor,required,help,children}:{label:string;htmlFor:stri
 }
 function NewSellerProduct(){
  const navigate=useNavigate(),qc=useQueryClient(),lock=useRef(false);
- const [title,setTitle]=useState(""),[description,setDescription]=useState(""),[included,setIncluded]=useState(""),[categoryId,setCategoryId]=useState(""),[exam,setExam]=useState(""),[subject,setSubject]=useState(""),[price,setPrice]=useState(""),[pageCount,setPageCount]=useState(""),[coverUrl,setCoverUrl]=useState(""),[rightsConfirmed,setRightsConfirmed]=useState(false);
+ const [title,setTitle]=useState(""),[description,setDescription]=useState(""),[included,setIncluded]=useState(""),[categoryId,setCategoryId]=useState(""),[exam,setExam]=useState(""),[subject,setSubject]=useState(""),[price,setPrice]=useState(""),[discountedPrice,setDiscountedPrice]=useState(""),[pageCount,setPageCount]=useState(""),[coverUrl,setCoverUrl]=useState(""),[rightsConfirmed,setRightsConfirmed]=useState(false);
  const [pdf,setPdf]=useState<File|null>(null),[preview,setPreview]=useState<File|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState("");
  const pick=(file:File|null,kind:Kind)=>{
   if(!file){if(kind==="pdf")setPdf(null);else setPreview(null);return;}
@@ -61,7 +61,7 @@ function NewSellerProduct(){
  };
  const submit=async(e:React.FormEvent)=>{
   e.preventDefault();if(lock.current)return;
-  const amount=Number(price);
+  const amount=Number(price),discountAmount=discountedPrice.trim()===""?null:Number(discountedPrice);
   if(title.trim().length<5||title.trim().length>120){setError("Title must be 5–120 characters.");return;}
   if(description.trim().length<20||description.trim().length>2000){setError("Description must be 20–2,000 characters.");return;}
   if(included.trim().length<5||included.trim().length>2000){setError("Explain what the product includes (5–2,000 characters).");return;}
@@ -72,14 +72,14 @@ function NewSellerProduct(){
   if(!exams.includes(exam as typeof exams[number])){setError("Choose an exam or course.");return;}
   if(subject.trim().length<2||subject.trim().length>60){setError("Subject must be 2–60 characters.");return;}
   if(!/^(?:\d{1,4})(?:\.\d{1,2})?$/.test(price)||!Number.isFinite(amount)||amount<10||amount>5000){setError("Enter a price between ₹10 and ₹5,000 with up to 2 decimals.");return;}
-  if(!pdf){setError("Upload your main notes PDF.");return;}
+  if(discountedPrice.trim()!==""&&(!/^(?:\\d{1,4})(?:\\.\\d{1,2})?$/.test(discountedPrice)||!Number.isFinite(discountAmount)||discountAmount!<1||discountAmount!>=amount)){setError("Discounted price must be at least ₹1 and lower than the original price.");return;}\n  if(!pdf){setError("Upload your main notes PDF.");return;}
   lock.current=true;setBusy(true);setError("");
   let mainPath:string|null=null,previewPath:string|null=null;
   try{
    const token=await sellerAccessToken();
    mainPath=await upload(pdf,"pdf",token);
    if(preview)previewPath=await upload(preview,"preview",token);
-   await sellerCreateProduct({data:{accessToken:token,title:title.trim(),description:description.trim(),whatsIncluded:included.trim(),categoryId:categoryId||null,pageCount:Number(pageCount),coverSourceUrl:coverUrl.trim()||null,rightsConfirmed,exam,subject:subject.trim(),price:amount,pdfPath:mainPath,previewPath}});
+   await sellerCreateProduct({data:{accessToken:token,title:title.trim(),description:description.trim(),whatsIncluded:included.trim(),categoryId:categoryId||null,pageCount:Number(pageCount),coverSourceUrl:coverUrl.trim()||null,rightsConfirmed,exam,subject:subject.trim(),price:amount,discountedPrice:discountAmount,pdfPath:mainPath,previewPath}});
    mainPath=null;previewPath=null;
    await qc.invalidateQueries({queryKey:["seller","products"]});
    toast.success("Product submitted for review.");
@@ -101,12 +101,12 @@ function NewSellerProduct(){
       <Field label="What's included" htmlFor="seller-included" required help="Mention chapters, solved papers, answer keys, topics or other contents. This appears on the product page."><Textarea id="seller-included" rows={3} maxLength={2000} value={included} onChange={e=>setIncluded(e.target.value)} placeholder={"Complete chapter-wise notes\nPrevious-year questions\nAnswer key and explanations"} required className="min-h-24 resize-y"/></Field>
      </Section>
      <div className="my-7 border-t"/>
-     <Section number="02" title="Course and pricing" description="Choose where this resource belongs and set one selling price.">
+     <Section number="02" title="Course and pricing" description="Choose a category and set your original price. Add a sale price only if you want to offer a discount.">
       <div className="grid gap-4 sm:grid-cols-2">
        <Field label="Category" htmlFor="seller-category" required help="The store category used to organise your listing."><Select value={categoryId} onValueChange={setCategoryId}><SelectTrigger id="seller-category" className="h-11"><SelectValue placeholder="Select category"/></SelectTrigger><SelectContent>{categories.map(([id,label])=><SelectItem key={id} value={id}>{label}</SelectItem>)}</SelectContent></Select></Field>
        <Field label="Exam / course" htmlFor="seller-exam" required><Select value={exam} onValueChange={setExam}><SelectTrigger id="seller-exam" className="h-11"><SelectValue placeholder="Select exam or course"/></SelectTrigger><SelectContent>{exams.map(item=><SelectItem value={item} key={item}>{item}</SelectItem>)}</SelectContent></Select></Field>
        <Field label="Subject" htmlFor="seller-subject" required help="e.g. Indian Polity, Physics, Accounting"><Input id="seller-subject" maxLength={60} value={subject} onChange={e=>setSubject(e.target.value)} placeholder="Enter subject" required className="h-11"/></Field>
-       <Field label="Selling price" htmlFor="seller-price" required help="₹10–₹5,000. Enter the amount students pay."><div className="relative"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span><Input id="seller-price" type="number" min="10" max="5000" step="0.01" value={price} onChange={e=>setPrice(e.target.value)} placeholder="99.00" required className="h-11 pl-8"/></div></Field>
+       <Field label="Original price" htmlFor="seller-price" required help="The regular price before any discount. ₹10–₹5,000."><div className="relative"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span><Input id="seller-price" type="number" min="10" max="5000" step="0.01" value={price} onChange={e=>setPrice(e.target.value)} placeholder="199" required className="h-11 pl-8"/></div></Field><Field label="Discounted price (optional)" htmlFor="seller-discount-price" help="The amount customers actually pay. Leave blank to sell at the original price."><div className="relative"><span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span><Input id="seller-discount-price" type="number" min="1" max="5000" step="0.01" value={discountedPrice} onChange={e=>setDiscountedPrice(e.target.value)} placeholder="149" className="h-11 pl-8"/></div>{price&&discountedPrice&&Number(discountedPrice)>0&&Number(discountedPrice)<Number(price)&&<p className="mt-1 text-xs font-medium text-emerald-700">Customer saves {Math.round((1-Number(discountedPrice)/Number(price))*100)}% · pays ₹{Number(discountedPrice).toFixed(2)}</p>}</Field>
       </div>
      </Section>
      <div className="my-7 border-t"/>
