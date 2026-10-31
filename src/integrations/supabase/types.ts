@@ -2547,6 +2547,7 @@ export type Database = {
           p_page_count: number
           p_seller_cover_source_url: string | null
           p_rights_confirmed: boolean
+          p_discounted_price?: number | null
         }
         Returns: string
       }
