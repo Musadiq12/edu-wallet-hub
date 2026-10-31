@@ -1,5 +1,8 @@
 import { withSupabase } from "npm:@supabase/server";
 
+const EDUWALLET_FROM_EMAIL = "EduWallet Support <support@eduwallethub.in>";
+const EDUWALLET_REPLY_TO = "support@eduwallethub.in";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -187,9 +190,9 @@ export default {
     }
 
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
-    const fromEmail = Deno.env.get("EDUWALLET_FROM_EMAIL");
-    if ((!resendApiKey || !fromEmail) && action !== "verify") {
-      return json({ error: "Email delivery is not configured. Add RESEND_API_KEY and EDUWALLET_FROM_EMAIL to Supabase Edge Function secrets." }, 500);
+    const fromEmail = EDUWALLET_FROM_EMAIL;
+    if (!resendApiKey && action !== "verify") {
+      return json({ error: "Email delivery is not configured. Add RESEND_API_KEY to Supabase Edge Function secrets." }, 500);
     }
 
     const r2WorkerUrl = Deno.env.get("R2_WORKER_URL")?.replace(/\/$/, "");
@@ -237,7 +240,7 @@ export default {
     const amount = formatInr(Number(order.amount));
 
     let emailSent = false;
-    if (resendApiKey && fromEmail) {
+    if (resendApiKey) {
       const emailResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -250,6 +253,7 @@ export default {
       },
         body: JSON.stringify({
           from: fromEmail,
+        reply_to: EDUWALLET_REPLY_TO,
         to: [order.email],
         subject: `Your EduWallet purchase is ready — ${product.title}`,
         html: `<!doctype html>
