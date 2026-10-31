@@ -1,5 +1,8 @@
 import { withSupabase } from "npm:@supabase/server";
 
+const EDUWALLET_FROM_EMAIL = "EduWallet Support <support@eduwallethub.in>";
+const EDUWALLET_REPLY_TO = "support@eduwallethub.in";
+
 const encoder = new TextEncoder();
 
 function response(data: unknown, status = 200) {
@@ -49,6 +52,7 @@ async function sendDeliveryEmail(args: {
     },
     body: JSON.stringify({
       from: args.from,
+      reply_to: EDUWALLET_REPLY_TO,
       to: [args.to],
       subject: `Your EduWallet purchase is ready — ${args.productTitle}`,
       html: `<p>Hello ${escapeHtml(args.customerName)},</p><p>Your payment for <strong>${escapeHtml(args.productTitle)}</strong> is confirmed.</p><p>Amount paid: ${amount}</p><p><a href="${args.downloadUrl}">Download your PDF</a></p><p>This secure link expires in 48 hours. Contact support if it expires.</p><p>Thank you for using EduWallet.</p>`,
@@ -230,15 +234,15 @@ Deno.serve(withSupabase({ auth: "none" }, async (req, ctx) => {
       const workerUrl = Deno.env.get("R2_WORKER_URL")?.replace(/\/$/, "");
       const deliverySecret = Deno.env.get("R2_WORKER_DELIVERY_SECRET");
       const resendApiKey = Deno.env.get("RESEND_API_KEY");
-      const fromEmail = Deno.env.get("EDUWALLET_FROM_EMAIL");
+      const fromEmail = EDUWALLET_FROM_EMAIL;
       if (!workerUrl || !deliverySecret) {
         throw new Error("PDF fulfilment requires R2 worker secrets.");
       }
       // A buyer may configure their own email provider after acquiring the site.
       // Record the payment event as handled, but leave the order paid (not fulfilled)
       // until email delivery is configured and the order can be fulfilled safely.
-      if (!resendApiKey || !fromEmail) {
-        const message = "PDF email delivery deferred: RESEND_API_KEY and EDUWALLET_FROM_EMAIL are not configured.";
+      if (!resendApiKey) {
+        const message = "PDF email delivery deferred: RESEND_API_KEY is not configured.";
         const { error: deferredError } = await ctx.supabaseAdmin.from("razorpay_webhook_events")
           .update({ processed_at: new Date().toISOString(), processing_error: message })
           .eq("event_id", eventId);
