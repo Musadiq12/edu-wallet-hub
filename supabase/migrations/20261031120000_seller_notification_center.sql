@@ -126,8 +126,6 @@ language plpgsql
 security definer
 set search_path = ''
 as $$
-declare
-  v_product_title text;
 begin
   if tg_op = 'INSERT' then
     if new.seller_id is not null and new.seller_share is not null then
