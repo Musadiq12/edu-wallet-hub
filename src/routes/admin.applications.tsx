@@ -134,8 +134,10 @@ function SellerApplicationsAdmin() {
     try {
       await approveSellerApplication({ data: { id: approveTarget.id, accessToken: await getSessionAccessToken() } });
       await refreshLists();
+      await Promise.all([apps.refetch(), pendingCount.refetch()]);
       toast.success("Seller application approved. The user is now a seller.");
     } catch (error) {
+      await Promise.all([apps.refetch(), pendingCount.refetch()]);
       toast.error(error instanceof Error ? error.message : "Could not approve this application.");
     } finally {
       setBusy(false);
