@@ -148,8 +148,10 @@ function SellerApplicationsAdmin() {
     try {
       await rejectSellerApplication({ data: { id: rejectTarget.id, reason: reason.trim(), accessToken: await getSessionAccessToken() } });
       await refreshLists();
+      await Promise.all([apps.refetch(), pendingCount.refetch()]);
       toast.success("Application rejected. The applicant can edit and resubmit.");
     } catch (error) {
+      await Promise.all([apps.refetch(), pendingCount.refetch()]);
       toast.error(error instanceof Error ? error.message : "Could not reject this application.");
     } finally {
       setBusy(false);
