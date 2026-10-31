@@ -75,12 +75,18 @@ async function requireSeller(accessToken: string): Promise<SellerContext> {
 }
 
 function safeMessage(error: unknown, fallback: string) {
-  const message = error instanceof Error ? error.message.toLowerCase() : "";
-  if (message.includes("product not found")) return "This product could not be found.";
-  if (message.includes("duplicate key")) return "That product URL is already in use. Please change the title.";
-  if (message.includes("invalid product") || message.includes("22023")) return "Check the product details and try again.";
-  if (message.includes("archived")) return "Archived products cannot be edited.";
-  if (message.includes("seller access")) return "Seller access is no longer available. Please sign in again.";
+  const message = error instanceof Error ? error.message : "";
+  const normalized = message.toLowerCase();
+  if (normalized.includes("product not found")) return "This product could not be found.";
+  if (normalized.includes("duplicate key")) return "That product URL is already in use. Please change the title.";
+  if (normalized.includes("invalid product") || normalized.includes("22023")) return "Check the product details and try again.";
+  if (normalized.includes("archived")) return "Archived products cannot be edited.";
+  if (normalized.includes("seller access")) return "Seller access is no longer available. Please sign in again.";
+  if (normalized.includes("function") && normalized.includes("does not exist")) {
+    console.error("Seller product RPC is missing or out of date:", message);
+    return "The product submission service is being updated. Please refresh and try again.";
+  }
+  console.error("Seller workspace operation failed:", error);
   return fallback;
 }
 
