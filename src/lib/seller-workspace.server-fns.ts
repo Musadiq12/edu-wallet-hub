@@ -24,7 +24,7 @@ const productInputSchema = z.object({
   rightsConfirmed: z.literal(true),
   exam: z.enum(["NEET","JEE","UPSC","SSC","CGL","CLAT","CA","Other"]),
   subject: z.string().trim().min(2).max(60),
-  price: z.number().finite().min(10).max(5000).refine(v => Math.round(v*100) === v*100),
+  price: z.number().finite().min(10).max(5000).refine(v => Math.round(v*100) === v*100),\n  discountedPrice: z.number().finite().min(1).max(4999.99).refine(v => Math.round(v*100) === v*100).nullable(),
   pdfPath: z.string().min(1).max(500),
   previewPath: z.string().max(500).nullable().optional(),
 });
@@ -200,7 +200,7 @@ export const sellerGetProduct = createServerFn({method:"POST"})
   });
 
 export const sellerCreateProduct = createServerFn({method:"POST"})
-  .validator((input:{accessToken:string;title:string;description:string;whatsIncluded:string;categoryId:string|null;pageCount:number;coverSourceUrl:string|null;rightsConfirmed:true;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null}) => {
+  .validator((input:{accessToken:string;title:string;description:string;whatsIncluded:string;categoryId:string|null;pageCount:number;coverSourceUrl:string|null;rightsConfirmed:true;exam:string;subject:string;price:number;discountedPrice:number|null;pdfPath:string;previewPath?:string|null}) => {
     const parsed=productInputSchema.parse(input);
     const cover=validateCoverSourceUrl(parsed.coverSourceUrl);
     return { ...parsed, cover, accessToken:z.string().min(1).parse(input.accessToken) };
@@ -214,7 +214,7 @@ export const sellerCreateProduct = createServerFn({method:"POST"})
       p_title:data.title,p_slug:slug,p_description:data.description,p_exam_label:data.exam,
       p_subject_label:data.subject,p_price:data.price,p_pdf_path:data.pdfPath,p_preview_path:data.previewPath??null,
       p_whats_included:data.whatsIncluded,p_category_id:data.categoryId,p_page_count:data.pageCount,
-      p_seller_cover_source_url:data.cover?.source??null,p_rights_confirmed:data.rightsConfirmed,
+      p_seller_cover_source_url:data.cover?.source??null,p_rights_confirmed:data.rightsConfirmed,\n      p_discounted_price:data.discountedPrice,
     });
     if(error){
       await removePrivateFiles(context,[data.pdfPath,data.previewPath]);
