@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, Banknote, Bell, BellRing, CheckCheck, PackageCheck, ShieldAlert, ShoppingCart, Info } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SellerLayout } from "@/components/seller/SellerLayout";
 import { SellerRouteGuard } from "@/components/seller/SellerRouteGuard";
-import { supabase } from "@/integrations/supabase/client";
 import { sellerNotificationsQuery, sellerMarkNotificationRead, sellerMarkAllNotificationsRead } from "@/lib/seller-workspace";
 import { cn } from "@/lib/utils";
 
@@ -64,19 +63,6 @@ function SellerNotificationsPage() {
     onError: (_error, _variables, context) => { if (context?.previous) queryClient.setQueryData(["seller","notifications"], context.previous); },
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["seller","notifications"] }),
   });
-
-  useEffect(() => {
-    let active = true;
-    let channel: ReturnType<typeof supabase.channel> | null = null;
-    void supabase.auth.getUser().then(({ data }) => {
-      if (!active || !data.user) return;
-      channel = supabase.channel("seller-notification-page-" + data.user.id)
-        .on("postgres_changes", { event: "*", schema: "public", table: "seller_notifications", filter: "seller_id=eq." + data.user.id },
-          () => void queryClient.invalidateQueries({ queryKey: ["seller","notifications"] }))
-        .subscribe();
-    });
-    return () => { active = false; if (channel) void supabase.removeChannel(channel); };
-  }, [queryClient]);
 
   const open = async (item: Notification) => {
     if (!item.read_at) await markOne.mutateAsync(item.id);
