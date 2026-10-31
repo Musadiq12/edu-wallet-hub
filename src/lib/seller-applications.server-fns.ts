@@ -187,12 +187,37 @@ export const rejectSellerApplication = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const adminClient = await requireAdmin(data.accessToken);
+    const { data: application, error: lookupError } = await adminClient
+      .from("seller_applications")
+      .select("id,status")
+      .eq("id", data.id)
+      .maybeSingle();
+
+    if (lookupError) throw new Error("Could not verify the application's current status.");
+    if (!application) throw new Error("Application not found. Refresh the list and try again.");
+    if (application.status !== "pending") {
+      throw new Error(`This application is already ${application.status}. Refresh the list to see its current state.`);
+    }
+
     const { error } = await adminClient.rpc("server_review_seller_application", {
       p_application_id: data.id,
       p_status: "rejected",
       p_rejection_reason: data.reason,
     });
-    if (error) throw new Error("Could not reject this application. It may already have been reviewed.");
+    if (error) {
+      // The RPC performs a conditional pending -> rejected transition. If another
+      // admin reviewed it after the lookup, report the fresh status instead of
+      // hiding every database failure behind the same generic toast.
+      const { data: latest, error: refreshError } = await adminClient
+        .from("seller_applications")
+        .select("status")
+        .eq("id", data.id)
+        .maybeSingle();
+      if (!refreshError && latest && latest.status !== "pending") {
+        throw new Error(`This application was already ${latest.status}. The list has been refreshed.`);
+      }
+      throw new Error("The application could not be rejected. Please refresh and try again.");
+    }
     return { ok: true };
   });
 
