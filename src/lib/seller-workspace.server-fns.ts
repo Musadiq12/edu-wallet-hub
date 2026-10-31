@@ -214,7 +214,8 @@ export const sellerCreateProduct = createServerFn({method:"POST"})
       p_title:data.title,p_slug:slug,p_description:data.description,p_exam_label:data.exam,
       p_subject_label:data.subject,p_price:data.price,p_pdf_path:data.pdfPath,p_preview_path:data.previewPath??null,
       p_whats_included:data.whatsIncluded,p_category_id:data.categoryId,p_page_count:data.pageCount,
-      p_seller_cover_source_url:data.cover?.source??null,p_rights_confirmed:data.rightsConfirmed,\n      p_discounted_price:data.discountedPrice,
+      p_seller_cover_source_url:data.cover?.source??null,p_rights_confirmed:data.rightsConfirmed,
+      p_discounted_price:data.discountedPrice,
     });
     if(error){
       await removePrivateFiles(context,[data.pdfPath,data.previewPath]);
