@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, BadgeCheck, Banknote, BookOpen, CalendarClock, CheckCircle2, CircleHelp, Clock3, IndianRupee, Package, ShieldCheck, ShoppingBag, Wallet } from "lucide-react";
+import { ArrowRight, BadgeCheck, BookOpen, CalendarClock, CheckCircle2, Clock3, IndianRupee, Package, ShieldCheck, ShoppingBag, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,10 +30,10 @@ function DashboardPage(){
   return <SellerRouteGuard><SellerLayout>
     <section className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 via-white to-slate-50 p-5 shadow-sm dark:border-emerald-900 dark:from-emerald-950/40 dark:via-card dark:to-slate-950 sm:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="max-w-2xl"><div className="flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-200"><ShieldCheck className="size-5"/> Seller account verified</div><h2 className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">Your work. Your earnings. Clear at every step.</h2><p className="mt-1 text-sm leading-6 text-muted-foreground">Your seller workspace is active. Review your listings, understand when earnings are released, and manage your UPI payout details.</p></div>
-        <div className="flex flex-wrap gap-2"><Button asChild><Link to="/seller/products/new"><BookOpen className="mr-2 size-4"/> Add a resource</Link></Button><Button asChild variant="outline"><Link to="/seller/wallet"><Wallet className="mr-2 size-4"/> Open wallet</Link></Button></div>
+        <div className="max-w-2xl"><div className="flex items-center gap-2 text-sm font-semibold text-emerald-800 dark:text-emerald-200"><ShieldCheck className="size-5"/> Seller account verified</div><h2 className="mt-2 text-xl font-bold tracking-tight sm:text-2xl">Your seller overview</h2><p className="mt-1 text-sm leading-6 text-muted-foreground">Track your products, sales and available earnings from one place.</p></div>
+        <div className="flex flex-wrap gap-2"><Button asChild><Link to="/seller/products/new"><BookOpen className="mr-2 size-4"/> Add a resource</Link></Button><Button asChild variant="outline"><Link to="/seller/products">My products <ArrowRight className="ml-1 size-4"/></Link></Button></div>
       </div>
-      <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-emerald-200/80 pt-4 text-xs text-muted-foreground dark:border-emerald-900"><span className="inline-flex items-center gap-1.5"><LockIcon/> Seller-only account data</span><span className="inline-flex items-center gap-1.5"><CheckCircle2 className="size-3.5 text-emerald-700 dark:text-emerald-300"/> Order-level earnings ledger</span><span className="inline-flex items-center gap-1.5"><Banknote className="size-3.5"/> Manual UPI payouts</span></div>
+      
     </section>
     {query.isError&&<div role="alert" className="rounded-xl border border-destructive/30 bg-card p-4 text-sm">We couldn't load your seller summary. Your records have not been changed. Refresh to try again.</div>}
     <section aria-label="Earnings summary" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
