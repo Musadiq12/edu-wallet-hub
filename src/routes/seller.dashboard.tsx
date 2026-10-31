@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, BadgeCheck, BookOpen, CalendarClock, CheckCircle2, Clock3, IndianRupee, Package, ShieldCheck, ShoppingBag, Wallet } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarClock, Clock3, IndianRupee, Package, ShieldCheck, ShoppingBag, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -54,4 +54,3 @@ function DashboardPage(){
     <p className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="size-4"/> Your seller balances are calculated from the seller wallet ledger. For questions about a specific sale or payout, contact <a className="font-medium text-primary underline underline-offset-2" href="mailto:support@eduwallethub.in">seller support</a>.</p>
   </SellerLayout></SellerRouteGuard>;
 }
-function LockIcon(){return <BadgeCheck className="size-3.5"/>}
