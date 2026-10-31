@@ -105,6 +105,9 @@ function NotificationBell() {
     const target = item.target_url && item.target_url.startsWith("/") ? item.target_url : "/seller/notifications";
     await navigate({ to: target as never });
   };
+  const openAllNotifications = async () => {
+    await navigate({ to: "/seller/notifications" });
+  };
 
   return (
     <DropdownMenu>
@@ -151,7 +154,7 @@ function NotificationBell() {
           })}
         </div>
         <DropdownMenuSeparator className="my-0"/>
-        <Link to="/seller/notifications" className="flex items-center justify-center gap-2 px-4 py-3 text-xs font-semibold text-primary transition-colors hover:bg-muted">View all notifications</Link>
+        <button type="button" onClick={() => void openAllNotifications()} className="flex w-full items-center justify-center gap-2 px-4 py-3 text-xs font-semibold text-primary transition-colors hover:bg-muted">View all notifications</button>
       </DropdownMenuContent>
     </DropdownMenu>
   );
