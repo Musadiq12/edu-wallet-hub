@@ -43,6 +43,7 @@ const STATUSES: { value: "All" | OrderStatus; label: string }[] = [
   { value: "Payment Verified", label: "Payment Verified" },
   { value: "Preparing Order", label: "Preparing Order" },
   { value: "Dispatched", label: "Dispatched" },
+  { value: "Delivered", label: "Delivered" },
   { value: "Cancelled", label: "Cancelled" },
 ];
 
@@ -51,6 +52,7 @@ const statusStyles: Record<OrderStatus, string> = {
   "Payment Verified": "border-blue-300 bg-blue-50 text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200",
   "Preparing Order": "border-violet-300 bg-violet-50 text-violet-800 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-200",
   Dispatched: "border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950 dark:text-green-200",
+  Delivered: "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
   Cancelled: "border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200",
 };
 
@@ -234,6 +236,31 @@ function AdminOrders() {
     await transitionPhysicalOrder(order, "Dispatched", {
       courierName, trackingId, trackingLink, estimatedDelivery,
     });
+  };
+
+
+  const markPhysicalDelivered = async (order: AdminOrder) => {
+    if (order.product_type !== "physical" || order.status !== "Dispatched" || !order.dispatched_at) {
+      toast.error("Only dispatched physical orders can be marked delivered.");
+      return;
+    }
+    if (!window.confirm(`Confirm that physical order #${order.id} has been received by the customer.`)) return;
+    setBusyId(order.id);
+    try {
+      const { data, error } = await physicalTrackingRpc.rpc("admin_mark_physical_order_delivered", { p_order_id: order.id });
+      if (error) throw error;
+      const result = data as { ok?: boolean; status?: string };
+      if (!result?.ok) throw new Error("The order could not be marked delivered.");
+      await Promise.all([
+        qc.invalidateQueries({ queryKey: ["admin", "orders"] }),
+        qc.invalidateQueries({ queryKey: ["admin", "order-status-history", order.id] }),
+      ]);
+      toast.success("Order marked as delivered.");
+    } catch (error) {
+      toast.error(friendlyError(error, "Could not mark this order delivered."));
+    } finally {
+      setBusyId(null);
+    }
   };
 
   const verifyAndDeliver = async (order: AdminOrder) => {
@@ -518,6 +545,7 @@ Thank you for shopping with EduWallet.`;
                         {order.product_type === "physical" && <div className="sm:col-span-2 xl:col-span-3"><dt className="text-xs text-muted-foreground">Delivery address</dt><dd className="break-words">{[order.delivery_address, order.delivery_city, order.delivery_state, order.delivery_postal_code, order.delivery_country].filter(Boolean).join(", ") || "No address recorded"}</dd></div>}
                         <div><dt className="text-xs text-muted-foreground">Payment verified</dt><dd>{order.verified_at ? new Date(order.verified_at).toLocaleString() : "—"}</dd></div>
                         {order.product_type === "physical" && <div><dt className="text-xs text-muted-foreground">Dispatched</dt><dd>{order.dispatched_at ? new Date(order.dispatched_at).toLocaleString() : "—"}</dd></div>}
+                        {order.product_type === "physical" && <div><dt className="text-xs text-muted-foreground">Delivered</dt><dd>{order.delivered_at ? new Date(order.delivered_at).toLocaleString() : "—"}</dd></div>}
                       </dl>
                       <div className="mt-3 flex flex-wrap gap-2">
                         {order.screenshot_path && <Button size="sm" variant="outline" disabled={busy} onClick={() => void openPaymentProof(order)}>View payment proof</Button>}
@@ -631,7 +659,7 @@ Thank you for shopping with EduWallet.`;
                             <div><dt className="text-xs text-muted-foreground">Tracking ID</dt><dd className="break-all">{order.courier_tracking_id || "—"}</dd></div>
                           </dl>
                           <div className="flex flex-wrap items-center gap-2">
-                            <Button size="sm" className="bg-green-600 text-white hover:bg-green-700" onClick={() => openWhatsApp(order)}>
+                            <Button size="sm" className="bg-green-600 text-white hover:bg-green-700" disabled={busy} onClick={() => openWhatsApp(order)}>
                               <MessageCircle className="mr-1.5 h-4 w-4" />{order.whatsapp_sent_at ? "Resend WhatsApp Message" : "Send WhatsApp Message"}
                             </Button>
                             {order.whatsapp_sent_at ? (
@@ -641,11 +669,22 @@ Thank you for shopping with EduWallet.`;
                             )}
                           </div>
                           {order.whatsapp_sent_at && <p className="text-xs text-muted-foreground">Last marked sent: {new Date(order.whatsapp_sent_at).toLocaleString()}</p>}
+                          <div className="border-t border-border pt-3">
+                            <Button size="sm" disabled={busy} onClick={() => void markPhysicalDelivered(order)}>
+                              {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                              <CheckCircle2 className="mr-1.5 h-4 w-4" />Mark Delivered
+                            </Button>
+                          </div>
                         </div>
+                      )}
+                      {order.status === "Delivered" && order.product_type === "physical" && (
+                        <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                          Delivered{order.delivered_at ? ` on ${new Date(order.delivered_at).toLocaleString()}` : ""}.
+                        </p>
                       )}
 
                       {order.status === "Cancelled" && <p className="text-sm text-muted-foreground">This order has been cancelled.</p>}
-                      {order.status !== "Cancelled" && order.status !== "Dispatched" && order.status !== "Payment Verified" && order.status !== "Preparing Order" && order.status !== "Pending" && <p className="text-sm text-muted-foreground">No actions available for this status.</p>}
+                      {order.status !== "Cancelled" && order.status !== "Delivered" && order.status !== "Dispatched" && order.status !== "Payment Verified" && order.status !== "Preparing Order" && order.status !== "Pending" && <p className="text-sm text-muted-foreground">No actions available for this status.</p>}
                     </section>
 
                     <section>

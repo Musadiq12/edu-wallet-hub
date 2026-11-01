@@ -4,7 +4,6 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Bell,
   BadgePercent,
-  BarChart3,
   BookOpen,
   ChevronDown,
   ChevronsRight,
@@ -48,17 +47,14 @@ export const Route = createFileRoute("/admin")({
 
 const NAV = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { to: "/admin/analytics", label: "Analytics", icon: BarChart3, exact: false },
   { to: "/admin/orders", label: "Sales", icon: ShoppingCart, exact: false },
   { to: "/", label: "View Site", icon: ExternalLink, exact: false, external: true },
   { to: "/admin/products", label: "Products", icon: Package, exact: false },
   { to: "/admin/seller-products", label: "Product Review", icon: ClipboardCheck, exact: false },
   { to: "/admin/coupons", label: "Coupons", icon: BadgePercent, exact: false },
   { to: "/admin/customers", label: "Customers", icon: Users, exact: false },
-  { to: "/admin/applications", label: "Seller Applications", icon: Store, exact: false },
   { to: "/admin/sellers", label: "Sellers", icon: Users, exact: false },
-  { to: "/admin/withdrawals", label: "Withdrawals", icon: Wallet, exact: false },
-  { to: "/admin/commission", label: "Commission", icon: BadgePercent, exact: false },
+  { to: "/admin/applications", label: "Seller Management", icon: Store, exact: false },
   { to: "/admin/messages", label: "Messages", icon: Bell, exact: false },
   { to: "/admin/reviews", label: "Reviews", icon: Star, exact: false },
   { to: "/admin/blog", label: "Blog", icon: Newspaper, exact: false },
@@ -71,6 +67,7 @@ function AdminLayout() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sellerMenuOpen, setSellerMenuOpen] = useState(true);
   const [isDark, setIsDark] = useState(false);
   const { user, loading } = useSession();
   const { data: isAdmin, isLoading: roleLoading } = useIsAdmin(user?.id);
@@ -178,6 +175,63 @@ function AdminLayout() {
       {NAV.map((item) => {
         const Icon = item.icon;
 
+        if (item.label === "Seller Management") {
+          const sellerRoutes = [
+            { to: "/admin/applications" as const, label: "Applications" },
+            { to: "/admin/withdrawals" as const, label: "Withdrawals" },
+            { to: "/admin/commission" as const, label: "Commission" },
+          ];
+          return (
+            <div key={item.label} className="space-y-1">
+              <button
+                type="button"
+                aria-expanded={sellerMenuOpen}
+                onClick={() => {
+                  if (!open && !mobile) setOpen(true);
+                  setSellerMenuOpen((value) => !value);
+                }}
+                className="group flex h-11 w-full items-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
+              >
+                <span className="grid h-full w-12 shrink-0 place-content-center">
+                  <Icon className="h-4 w-4" />
+                </span>
+                {(open || mobile) && (
+                  <span className="flex min-w-0 flex-1 items-center justify-between gap-2 pr-3 text-sm font-medium">
+                    <span className="flex items-center gap-2">
+                      {item.label}
+                      {(pendingSellerApplications.data ?? 0) > 0 && (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                          {pendingSellerApplications.data}
+                        </span>
+                      )}
+                    </span>
+                    <ChevronDown className={cn("size-4 transition-transform", sellerMenuOpen && "rotate-180")} />
+                  </span>
+                )}
+              </button>
+              {(open || mobile) && sellerMenuOpen && (
+                <div className="ml-5 space-y-1 border-l border-gray-200 pl-3 dark:border-gray-800">
+                  {sellerRoutes.map((route) => (
+                    <Link
+                      key={route.to}
+                      to={route.to}
+                      onClick={() => mobile && setMobileOpen(false)}
+                      className="flex min-h-9 items-center justify-between gap-2 rounded-md px-3 py-2 text-sm text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 data-[status=active]:bg-blue-50 data-[status=active]:font-semibold data-[status=active]:text-blue-700 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100 dark:data-[status=active]:bg-blue-950/60 dark:data-[status=active]:text-blue-300"
+                    >
+                      {route.label}
+                      {route.label === "Applications" && (pendingSellerApplications.data ?? 0) > 0 && (
+                        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                          {pendingSellerApplications.data}
+                        </span>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        }
+
         if ("external" in item && item.external) {
           return (
             <Link
@@ -195,17 +249,9 @@ function AdminLayout() {
                 {item.label === "Product Review" && (pendingSellerProducts.data ?? 0) > 0 && (
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">{pendingSellerProducts.data}</span>
                 )}
-                {item.label === "Product Review" && (pendingSellerProducts.data ?? 0) > 0 && (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">{pendingSellerProducts.data}</span>
-                )}
                 {item.label === "Reviews" && (pendingReviews.data ?? 0) > 0 && (
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                     {pendingReviews.data}
-                  </span>
-                )}
-                {item.label === "Seller Applications" && (pendingSellerApplications.data ?? 0) > 0 && (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                    {pendingSellerApplications.data}
                   </span>
                 )}
               </span>
@@ -234,11 +280,6 @@ function AdminLayout() {
                 {item.label === "Reviews" && (pendingReviews.data ?? 0) > 0 && (
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
                     {pendingReviews.data}
-                  </span>
-                )}
-                {item.label === "Seller Applications" && (pendingSellerApplications.data ?? 0) > 0 && (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                    {pendingSellerApplications.data}
                   </span>
                 )}
               </span>

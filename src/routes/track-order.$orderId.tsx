@@ -19,7 +19,7 @@ export const Route = createFileRoute("/track-order/$orderId")({
   component: TrackOrderPage,
 });
 
-type TrackingStatus = "Payment Verified" | "Preparing Order" | "Dispatched";
+type TrackingStatus = "Payment Verified" | "Preparing Order" | "Dispatched" | "Delivered";
 const trackingRpc = supabase as unknown as {
   rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
 };
@@ -31,6 +31,7 @@ type TrackingResponse = {
     amount: number | string;
     created_at: string;
     verified_at: string | null;
+    delivered_at: string | null;
     status: string;
     delivery_address: string | null;
     estimated_delivery: string | null;
@@ -41,11 +42,12 @@ type TrackingResponse = {
   };
 };
 
-const STAGES: TrackingStatus[] = ["Payment Verified", "Preparing Order", "Dispatched"];
+const STAGES: TrackingStatus[] = ["Payment Verified", "Preparing Order", "Dispatched", "Delivered"];
 const LABELS: Record<TrackingStatus, string> = {
   "Payment Verified": "Payment Confirmed",
   "Preparing Order": "Preparing Order",
   Dispatched: "Dispatched",
+  Delivered: "Delivered",
 };
 
 function formatTimestamp(value: string | null | undefined) {
@@ -112,7 +114,7 @@ function TrackOrderPage() {
 
   const order = tracking.data;
   const currentIndex = STAGES.indexOf(order.status as TrackingStatus);
-  const isDispatched = order.status === "Dispatched";
+  const isDispatched = order.status === "Dispatched" || order.status === "Delivered";
   const statusTime = new Map(order.history.map((entry) => [entry.status, entry.timestamp]));
   if (order.verified_at && !statusTime.has("Payment Verified")) statusTime.set("Payment Verified", order.verified_at);
   const visibleStages = currentIndex < 0 ? [STAGES[0]] : STAGES.slice(0, currentIndex + 1);
@@ -142,6 +144,7 @@ function TrackOrderPage() {
             <div><p className="text-xs text-muted-foreground">Order date</p><p className="mt-1 font-semibold">{formatTimestamp(order.created_at) ?? "—"}</p></div>
             <div className="sm:col-span-2"><p className="text-xs text-muted-foreground">Shipping address</p><p className="mt-1 font-medium">{order.delivery_address || "Address unavailable"}</p></div>
             {order.estimated_delivery && <div className="sm:col-span-2"><p className="text-xs text-muted-foreground">Estimated delivery</p><p className="mt-1 font-semibold">{order.estimated_delivery}</p></div>}
+            {order.delivered_at && <div className="sm:col-span-2"><p className="text-xs text-muted-foreground">Delivered at</p><p className="mt-1 font-semibold">{formatTimestamp(order.delivered_at)}</p></div>}
           </div>
         </section>
 
@@ -161,7 +164,7 @@ function TrackOrderPage() {
                   <div className="min-w-0 flex-1">
                     <p className={`font-semibold ${current ? "text-foreground" : completed ? "text-foreground" : "text-muted-foreground"}`}>{LABELS[stage]}</p>
                     {stamp && <p className="mt-1 text-xs text-muted-foreground">{completed ? "Completed" : "Updated"} · {formatTimestamp(stamp)}</p>}
-                    {current && <p className="mt-1 text-sm text-muted-foreground">{stage === "Payment Verified" ? "Your payment is confirmed. Your order is waiting to be prepared." : stage === "Preparing Order" ? "Your order is being prepared for dispatch." : "Your package has been dispatched."}</p>}
+                    {current && <p className="mt-1 text-sm text-muted-foreground">{stage === "Payment Verified" ? "Your payment is confirmed. Your order is waiting to be prepared." : stage === "Preparing Order" ? "Your order is being prepared for dispatch." : stage === "Dispatched" ? "Your package has been dispatched." : "Your delivery has been marked complete."}</p>}
                   </div>
                   {current && <span className="mt-1 shrink-0 text-xs font-semibold text-primary">Current</span>}
                 </li>
@@ -172,8 +175,8 @@ function TrackOrderPage() {
 
         {isDispatched && order.courier_name && order.courier_tracking_id && order.courier_tracking_url && (
           <section className="rounded-xl border border-success/30 bg-success/5 p-5 sm:p-7">
-            <h2 className="text-lg font-semibold">Your order has been dispatched</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Your order has been dispatched. Use the tracking link below to follow your package with our courier partner.</p>
+            <h2 className="text-lg font-semibold">{order.status === "Delivered" ? "Your order has been delivered" : "Your order has been dispatched"}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{order.status === "Delivered" ? "Delivery completion has been recorded. Courier tracking information remains available below." : "Your order has been dispatched. Use the tracking link below to follow your package with our courier partner."}</p>
             <dl className="mt-5 grid gap-4 sm:grid-cols-2">
               <div><dt className="text-xs text-muted-foreground">Courier partner</dt><dd className="mt-1 font-semibold">{order.courier_name}</dd></div>
               <div><dt className="text-xs text-muted-foreground">Tracking ID / AWB</dt><dd className="mt-1 break-all font-semibold">{order.courier_tracking_id}</dd></div>
