@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, Link, Outlet, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   Bell,
@@ -23,7 +23,6 @@ import {
   Store,
   Sun,
   Users,
-  Wallet,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,7 +47,6 @@ export const Route = createFileRoute("/admin")({
 const NAV = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { to: "/admin/orders", label: "Sales", icon: ShoppingCart, exact: false },
-  { to: "/", label: "View Site", icon: ExternalLink, exact: false, external: true },
   { to: "/admin/products", label: "Products", icon: Package, exact: false },
   { to: "/admin/seller-products", label: "Product Review", icon: ClipboardCheck, exact: false },
   { to: "/admin/coupons", label: "Coupons", icon: BadgePercent, exact: false },
@@ -65,6 +63,22 @@ const NAV = [
 
 function AdminLayout() {
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const pageTitle = pathname === "/admin" ? "Dashboard"
+    : pathname.startsWith("/admin/orders") ? "Sales & Orders"
+    : pathname.startsWith("/admin/products") ? "Products"
+    : pathname.startsWith("/admin/seller-products") ? "Product Review"
+    : pathname.startsWith("/admin/applications") ? "Seller Applications"
+    : pathname.startsWith("/admin/withdrawals") ? "Withdrawals"
+    : pathname.startsWith("/admin/commission") ? "Commission"
+    : pathname.startsWith("/admin/sellers") ? "Sellers"
+    : pathname.startsWith("/admin/customers") ? "Customers"
+    : pathname.startsWith("/admin/messages") ? "Messages"
+    : pathname.startsWith("/admin/reviews") ? "Reviews"
+    : pathname.startsWith("/admin/blog") ? "Blog Manager"
+    : pathname.startsWith("/admin/free-resources") ? "Free Resources"
+    : pathname.startsWith("/admin/announcements") ? "Announcement Bar"
+    : pathname.startsWith("/admin/settings") ? "Settings" : "Admin";
   const [open, setOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sellerMenuOpen, setSellerMenuOpen] = useState(true);
@@ -105,7 +119,7 @@ function AdminLayout() {
     },
   });
   const hasPendingOrders = (orders.data ?? []).some(
-    (order) => order.payment_status === "submitted" && order.order_status !== "cancelled",
+    (order) => ["pending", "submitted"].includes(order.payment_status) && order.order_status !== "cancelled",
   );
 
   useEffect(() => {
@@ -392,7 +406,7 @@ function AdminLayout() {
                 <Menu className="h-5 w-5" />
               </Button>
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold sm:text-base">Admin Dashboard</p>
+                <p className="truncate text-sm font-semibold sm:text-base">{pageTitle}</p>
                 <p className="hidden truncate text-xs text-gray-500 dark:text-gray-400 sm:block">
                   Manage your EduWallet store
                 </p>
