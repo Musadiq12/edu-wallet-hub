@@ -49,7 +49,7 @@ function AdminDashboard() {
   const drafts = live.filter((p) => !p.is_active).length;
 
   const allOrders = orders.data ?? [];
-  const pendingVerification = allOrders.filter((o) => o.payment_status === "submitted").length;
+  const pendingVerification = allOrders.filter((o) => ["pending", "submitted"].includes(o.payment_status) && o.order_status !== "cancelled").length;
   const revenue = allOrders
     .filter((o) => o.payment_status === "verified" && o.order_status !== "cancelled")
     .reduce((sum, o) => sum + Number(o.amount ?? 0), 0);
