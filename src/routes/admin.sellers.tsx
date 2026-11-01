@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { adminSellerWalletsQuery, setSellerSuspension } from "@/lib/seller-finance.admin";
 import { SellerEmailActions, sellerEmailDecisionKey } from "@/components/admin/SellerEmailActions";
 
-export const Route=createFileRoute("/admin/sellers")({component:AdminSellersPage});
+export const Route=createFileRoute("/admin/sellers")({head:()=>({meta:[{title:"Seller Accounts | EduWallet Admin"},{name:"description",content:"Manage seller accounts and manual operational emails."},{property:"og:title",content:"Seller Accounts | EduWallet Admin"},{property:"og:description",content:"Manage seller accounts and manual operational emails."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"},{name:"robots",content:"noindex, nofollow"}]}),component:AdminSellersPage});
 const money=(v:number)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:2}).format(Number(v??0));
 type Seller={seller_id:string;full_name:string|null;email:string|null;verification_status:string;is_suspended:boolean;total_sales:number;lifetime_earnings:number;commission_deducted:number;pending_balance:number;released_earnings:number;pending_withdrawals:number;withdrawable_balance:number};
 function AdminSellersPage(){

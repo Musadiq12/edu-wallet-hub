@@ -45,6 +45,11 @@ export const Route = createFileRoute("/admin/applications")({
   head: () => ({ meta: [
     { title: buildTitle(["Seller Applications", "Admin", BRAND]) },
     { name: "robots", content: "noindex, nofollow" },
+    { name: "description", content: "Review EduWallet seller applications and send manual decision notifications." },
+    { property: "og:title", content: "Seller Applications | EduWallet Admin" },
+    { property: "og:description", content: "Review EduWallet seller applications and send manual decision notifications." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
   ] }),
   component: SellerApplicationsAdmin,
 });

@@ -1517,6 +1517,14 @@ Continue developing this project in the [Lovable editor](https://lovable.dev/pro
 
 ## Development
 
+### Admin operational emails
+
+Application approval/rejection, seller suspension/reactivation, and paid/rejected withdrawals have explicit email actions. Review and edit the subject/message/details, then click **Send email**. Decisions do not send automatically; email errors do not undo decisions. Seller account details also support custom operational messages. Payout confirmation is available only after the saved request is Paid. Keep the exact rejection/suspension reason in the message.
+
+The existing client invokes `admin-send-notification` using the current user's bearer token and the configured publishable key. Its connected backend must match the backend where this function is deployed. The function handles admin authorization, recipient lookup and branded delivery; never expose provider secrets in the browser.
+
+Receipts (recipient, subject, email ID, timestamp) and sending/failed states remain in the current admin's session-only query state and disappear on reload. No new audit table is created. Keys use `admin-email:<event>:<record>` and stay identical for retries; provider idempotency expires according to provider policy, not a permanent once-ever guarantee. Custom messages share one key per seller. Suspension reasons are retained after successful decisions within the session; existing suspensions without an available reason cannot send a suspension email. Emails omit identity documents, PAN, bank account fields and credentials; payout details include UPI ID and transaction reference only.
+
 Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
 
 ```sh

@@ -14,7 +14,7 @@ import { adminWithdrawalsQuery, transitionWithdrawal, sellerPayoutPolicyQuery, s
 import { SendEmailDialog } from "@/components/admin/SendEmailDialog";
 import { canSendWithdrawalEmail } from "@/lib/admin-email";
 
-export const Route=createFileRoute("/admin/withdrawals")({component:AdminWithdrawalsPage});
+export const Route=createFileRoute("/admin/withdrawals")({head:()=>({meta:[{title:"Withdrawals | EduWallet Admin"},{name:"description",content:"Manage withdrawals and manually send payout or rejection emails."},{property:"og:title",content:"Withdrawals | EduWallet Admin"},{property:"og:description",content:"Manage withdrawals and manually send payout or rejection emails."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"},{name:"robots",content:"noindex, nofollow"}]}),component:AdminWithdrawalsPage});
 type Withdrawal={id:string;seller_id:string;seller_name:string|null;email:string|null;amount:number;upi_id:string|null;status:string;requested_at:string;processing_at:string|null;paid_at:string|null;rejected_at:string|null;rejection_reason:string|null;upi_reference:string|null};
 const money=(v:number)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:2}).format(Number(v??0));
 const when=(v:string|null)=>v?new Date(v).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"}):"—";
