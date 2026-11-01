@@ -24,6 +24,7 @@ import {
 import { useSession } from "@/lib/auth";
 import { BRAND, buildTitle } from "@/lib/seo";
 import { supabase } from "@/integrations/supabase/client";
+import { SendEmailDialog } from "@/components/admin/SendEmailDialog";
 
 type Status = "pending" | "approved" | "rejected";
 type Application = {
@@ -44,6 +45,11 @@ export const Route = createFileRoute("/admin/applications")({
   head: () => ({ meta: [
     { title: buildTitle(["Seller Applications", "Admin", BRAND]) },
     { name: "robots", content: "noindex, nofollow" },
+    { name: "description", content: "Review EduWallet seller applications and send manual decision notifications." },
+    { property: "og:title", content: "Seller Applications | EduWallet Admin" },
+    { property: "og:description", content: "Review EduWallet seller applications and send manual decision notifications." },
+    { property: "og:type", content: "website" },
+    { name: "twitter:card", content: "summary" },
   ] }),
   component: SellerApplicationsAdmin,
 });
@@ -109,7 +115,10 @@ function SellerApplicationsAdmin() {
   });
   const detail = useQuery({
     queryKey: ["admin", "seller-application-detail", selectedId],
-    queryFn: async () => getSellerApplicationDetail({ data: { id: selectedId!, accessToken: await getSessionAccessToken() } }),
+    queryFn: async () => {
+      if (!selectedId) throw new Error("Select an application.");
+      return getSellerApplicationDetail({ data: { id: selectedId, accessToken: await getSessionAccessToken() } });
+    },
     enabled: !!user && serverRoleChecked && !!selectedId,
     staleTime: 4 * 60 * 1000,
   });
@@ -118,7 +127,6 @@ function SellerApplicationsAdmin() {
     .some((value) => value.toLowerCase().includes(search.trim().toLowerCase())));
 
   const refreshLists = async () => {
-    setSelectedId(null);
     setApproveTarget(null);
     setRejectTarget(null);
     setReason("");
@@ -207,6 +215,12 @@ function SellerApplicationsAdmin() {
           <Button variant="outline" disabled={busy} onClick={() => { setReason(""); setRejectTarget(current); }}><X className="mr-2 size-4" />Reject application</Button>
           <Button disabled={busy} onClick={() => setApproveTarget(current)}><Check className="mr-2 size-4" />Approve seller</Button>
         </div>}
+        {current.status !== "pending" && <SendEmailDialog key={`${current.id}-${current.status}`} label={current.status === "approved" ? "Send approval email" : "Send rejection email"} disabled={busy} draft={{
+          eventType: current.status === "approved" ? "seller_application_approved" : "seller_application_rejected",
+          referenceId: current.id, recipientUserId: current.user_id, recipientEmail: current.user_email, recipientName: current.full_name,
+          reason: current.status === "rejected" ? current.rejection_reason : null,
+          details: { "Application ID": current.id, Name: current.full_name, Profession: current.profession, Education: current.education, Exams: current.exams?.join(", ") || null, Status: current.status, Reason: current.rejection_reason },
+        }} />}
       </>}
     </section> : <>
       <div className="flex flex-col gap-3 rounded-xl border border-border bg-card p-3 sm:flex-row sm:items-center sm:justify-between">

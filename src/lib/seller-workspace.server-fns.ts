@@ -24,7 +24,8 @@ const productInputSchema = z.object({
   rightsConfirmed: z.literal(true),
   exam: z.enum(["NEET","JEE","UPSC","SSC","CGL","CLAT","CA","Other"]),
   subject: z.string().trim().min(2).max(60),
-  price: z.number().finite().min(10).max(5000).refine(v => Math.round(v*100) === v*100),\n  discountedPrice: z.number().finite().min(1).max(4999.99).refine(v => Math.round(v*100) === v*100).nullable().default(null),
+  price: z.number().finite().min(10).max(5000).refine(v => Math.round(v*100) === v*100),
+  discountedPrice: z.number().finite().min(1).max(4999.99).refine(v => Math.round(v*100) === v*100).nullable().default(null),
   pdfPath: z.string().min(1).max(500),
   previewPath: z.string().max(500).nullable().optional(),
 });

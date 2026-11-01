@@ -9,8 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { adminSellerWalletsQuery, setSellerSuspension } from "@/lib/seller-finance.admin";
+import { SellerEmailActions, sellerEmailDecisionKey } from "@/components/admin/SellerEmailActions";
 
-export const Route=createFileRoute("/admin/sellers/$sellerId")({component:AdminSellerDetailPage});
+export const Route=createFileRoute("/admin/sellers/$sellerId")({head:()=>({meta:[{title:"Seller Details | EduWallet Admin"},{name:"description",content:"Review seller account details and send operational emails."},{property:"og:title",content:"Seller Details | EduWallet Admin"},{property:"og:description",content:"Review seller account details and send operational emails."},{property:"og:type",content:"website"},{name:"twitter:card",content:"summary"},{name:"robots",content:"noindex, nofollow"}]}),component:AdminSellerDetailPage});
 type Seller={seller_id:string;full_name:string|null;email:string|null;verification_status:string;is_suspended:boolean;total_sales:number;lifetime_earnings:number;commission_deducted:number;pending_balance:number;released_earnings:number;pending_withdrawals:number;withdrawable_balance:number};
 const money=(v:number)=>new Intl.NumberFormat("en-IN",{style:"currency",currency:"INR",maximumFractionDigits:2}).format(Number(v??0));
 function AdminSellerDetailPage(){
@@ -21,7 +22,7 @@ function AdminSellerDetailPage(){
  const seller=rows.find(row=>row.seller_id===sellerId);
  const mutation=useMutation({
   mutationFn:(suspended:boolean)=>setSellerSuspension(sellerId,suspended,reason),
-  onSuccess:async()=>{await qc.invalidateQueries({queryKey:["admin","seller-wallets"]});toast.success("Seller status updated.");},
+  onSuccess:async(_data,suspended)=>{qc.setQueryData(sellerEmailDecisionKey(sellerId),{suspended,reason:suspended?reason.trim():null});await qc.invalidateQueries({queryKey:["admin","seller-wallets"]});toast.success("Seller status updated.");},
   onError:(e:Error)=>toast.error(e.message),
  });
  const metrics=seller?[
@@ -42,6 +43,7 @@ function AdminSellerDetailPage(){
     </Card>
     {seller.verification_status==="approved"&&!seller.is_suspended?<Card><CardHeader><CardTitle>Suspend seller</CardTitle><p className="text-sm text-muted-foreground">Suspension blocks seller workspace actions but preserves the KYC approval record and existing order history.</p></CardHeader><CardContent className="space-y-3"><Textarea value={reason} onChange={e=>setReason(e.target.value)} rows={3} placeholder="Required reason for suspension (minimum 3 characters)"/><Button variant="destructive" disabled={mutation.isPending||reason.trim().length<3} onClick={()=>mutation.mutate(true)}><ShieldAlert className="mr-2 size-4"/>Suspend seller</Button></CardContent></Card>
     :seller.verification_status==="approved"&&seller.is_suspended?<Card><CardHeader><CardTitle>Seller suspended</CardTitle></CardHeader><CardContent><Button variant="outline" disabled={mutation.isPending} onClick={()=>mutation.mutate(false)}><ShieldCheck className="mr-2 size-4"/>Reactivate seller</Button></CardContent></Card>:null}
+    <SellerEmailActions seller={seller}/>
    </>
   }
  </div>;
