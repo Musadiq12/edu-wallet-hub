@@ -175,7 +175,7 @@ export type AdminOrder = {
   user_id: string;
   product_id: string | null;
   product_type: "pdf" | "physical";
-  status: "Pending" | "Payment Verified" | "Preparing Order" | "Dispatched" | "Cancelled";
+  status: "Pending" | "Payment Verified" | "Preparing Order" | "Dispatched" | "Delivered" | "Cancelled";
   quantity: number;
   estimated_delivery: string | null;
   dispatched_at: string | null;
