@@ -164,8 +164,13 @@ function AdminDashboard() {
           <div className="space-y-2 p-4">
             {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
+        ) : orders.isError ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 p-5">
+            <p className="text-sm text-destructive">Orders could not be loaded. No zero values are shown because the data is unavailable.</p>
+            <Button size="sm" variant="outline" onClick={() => void orders.refetch()}>Retry loading orders</Button>
+          </div>
         ) : recent.length === 0 ? (
-          <p className="p-6 text-sm text-muted-foreground">No orders yet.</p>
+          <p className="p-6 text-sm text-muted-foreground">No orders have been recorded yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
