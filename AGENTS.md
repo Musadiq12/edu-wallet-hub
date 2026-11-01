@@ -10,3 +10,5 @@
 <!-- LOVABLE:END -->
 
 - Keep product pricing validation and genuine-discount decisions in `src/lib/format.ts` so admin forms and public displays use the same rules.
+- Keep manual admin email payload rules in `src/lib/admin-email.ts` and invoke the deployed function through the existing browser client; this preserves one auth source and prevents sensitive record fields entering emails.
+- Keep admin email receipts and decision snapshots in user-scoped, session-only query state, not database tables or persistent browser storage; no suitable email audit infrastructure exists.

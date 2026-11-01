@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { adminWithdrawalsQuery, transitionWithdrawal, sellerPayoutPolicyQuery, setSellerPayoutPolicy } from "@/lib/seller-finance.admin";
+import { SendEmailDialog } from "@/components/admin/SendEmailDialog";
+import { canSendWithdrawalEmail } from "@/lib/admin-email";
 
 export const Route=createFileRoute("/admin/withdrawals")({component:AdminWithdrawalsPage});
 type Withdrawal={id:string;seller_id:string;seller_name:string|null;email:string|null;amount:number;upi_id:string|null;status:string;requested_at:string;processing_at:string|null;paid_at:string|null;rejected_at:string|null;rejection_reason:string|null;upi_reference:string|null};
@@ -45,6 +47,7 @@ function AdminWithdrawalsPage(){
      {row.status==="processing"&&<div className="grid gap-3 sm:grid-cols-[1fr_auto]"><div className="space-y-1.5"><Label htmlFor={"upi-ref-"+row.id}>UPI transaction reference (optional)</Label><Input id={"upi-ref-"+row.id} value={reference[row.id]??""} onChange={e=>setReference(v=>({...v,[row.id]:e.target.value}))} placeholder="UTR / transaction ID"/></div><div className="flex items-end"><Button disabled={mutation.isPending} onClick={()=>mutation.mutate({row,status:"paid"})}><CheckCircle2 className="mr-2 size-4"/>Mark as paid</Button></div></div>}
      {["requested","processing"].includes(row.status)&&<div className="space-y-2 border-t pt-3"><Label htmlFor={"reason-"+row.id}>Rejection reason</Label><Textarea id={"reason-"+row.id} value={reason[row.id]??""} onChange={e=>setReason(v=>({...v,[row.id]:e.target.value}))} rows={2} placeholder="Required only when rejecting this request"/><Button variant="destructive" size="sm" disabled={mutation.isPending||(reason[row.id]??"").trim().length<3} onClick={()=>mutation.mutate({row,status:"rejected"})}><XCircle className="mr-2 size-4"/>Reject request</Button></div>}
      {row.processing_at&&<p className="text-xs text-muted-foreground">Processing: {when(row.processing_at)}</p>}{row.paid_at&&<p className="text-xs text-muted-foreground">Paid: {when(row.paid_at)} {row.upi_reference?"· UPI reference: "+row.upi_reference:""}</p>}{row.rejected_at&&<p className="text-xs text-muted-foreground">Rejected: {when(row.rejected_at)}</p>}{row.rejection_reason&&<p className="text-sm text-destructive">Rejection reason: {row.rejection_reason}</p>}
+     {(row.status==="paid"||row.status==="rejected")&&<SendEmailDialog label={row.status==="paid"?"Send payout confirmation":"Send rejection email"} disabled={mutation.isPending||!canSendWithdrawalEmail(row.status,row.status==="paid"?"withdrawal_paid":"withdrawal_rejected")} draft={{eventType:row.status==="paid"?"withdrawal_paid":"withdrawal_rejected",referenceId:row.id,recipientUserId:row.seller_id,recipientName:row.seller_name,recipientEmail:row.email,reason:row.status==="rejected"?row.rejection_reason:null,details:{"Withdrawal ID":row.id,Amount:money(row.amount),Requested:when(row.requested_at),"UPI ID":row.upi_id,"UPI reference":row.upi_reference,Status:row.status,Reason:row.rejection_reason}}}/ >}
     </CardContent></Card>)}</div>}
  </div>;
 }
