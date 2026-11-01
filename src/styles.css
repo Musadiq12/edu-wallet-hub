@@ -351,3 +351,16 @@
 .prose-blog code { border-radius: .25rem; background: hsl(var(--muted)); padding: .15rem .3rem; font-family: ui-monospace, monospace; font-size: .9em; }
 .prose-blog pre { overflow-x: auto; border-radius: .5rem; background: hsl(var(--muted)); padding: 1rem; }
 .prose-blog pre code { background: transparent; padding: 0; }
+
+
+/* Keep the admin sidebar scrollable without showing a browser scrollbar. */
+.admin-sidebar-scroll {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.admin-sidebar-scroll::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
