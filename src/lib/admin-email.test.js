@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { canSendWithdrawalEmail, emailIdempotencyKey, prefillEmail, prepareEmailPayload, safeEmailDetails, type EmailDraft } from "./admin-email";
-const draft: EmailDraft = { eventType: "seller_application_approved", referenceId: "application-123", recipientUserId: "seller-123", recipientName: "Ayesha", details: { Profession: "Teacher", Education: "B.Ed", Exams: "CSEET" } };
+import { canSendWithdrawalEmail, emailIdempotencyKey, prefillEmail, prepareEmailPayload, safeEmailDetails } from "./admin-email";
+const draft = { eventType: "seller_application_approved", referenceId: "application-123", recipientUserId: "seller-123", recipientName: "Ayesha", details: { Profession: "Teacher", Education: "B.Ed", Exams: "CSEET" } };
 describe("manual admin email rules", () => {
   test("idempotency uses event and record, never edited message or random time", () => {
     expect(emailIdempotencyKey(draft)).toBe("admin-email:seller_application_approved:application-123");
@@ -16,7 +16,7 @@ describe("manual admin email rules", () => {
     expect(canSendWithdrawalEmail("rejected", "withdrawal_rejected")).toBe(true);
   });
   test("rejection and suspension preserve exact required reason", () => {
-    for (const eventType of ["seller_application_rejected", "seller_suspended", "withdrawal_rejected"] as const) {
+    for (const eventType of ["seller_application_rejected", "seller_suspended", "withdrawal_rejected"]) {
       const rejected = { ...draft, eventType, reason: "Document is unreadable." };
       const copy = prefillEmail(rejected);
       expect(copy.message).toContain("Document is unreadable.");
