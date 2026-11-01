@@ -246,33 +246,6 @@ function AdminLayout() {
           );
         }
 
-        if ("external" in item && item.external) {
-          return (
-            <Link
-              key={item.label}
-              to={item.to}
-              onClick={() => mobile && setMobileOpen(false)}
-              className="group relative flex h-11 w-full items-center rounded-lg text-gray-500 transition-all duration-200 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-100"
-            >
-              <span className="grid h-full w-12 shrink-0 place-content-center">
-                <Icon className="h-4 w-4" />
-              </span>
-              {(open || mobile) && (
-              <span className="flex min-w-0 flex-1 items-center justify-between gap-2 text-sm font-medium">
-                {item.label}
-                {item.label === "Product Review" && (pendingSellerProducts.data ?? 0) > 0 && (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">{pendingSellerProducts.data}</span>
-                )}
-                {item.label === "Reviews" && (pendingReviews.data ?? 0) > 0 && (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                    {pendingReviews.data}
-                  </span>
-                )}
-              </span>
-            )}
-            </Link>
-          );
-        }
 
         return (
           <Link
