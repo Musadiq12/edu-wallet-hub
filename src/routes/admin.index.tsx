@@ -16,6 +16,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { adminOrdersQuery, adminProductsQuery, friendlyError } from "@/lib/admin";
+import Dashboard from "@/components/ui/dashboard-4";
+import { salesStatsQuery } from "@/lib/analytics";
 import { formatPrice, ORDER_STATUS_LABELS, PAYMENT_STATUS_LABELS } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -34,6 +36,7 @@ function AdminDashboard() {
   const queryClient = useQueryClient();
   const products = useQuery(adminProductsQuery(true));
   const orders = useQuery(adminOrdersQuery());
+  const analytics = useQuery(salesStatsQuery(30));
   const [resetOpen, setResetOpen] = useState(false);
   const [resetPassword, setResetPassword] = useState("");
   const [confirmText, setConfirmText] = useState("");
@@ -130,6 +133,22 @@ function AdminDashboard() {
         <Stat label="Pending verification" value={pendingVerification} loading={orders.isLoading} />
         <Stat label="Verified revenue" value={formatPrice(revenue)} loading={orders.isLoading} />
       </div>
+
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight">Sales analytics</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Verified spending, payment verifications and sales performance for the last 30 days.</p>
+          </div>
+          <span className="text-xs text-muted-foreground">{analytics.isFetching ? "Refreshing…" : "Live order data"}</span>
+        </div>
+        {analytics.isError ? (
+          <div className="rounded-xl border border-destructive/30 p-5">
+            <p className="text-sm">{friendlyError(analytics.error, "Could not load sales analytics.")}</p>
+            <Button className="mt-3" variant="outline" onClick={() => void analytics.refetch()}>Retry analytics</Button>
+          </div>
+        ) : <Dashboard />}
+      </section>
 
       <section className="rounded-lg border border-border">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
