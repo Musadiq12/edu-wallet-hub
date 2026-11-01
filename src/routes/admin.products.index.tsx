@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Archive, Eye, ExternalLink, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
+import { Archive, Eye, Loader2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -290,9 +290,12 @@ function AdminProducts() {
                             <Button size="sm" variant="outline" disabled={busyId === product.id} onClick={() => void setPublished(product, !active)}>{active ? "Take down" : "Republish"}</Button>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild><Button size="sm" variant="outline" disabled={busyId === product.id}>Manage</Button></DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuItem asChild><Link to="/shop/$slug" params={{ slug: product.slug }} target="_blank"><Eye className="h-4 w-4" />View listing</Link></DropdownMenuItem>
-                                <DropdownMenuItem asChild><Link to="/admin/seller-products"><ExternalLink className="h-4 w-4" />Open moderation</Link></DropdownMenuItem>
+                              <DropdownMenuContent align="end" className="w-52">
+                                <DropdownMenuItem asChild><Link to="/shop/$slug" params={{ slug: product.slug }} target="_blank"><Eye className="h-4 w-4" />View product</Link></DropdownMenuItem>
+                                <DropdownMenuItem asChild><Link to="/admin/seller-products"><Pencil className="h-4 w-4" />Edit product</Link></DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={() => { setSellerAction("unpublish"); setTarget(product); }}><Archive className="h-4 w-4" />Archive product</DropdownMenuItem>
+                                <DropdownMenuItem disabled title="Seller-owned listings are retained for ownership, audit and order-history protection." className="text-destructive"><Trash2 className="h-4 w-4" />Delete permanently</DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </>
