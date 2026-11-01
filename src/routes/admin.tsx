@@ -320,7 +320,7 @@ function AdminLayout() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
+            <div className="admin-sidebar-scroll flex-1 overflow-y-auto">
               <SideNav />
             </div>
 
