@@ -23,11 +23,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/")({ component: AdminDashboard });
 
-function Stat({ label, value, loading }: { label: string; value: string | number; loading: boolean }) {
+function Stat({ label, value, loading, error, onRetry }: { label: string; value: string | number; loading: boolean; error?: boolean; onRetry?: () => void }) {
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
+    <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm">
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      {loading ? <Skeleton className="mt-2 h-7 w-16" /> : <p className="mt-1 text-2xl font-semibold">{value}</p>}
+      {loading ? <Skeleton className="mt-2 h-7 w-16" /> : error ? (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-destructive">Unavailable</span>
+          {onRetry && <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={onRetry}>Retry</Button>}
+        </div>
+      ) : <p className="mt-1 break-words text-2xl font-semibold tabular-nums">{value}</p>}
     </div>
   );
 }
@@ -126,19 +131,19 @@ function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <Stat label="Total products" value={live.length} loading={products.isLoading} />
-        <Stat label="Published" value={published} loading={products.isLoading} />
-        <Stat label="Drafts" value={drafts} loading={products.isLoading} />
-        <Stat label="Total orders" value={allOrders.length} loading={orders.isLoading} />
-        <Stat label="Pending verification" value={pendingVerification} loading={orders.isLoading} />
-        <Stat label="Verified revenue" value={formatPrice(revenue)} loading={orders.isLoading} />
+        <Stat label="Total products" value={live.length} loading={products.isLoading} error={products.isError} onRetry={() => void products.refetch()} />
+        <Stat label="Published products" value={published} loading={products.isLoading} error={products.isError} onRetry={() => void products.refetch()} />
+        <Stat label="Draft products" value={drafts} loading={products.isLoading} error={products.isError} onRetry={() => void products.refetch()} />
+        <Stat label="Total orders" value={allOrders.length} loading={orders.isLoading} error={orders.isError} onRetry={() => void orders.refetch()} />
+        <Stat label="Awaiting verification (all time)" value={pendingVerification} loading={orders.isLoading} error={orders.isError} onRetry={() => void orders.refetch()} />
+        <Stat label="Verified revenue (all time)" value={formatPrice(revenue)} loading={orders.isLoading} error={orders.isError} onRetry={() => void orders.refetch()} />
       </div>
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold tracking-tight">Sales analytics</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Verified spending, payment verifications and sales performance for the last 30 days.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Verified revenue, completed orders and payments awaiting verification over the last 30 days.</p>
           </div>
           <span className="text-xs text-muted-foreground">{analytics.isFetching ? "Refreshing…" : "Live order data"}</span>
         </div>
