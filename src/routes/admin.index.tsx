@@ -105,7 +105,7 @@ function AdminDashboard() {
       setResetPassword("");
       setConfirmText("");
       setResetError("");
-      toast.success("Dashboard reset successfully. All sales data was deleted.");
+      toast.success("Sales data reset successfully.");
     } catch (error) {
       setResetError(friendlyError(error, error instanceof Error ? error.message : "Dashboard reset failed."));
     } finally {
@@ -120,14 +120,7 @@ function AdminDashboard() {
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="mt-1 text-sm text-muted-foreground">Overview of your catalogue and orders.</p>
         </div>
-        <Button
-          variant="destructive"
-          className="w-full sm:w-auto"
-          onClick={() => { setResetError(""); setResetOpen(true); }}
-        >
-          <RotateCcw className="h-4 w-4" />
-          Reset Dashboard
-        </Button>
+
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
@@ -197,6 +190,22 @@ function AdminDashboard() {
             </table>
           </div>
         )}
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold">Danger zone</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Permanently delete sales records and order history. Products and customer accounts remain.</p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full shrink-0 border-destructive/40 text-destructive hover:bg-destructive/5 hover:text-destructive sm:w-auto"
+          onClick={() => { setResetError(""); setResetOpen(true); }}
+        >
+          <RotateCcw className="h-4 w-4" />
+          Reset sales data
+        </Button>
       </section>
 
       <Dialog open={resetOpen} onOpenChange={(open) => open ? setResetOpen(true) : closeReset()}>
