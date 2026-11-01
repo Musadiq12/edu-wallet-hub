@@ -23,11 +23,16 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/admin/")({ component: AdminDashboard });
 
-function Stat({ label, value, loading }: { label: string; value: string | number; loading: boolean }) {
+function Stat({ label, value, loading, error, onRetry }: { label: string; value: string | number; loading: boolean; error?: boolean; onRetry?: () => void }) {
   return (
-    <div className="rounded-lg border border-border bg-surface p-4">
+    <div className="min-w-0 rounded-xl border border-border bg-card p-4 shadow-sm">
       <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      {loading ? <Skeleton className="mt-2 h-7 w-16" /> : <p className="mt-1 text-2xl font-semibold">{value}</p>}
+      {loading ? <Skeleton className="mt-2 h-7 w-16" /> : error ? (
+        <div className="mt-2 flex flex-wrap items-center gap-2">
+          <span className="text-sm font-medium text-destructive">Unavailable</span>
+          {onRetry && <Button type="button" size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={onRetry}>Retry</Button>}
+        </div>
+      ) : <p className="mt-1 break-words text-2xl font-semibold tabular-nums">{value}</p>}
     </div>
   );
 }
@@ -100,7 +105,7 @@ function AdminDashboard() {
       setResetPassword("");
       setConfirmText("");
       setResetError("");
-      toast.success("Dashboard reset successfully. All sales data was deleted.");
+      toast.success("Sales data reset successfully.");
     } catch (error) {
       setResetError(friendlyError(error, error instanceof Error ? error.message : "Dashboard reset failed."));
     } finally {
@@ -115,30 +120,23 @@ function AdminDashboard() {
           <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
           <p className="mt-1 text-sm text-muted-foreground">Overview of your catalogue and orders.</p>
         </div>
-        <Button
-          variant="destructive"
-          className="w-full sm:w-auto"
-          onClick={() => { setResetError(""); setResetOpen(true); }}
-        >
-          <RotateCcw className="h-4 w-4" />
-          Reset Dashboard
-        </Button>
+
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <Stat label="Total products" value={live.length} loading={products.isLoading} />
-        <Stat label="Published" value={published} loading={products.isLoading} />
-        <Stat label="Drafts" value={drafts} loading={products.isLoading} />
-        <Stat label="Total orders" value={allOrders.length} loading={orders.isLoading} />
-        <Stat label="Pending verification" value={pendingVerification} loading={orders.isLoading} />
-        <Stat label="Verified revenue" value={formatPrice(revenue)} loading={orders.isLoading} />
+        <Stat label="Total products" value={live.length} loading={products.isLoading} error={products.isError} onRetry={() => void products.refetch()} />
+        <Stat label="Published products" value={published} loading={products.isLoading} error={products.isError} onRetry={() => void products.refetch()} />
+        <Stat label="Draft products" value={drafts} loading={products.isLoading} error={products.isError} onRetry={() => void products.refetch()} />
+        <Stat label="Total orders" value={allOrders.length} loading={orders.isLoading} error={orders.isError} onRetry={() => void orders.refetch()} />
+        <Stat label="Awaiting verification (all time)" value={pendingVerification} loading={orders.isLoading} error={orders.isError} onRetry={() => void orders.refetch()} />
+        <Stat label="Verified revenue (all time)" value={formatPrice(revenue)} loading={orders.isLoading} error={orders.isError} onRetry={() => void orders.refetch()} />
       </div>
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold tracking-tight">Sales analytics</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Verified spending, payment verifications and sales performance for the last 30 days.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Verified revenue, completed orders and payments awaiting verification over the last 30 days.</p>
           </div>
           <span className="text-xs text-muted-foreground">{analytics.isFetching ? "Refreshing…" : "Live order data"}</span>
         </div>
@@ -159,8 +157,13 @@ function AdminDashboard() {
           <div className="space-y-2 p-4">
             {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
           </div>
+        ) : orders.isError ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 p-5">
+            <p className="text-sm text-destructive">Orders could not be loaded. No zero values are shown because the data is unavailable.</p>
+            <Button size="sm" variant="outline" onClick={() => void orders.refetch()}>Retry loading orders</Button>
+          </div>
         ) : recent.length === 0 ? (
-          <p className="p-6 text-sm text-muted-foreground">No orders yet.</p>
+          <p className="p-6 text-sm text-muted-foreground">No orders have been recorded yet.</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -187,6 +190,22 @@ function AdminDashboard() {
             </table>
           </div>
         )}
+      </section>
+
+      <section className="flex flex-col gap-3 rounded-xl border border-destructive/30 bg-card p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold">Danger zone</h2>
+          <p className="mt-1 text-sm text-muted-foreground">Permanently delete sales records and order history. Products and customer accounts remain.</p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full shrink-0 border-destructive/40 text-destructive hover:bg-destructive/5 hover:text-destructive sm:w-auto"
+          onClick={() => { setResetError(""); setResetOpen(true); }}
+        >
+          <RotateCcw className="h-4 w-4" />
+          Reset sales data
+        </Button>
       </section>
 
       <Dialog open={resetOpen} onOpenChange={(open) => open ? setResetOpen(true) : closeReset()}>
