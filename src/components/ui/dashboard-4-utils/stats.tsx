@@ -7,10 +7,10 @@ export function DashboardStats() {
   const query = useQuery(salesStatsQuery(30));
   const stats = query.data;
   const cards = [
-    { label: "Revenue (30 days)", value: stats ? formatPrice(stats.revenue) : "—", icon: IndianRupee },
-    { label: "Verified orders", value: stats ? String(stats.ordersVerified) : "—", icon: ShoppingCart },
-    { label: "Average order value", value: stats ? formatPrice(stats.aov) : "—", icon: TrendingUp },
-    { label: "Pending verification", value: stats ? String(stats.ordersPending) : "—", icon: Clock3 },
+    { label: "Spending (verified)", value: stats ? formatPrice(stats.revenue) : "—", icon: IndianRupee },
+    { label: "Verifications completed", value: stats ? String(stats.ordersVerified) : "—", icon: ShoppingCart },
+    { label: "Average verified order", value: stats ? formatPrice(stats.aov) : "—", icon: TrendingUp },
+    { label: "Awaiting verification", value: stats ? String(stats.ordersPending) : "—", icon: Clock3 },
   ];
   return <div className="grid grid-cols-2 gap-3 md:col-span-2 xl:grid-cols-4">
     {cards.map(({label,value,icon:Icon}) => <div key={label} className="rounded-xl border bg-card p-4 shadow-sm">
