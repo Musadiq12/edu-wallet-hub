@@ -1,0 +1,28 @@
+.blog-admin-editor .blog-tiptap-surface { min-height: 560px; cursor: text; }
+.blog-admin-editor .blog-tiptap-content { min-height: 560px; max-width: 100%; padding: clamp(1.25rem, 4vw, 3rem); outline: none; line-height: 1.85; font-size: 1.05rem; overflow-wrap: anywhere; user-select: text; -webkit-user-select: text; }
+.blog-admin-editor .blog-tiptap-content p { margin: 0 0 1rem; }
+.blog-admin-editor .blog-tiptap-content h1,.blog-admin-editor .blog-tiptap-content h2,.blog-admin-editor .blog-tiptap-content h3,.blog-admin-editor .blog-tiptap-content h4 { font-family: Georgia,serif; font-weight: 700; line-height: 1.22; margin: 1.8rem 0 .75rem; }
+.blog-admin-editor .blog-tiptap-content h1 { font-size: 2.2rem; }
+.blog-admin-editor .blog-tiptap-content h2 { font-size: 1.8rem; }
+.blog-admin-editor .blog-tiptap-content h3 { font-size: 1.4rem; }
+.blog-admin-editor .blog-tiptap-content h4 { font-size: 1.15rem; }
+.blog-admin-editor .blog-tiptap-content ul { list-style: disc; padding-left: 1.5rem; }
+.blog-admin-editor .blog-tiptap-content ol { list-style: decimal; padding-left: 1.5rem; }
+.blog-admin-editor .blog-tiptap-content blockquote { border-left: 3px solid hsl(var(--primary)); padding-left: 1rem; color: hsl(var(--muted-foreground)); }
+.blog-admin-editor .blog-tiptap-content pre { overflow-x: auto; border-radius: .75rem; padding: 1rem; background: #111827; color: #f8fafc; }
+.blog-admin-editor .blog-tiptap-content code { font-family: ui-monospace,monospace; }
+.blog-admin-editor .blog-tiptap-content img { display: block; max-width: 100%; height: auto; margin: 1rem auto; border-radius: .75rem; cursor: pointer; }
+.blog-admin-editor .blog-tiptap-content img.ProseMirror-selectednode { outline: 3px solid hsl(var(--primary)); }
+.blog-admin-editor .blog-tiptap-content iframe { display: block; max-width: 100%; margin: 1.5rem auto; border: 0; border-radius: .75rem; aspect-ratio: 16/9; }
+.blog-admin-editor .blog-tiptap-content table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.blog-admin-editor .blog-tiptap-content td,.blog-admin-editor .blog-tiptap-content th { border: 1px solid hsl(var(--border)); padding: .65rem; vertical-align: top; }
+.blog-admin-editor .blog-tiptap-content .is-empty::before { content: attr(data-placeholder); color: hsl(var(--muted-foreground)); float: left; height: 0; pointer-events: none; }
+.prose-blog { user-select: text !important; -webkit-user-select: text !important; -moz-user-select: text !important; cursor: text; }
+.prose-blog img { max-width: 100%; height: auto; border-radius: .75rem; display: block; margin: 1.5rem auto; }
+.prose-blog figure { margin: 1.75rem 0; }
+.prose-blog figcaption { text-align: center; font-size: .9rem; color: hsl(var(--muted-foreground)); margin-top: .5rem; }
+.prose-blog iframe { width: 100%; max-width: 100%; aspect-ratio: 16/9; border: 0; border-radius: .75rem; }
+.prose-blog table { width: 100%; border-collapse: collapse; display: block; overflow-x: auto; }
+.prose-blog th,.prose-blog td { border: 1px solid hsl(var(--border)); padding: .65rem; text-align: left; }
+.prose-blog hr { border: 0; border-top: 1px solid hsl(var(--border)); margin: 2rem 0; }
+.blog-admin-editor .ProseMirror:focus { outline: none; }
