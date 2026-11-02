@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";\nimport type { ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -21,10 +22,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { savePost, type BlogPost, coverImageUrl, uniqueSlugCheck } from "@/lib/blog";
 import { uploadFile, LIMITS, friendlyError } from "@/lib/admin";
-import { MarkdownContent } from "@/components/MarkdownContent";\nimport "@/components/blog-editor.css";
+import { MarkdownContent } from "@/components/MarkdownContent";
+import "@/components/blog-editor.css";
 import { Link as RouterLink } from "@tanstack/react-router";
 
-type RichEditorProps = { initial?: BlogPost; onSaved: (id: string) => void };\ntype ImageUploadHandler = (file: File) => void;
+type RichEditorProps = { initial?: BlogPost; onSaved: (id: string) => void };
+type ImageUploadHandler = (file: File) => void;
 
 const categories = ["NEET", "JEE", "UPSC", "SSC CGL", "Banking", "CLAT", "Study Tips"];
 
@@ -33,13 +36,19 @@ function toEditorContent(content: string) {
   if (!trimmed) return "";
   if (trimmed.startsWith("<")) return trimmed;
   // Legacy Markdown posts remain editable without attempting unsafe HTML parsing.
-  const blocks = trimmed.split(/\n\s*\n/).map((block) => {
+  const blocks = trimmed.split(/
+\s*
+/).map((block) => {
     const heading = block.match(/^(#{1,4})\s+([\s\S]+)$/);
     if (heading) return `<h${heading[1].length}>${escapeHtml(heading[2])}</h${heading[1].length}>`;
-    if (/^>\s?/m.test(block)) return `<blockquote><p>${escapeHtml(block.replace(/^>\s?/gm, "").replace(/\n/g, " "))}</p></blockquote>`;
-    if (/^\d+\.\s/m.test(block)) return `<ol>${block.split("\n").map(x=>`<li><p>${escapeHtml(x.replace(/^\d+\.\s/,""))}</p></li>`).join("")}</ol>`;
-    if (/^[-*+]\s/m.test(block)) return `<ul>${block.split("\n").map(x=>`<li><p>${escapeHtml(x.replace(/^[-*+]\s/,""))}</p></li>`).join("")}</ul>`;
-    return `<p>${escapeHtml(block).replace(/\n/g,"<br>")}</p>`;
+    if (/^>\s?/m.test(block)) return `<blockquote><p>${escapeHtml(block.replace(/^>\s?/gm, "").replace(/
+/g, " "))}</p></blockquote>`;
+    if (/^\d+\.\s/m.test(block)) return `<ol>${block.split("
+").map(x=>`<li><p>${escapeHtml(x.replace(/^\d+\.\s/,""))}</p></li>`).join("")}</ol>`;
+    if (/^[-*+]\s/m.test(block)) return `<ul>${block.split("
+").map(x=>`<li><p>${escapeHtml(x.replace(/^[-*+]\s/,""))}</p></li>`).join("")}</ul>`;
+    return `<p>${escapeHtml(block).replace(/
+/g,"<br>")}</p>`;
   });
   return blocks.join("");
 }
@@ -56,7 +65,8 @@ export function BlogEditor({ initial, onSaved }: RichEditorProps) {
   const qc = useQueryClient();
   const bodyFileRef = useRef<HTMLInputElement>(null);
   const coverFileRef = useRef<HTMLInputElement>(null);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);\n  const inlineUploadRef = useRef<ImageUploadHandler>(() => undefined);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inlineUploadRef = useRef<ImageUploadHandler>(() => undefined);
   const savedOnce = useRef(false);
   const [v, setV] = useState<Partial<BlogPost>>(initial ?? {
     title: "", slug: "", excerpt: "", content: "", category: "", tags: [],
@@ -159,11 +169,16 @@ export function BlogEditor({ initial, onSaved }: RichEditorProps) {
         if (notify) toast.error("This article slug is already in use.");
         return null;
       }
-      const status = mode;\n      if (status === "scheduled" && (!v.scheduled_at || new Date(v.scheduled_at).getTime() <= Date.now())) {\n        if (notify) toast.error("Choose a future publish date and time.");\n        return null;\n      }
+      const status = mode;
+      if (status === "scheduled" && (!v.scheduled_at || new Date(v.scheduled_at).getTime() <= Date.now())) {
+        if (notify) toast.error("Choose a future publish date and time.");
+        return null;
+      }
       const post = await savePost({
         ...v, id: initial?.id, title: v.title.trim(), slug: v.slug.trim(),
         excerpt: v.excerpt ?? "", content, status,
-        published_at: status === "published" ? (v.published_at ?? new Date().toISOString()) : null,\n        scheduled_at: status === "scheduled" ? v.scheduled_at ?? null : null,
+        published_at: status === "published" ? (v.published_at ?? new Date().toISOString()) : null,
+        scheduled_at: status === "scheduled" ? v.scheduled_at ?? null : null,
       });
       savedOnce.current = true;
       await qc.invalidateQueries({ queryKey: ["admin", "blog"] });
@@ -180,7 +195,10 @@ export function BlogEditor({ initial, onSaved }: RichEditorProps) {
   useEffect(() => {
     if (!editor || !v.title?.trim() || !v.slug?.trim() || !editor.getText().trim()) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {\n      const currentStatus = v.status === "published" ? "published" : "draft";\n      void doSave(currentStatus, false);\n    }, 1800);
+    saveTimer.current = setTimeout(() => {
+      const currentStatus = v.status === "published" ? "published" : "draft";
+      void doSave(currentStatus, false);
+    }, 1800);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, [v.title, v.slug, v.content, v.excerpt, v.category, v.tags, v.cover_image, v.meta_title, v.meta_description, v.status, editor, doSave]);
 
@@ -232,7 +250,9 @@ export function BlogEditor({ initial, onSaved }: RichEditorProps) {
           <span className="hidden text-xs text-muted-foreground sm:block">{busy ? "Saving…" : savedOnce.current ? "Autosaved" : "Draft workspace"}</span>
           <Button variant="outline" size="icon" aria-label="Toggle editor theme" onClick={() => setDarkWriting((x)=>!x)}>{darkWriting?<Sun className="size-4"/>:<Moon className="size-4"/>}</Button>
           <Button variant="outline" disabled={busy} onClick={() => void doSave("draft")}><Save className="mr-2 size-4"/>Save draft</Button>
-          <Button disabled={busy} variant="outline" onClick={() => void schedule()}>Schedule</Button>\n          <Button disabled={busy} variant="outline" onClick={() => void schedule()}>Schedule</Button>\n          <Button disabled={busy} onClick={() => void publish()}>{busy?<Loader2 className="mr-2 size-4 animate-spin"/>:null}Publish</Button>
+          <Button disabled={busy} variant="outline" onClick={() => void schedule()}>Schedule</Button>
+          <Button disabled={busy} variant="outline" onClick={() => void schedule()}>Schedule</Button>
+          <Button disabled={busy} onClick={() => void publish()}>{busy?<Loader2 className="mr-2 size-4 animate-spin"/>:null}Publish</Button>
         </div>
       </div>
 
@@ -290,7 +310,9 @@ export function BlogEditor({ initial, onSaved }: RichEditorProps) {
         </section>
 
         <aside className="space-y-4 xl:sticky xl:top-24">
-          <div className="rounded-2xl border bg-card p-4 shadow-sm"><h2 className="font-semibold">Publishing</h2><p className="mt-1 text-xs text-muted-foreground">Choose draft, publish now, or schedule for later.</p>\n            <label className="mt-4 block text-xs text-muted-foreground">Author name<Input className="mt-1" value={v.author_name??""} onChange={e=>set("author_name",e.target.value)}/></label>\n            <label className="mt-3 block text-xs text-muted-foreground">Scheduled publish time<input type="datetime-local" className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground" value={v.scheduled_at?new Date(new Date(v.scheduled_at).getTime()-new Date(v.scheduled_at).getTimezoneOffset()*60000).toISOString().slice(0,16):""} onChange={e=>set("scheduled_at",e.target.value?new Date(e.target.value).toISOString():null)}/></label><label className="mt-4 block text-xs text-muted-foreground">Publish date<input type="datetime-local" className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground" value={v.published_at?new Date(new Date(v.published_at).getTime()-new Date(v.published_at).getTimezoneOffset()*60000).toISOString().slice(0,16):""} onChange={e=>set("published_at",e.target.value?new Date(e.target.value).toISOString():null)}/></label></div>
+          <div className="rounded-2xl border bg-card p-4 shadow-sm"><h2 className="font-semibold">Publishing</h2><p className="mt-1 text-xs text-muted-foreground">Choose draft, publish now, or schedule for later.</p>
+            <label className="mt-4 block text-xs text-muted-foreground">Author name<Input className="mt-1" value={v.author_name??""} onChange={e=>set("author_name",e.target.value)}/></label>
+            <label className="mt-3 block text-xs text-muted-foreground">Scheduled publish time<input type="datetime-local" className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground" value={v.scheduled_at?new Date(new Date(v.scheduled_at).getTime()-new Date(v.scheduled_at).getTimezoneOffset()*60000).toISOString().slice(0,16):""} onChange={e=>set("scheduled_at",e.target.value?new Date(e.target.value).toISOString():null)}/></label><label className="mt-4 block text-xs text-muted-foreground">Publish date<input type="datetime-local" className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground" value={v.published_at?new Date(new Date(v.published_at).getTime()-new Date(v.published_at).getTimezoneOffset()*60000).toISOString().slice(0,16):""} onChange={e=>set("published_at",e.target.value?new Date(e.target.value).toISOString():null)}/></label></div>
           <div className="rounded-2xl border bg-card p-4 shadow-sm"><h2 className="font-semibold">Featured image</h2><button type="button" onClick={()=>coverFileRef.current?.click()} className="mt-3 grid aspect-video w-full place-items-center overflow-hidden rounded-xl border-2 border-dashed bg-muted/40 text-sm text-muted-foreground hover:bg-muted">{v.cover_image?<img src={coverImageUrl(v.cover_image)} alt="Article cover preview" className="h-full w-full object-cover"/>:<span><ImagePlus className="mx-auto mb-2 size-6"/>Upload cover image</span>}</button><input ref={coverFileRef} hidden type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e=>{void uploadCover(e.target.files?.[0]);e.currentTarget.value="";}}/><p className="mt-2 text-xs text-muted-foreground">JPG, PNG, WebP or GIF · up to 5 MB</p><Button variant="ghost" size="sm" className="mt-1" onClick={()=>set("cover_image","")}>Remove cover</Button></div>
           <div className="rounded-2xl border bg-card p-4 shadow-sm"><h2 className="font-semibold">Tags</h2><div className="mt-3 flex gap-2"><Input value={tagDraft} onChange={e=>setTagDraft(e.target.value)} placeholder="Add tag" onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();addTag();}}}/><Button variant="outline" onClick={addTag}>Add</Button></div><div className="mt-3 flex flex-wrap gap-2">{(v.tags??[]).map(tag=><span key={tag} className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs">{tag}<button type="button" aria-label={`Remove ${tag}`} onClick={()=>set("tags",(v.tags??[]).filter(x=>x!==tag))}>×</button></span>)}</div></div>
           <div className="rounded-2xl border bg-card p-4 shadow-sm"><h2 className="font-semibold">Search appearance</h2><label className="mt-3 block text-xs text-muted-foreground">SEO title<Input className="mt-1" maxLength={70} value={v.meta_title??""} onChange={e=>set("meta_title",e.target.value)}/></label><label className="mt-3 block text-xs text-muted-foreground">Meta description<Textarea className="mt-1" maxLength={160} rows={3} value={v.meta_description??""} onChange={e=>set("meta_description",e.target.value)}/></label><label className="mt-3 block text-xs text-muted-foreground">Open Graph image URL<Input className="mt-1" value={v.og_image??""} onChange={e=>set("og_image",e.target.value)} placeholder="Optional image URL (defaults to cover)"/></label></div>
