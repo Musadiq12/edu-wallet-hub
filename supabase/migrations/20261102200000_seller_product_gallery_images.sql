@@ -51,8 +51,8 @@ BEGIN
   IF coalesce(array_length(p_product_images, 1), 0) > 7
      OR EXISTS (
        SELECT 1
-       FROM unnest(coalesce(p_product_images, '{}'::text[])) AS image_path
-       WHERE image_path !~ ('^' || v_user::text || '/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+[.](jpg|jpeg|png|webp|gif)$')
+       FROM unnest(coalesce(p_product_images, '{}'::text[])) AS images(path)
+       WHERE images.path !~ ('^' || v_user::text || '/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+[.](jpg|jpeg|png|webp|gif)$')
      ) THEN
     RAISE EXCEPTION 'invalid product image paths' USING errcode = '22023';
   END IF;
