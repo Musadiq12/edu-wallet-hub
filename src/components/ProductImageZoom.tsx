@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent, type KeyboardEvent, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type PointerEvent, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { X, ZoomIn } from "lucide-react";
 import { publicImageUrl } from "@/lib/image-storage";
@@ -28,7 +28,6 @@ function getDistance(a: Point, b: Point) {
 export function ProductImageZoom({ path, title, images }: Props) {
   const imagePaths = Array.from(new Set([path, ...(images ?? [])].filter((item): item is string => Boolean(item))));
   const [selected, setSelected] = useState(0);
-  const [dialogBounds, setDialogBounds] = useState({ width: 0, height: 0 });
 
   const [zoomOpen, setZoomOpen] = useState(false);
   const [hiResReady, setHiResReady] = useState(false);
@@ -71,7 +70,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
     image.decoding = "async";
     image.onload = () => {
       const mainWidth = imageRef.current?.getBoundingClientRect().width ?? 0;
-      if (image.naturalWidth <= mainWidth * 1.5) {
+      if (mainWidth > 0 && image.naturalWidth <= mainWidth * 1.5) {
         setHiResFailed(true);
         return;
       }
@@ -101,8 +100,10 @@ export function ProductImageZoom({ path, title, images }: Props) {
     lens.style.transform = `translate3d(${left}px,${top}px,0)`;
     lens.style.display = "block";
 
-    indicatorRef.current.style.transform = `translate3d(${left}px,${top}px,0)`;
-    indicatorRef.current.style.display = "block";
+    if (MODE === "panel") {
+      indicatorRef.current.style.transform = `translate3d(${left}px,${top}px,0)`;
+      indicatorRef.current.style.display = "block";
+    }
 
     if (MODE === "panel" && panelImageRef.current && hiResReady && highImageRef.current) {
       const width = bounds.width * ZOOM_FACTOR;
@@ -131,9 +132,8 @@ export function ProductImageZoom({ path, title, images }: Props) {
   };
 
   const openTouchZoom = () => {
-    if (!zoomAvailable || hiResFailed) return;
+    if (!zoomAvailable) return;
     preloadHighResolution();
-    cacheBounds();
     setZoomOpen(true);
   };
 
@@ -141,33 +141,29 @@ export function ProductImageZoom({ path, title, images }: Props) {
     setZoomOpen(false);
     setTouchScale(1);
     setTouchPan({ x: 0, y: 0 });
+    touchPointsRef.current.clear();
     pinchRef.current = null;
     dragRef.current = null;
   };
 
   const onTouchPointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (!zoomOpen || event.pointerType === "mouse") return;
+    if (event.pointerType === "mouse") return;
     event.currentTarget.setPointerCapture(event.pointerId);
-    activePointerRef.current = event.pointerId;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      const points = (event.currentTarget as HTMLDivElement & { __points?: Map<number, Point> }).__points ?? new Map<number, Point>();
-      points.set(event.pointerId, { x: event.clientX, y: event.clientY });
-      (event.currentTarget as HTMLDivElement & { __points?: Map<number, Point> }).__points = points;
-      if (points.size === 2) {
-        const [a, b] = Array.from(points.values());
-        pinchRef.current = { distance: getDistance(a, b), scale: touchScale };
-        dragRef.current = null;
-      } else if (points.size === 1) {
-        dragRef.current = { x: event.clientX, y: event.clientY, panX: touchPan.x, panY: touchPan.y };
-      }
+    const points = touchPointsRef.current;
+    points.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (points.size === 2) {
+      const [a, b] = Array.from(points.values());
+      pinchRef.current = { distance: getDistance(a, b), scale: touchScale };
+      dragRef.current = null;
+    } else if (points.size === 1) {
+      dragRef.current = { x: event.clientX, y: event.clientY, panX: touchPan.x, panY: touchPan.y };
     }
   };
 
   const onTouchPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (!zoomOpen || event.pointerType === "mouse") return;
-    const target = event.currentTarget as HTMLDivElement & { __points?: Map<number, Point> };
-    const points = target.__points;
-    if (!points?.has(event.pointerId)) return;
+    if (event.pointerType === "mouse") return;
+    const points = touchPointsRef.current;
+    if (!points.has(event.pointerId)) return;
     event.preventDefault();
     points.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (points.size === 2 && pinchRef.current) {
@@ -178,8 +174,9 @@ export function ProductImageZoom({ path, title, images }: Props) {
       if (nextScale === 1) setTouchPan({ x: 0, y: 0 });
     } else if (points.size === 1 && dragRef.current && touchScale > 1) {
       const delta = dragRef.current;
-      const maxX = ((frameRef.current?.clientWidth ?? 0) * (touchScale - 1)) / 2;
-      const maxY = ((frameRef.current?.clientHeight ?? 0) * (touchScale - 1)) / 2;
+      const rect = frameRef.current?.getBoundingClientRect();
+      const maxX = ((rect?.width ?? 0) * (touchScale - 1)) / 2;
+      const maxY = ((rect?.height ?? 0) * (touchScale - 1)) / 2;
       setTouchPan({
         x: clamp(delta.panX + event.clientX - delta.x, -maxX, maxX),
         y: clamp(delta.panY + event.clientY - delta.y, -maxY, maxY),
@@ -187,11 +184,11 @@ export function ProductImageZoom({ path, title, images }: Props) {
     }
   };
 
-  const onTouchPointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
-    const target = event.currentTarget as HTMLDivElement & { __points?: Map<number, Point> };
-    target.__points?.delete(event.pointerId);
-    if ((target.__points?.size ?? 0) < 2) pinchRef.current = null;
-    if (!target.__points?.size) dragRef.current = null;
+  const onTouchPointerUp = (event: PointerEvent<HTMLDivElement>) => {
+    const points = touchPointsRef.current;
+    points.delete(event.pointerId);
+    if (points.size < 2) pinchRef.current = null;
+    if (!points.size) dragRef.current = null;
   };
 
   const handleKeys = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -207,8 +204,9 @@ export function ProductImageZoom({ path, title, images }: Props) {
       return;
     }
     const step = 32;
-    const maxX = ((frameRef.current?.clientWidth ?? 0) * (touchScale - 1)) / 2;
-    const maxY = ((frameRef.current?.clientHeight ?? 0) * (touchScale - 1)) / 2;
+    const rect = frameRef.current?.getBoundingClientRect();
+    const maxX = ((rect?.width ?? 0) * (touchScale - 1)) / 2;
+    const maxY = ((rect?.height ?? 0) * (touchScale - 1)) / 2;
     if (event.key === "ArrowLeft") setTouchPan((p) => ({ ...p, x: clamp(p.x + step, -maxX, maxX) }));
     if (event.key === "ArrowRight") setTouchPan((p) => ({ ...p, x: clamp(p.x - step, -maxX, maxX) }));
     if (event.key === "ArrowUp") setTouchPan((p) => ({ ...p, y: clamp(p.y + step, -maxY, maxY) }));
@@ -222,7 +220,6 @@ export function ProductImageZoom({ path, title, images }: Props) {
 
   useEffect(() => {
     const update = () => {
-      cacheBounds();
       handlePointerLeave();
       if (zoomOpen) closeTouchZoom();
     };
@@ -253,7 +250,6 @@ export function ProductImageZoom({ path, title, images }: Props) {
   return (
     <div className="space-y-3">
       <div
-        ref={frameRef}
         role="button"
         tabIndex={0}
         aria-label={`View larger image of ${title}`}
@@ -290,9 +286,8 @@ export function ProductImageZoom({ path, title, images }: Props) {
         />
         <div ref={lensRef} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 hidden rounded-full border-2 border-white bg-no-repeat shadow-[0_2px_12px_rgba(0,0,0,.35)]" style={{ width: LENS_SIZE, height: LENS_SIZE, backgroundImage: hiResReady ? `url("${highUrl}")` : "none", backgroundSize: `${ZOOM_FACTOR * 100}% ${ZOOM_FACTOR * 100}%` }} />
         <div ref={indicatorRef} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 hidden h-[72px] w-[72px] border border-primary bg-primary/10" />
-        {MODE === "panel" && (
+        {MODE === "panel" && hiResReady && (
           <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-full z-10 hidden w-full overflow-hidden border border-border bg-card lg:block">
-            {!hiResReady && <div className="absolute inset-0 animate-pulse bg-muted" />}
             <img ref={panelImageRef} alt="" className="absolute left-0 top-0 max-w-none" />
           </div>
         )}
@@ -334,7 +329,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
           <div
             ref={frameRef}
             className="relative h-[min(82dvh,900px)] w-full touch-none overflow-hidden"
-            onPointerDown={onTouchPointerDown}\n            onPointerEnter={cacheDialogBounds}
+            onPointerDown={onTouchPointerDown}
             onPointerMove={onTouchPointerMove}
             onPointerUp={onTouchPointerUp}
             onPointerCancel={onTouchPointerUp}
