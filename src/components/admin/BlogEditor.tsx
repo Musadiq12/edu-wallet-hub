@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";\nimport type { ReactNode } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -21,10 +21,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { savePost, type BlogPost, coverImageUrl, uniqueSlugCheck } from "@/lib/blog";
 import { uploadFile, LIMITS, friendlyError } from "@/lib/admin";
-import { MarkdownContent } from "@/components/MarkdownContent";
+import { MarkdownContent } from "@/components/MarkdownContent";\nimport "@/components/blog-editor.css";
 import { Link as RouterLink } from "@tanstack/react-router";
 
-type RichEditorProps = { initial?: BlogPost; onSaved: (id: string) => void };
+type RichEditorProps = { initial?: BlogPost; onSaved: (id: string) => void };\ntype ImageUploadHandler = (file: File) => void;
 
 const categories = ["NEET", "JEE", "UPSC", "SSC CGL", "Banking", "CLAT", "Study Tips"];
 
@@ -48,7 +48,7 @@ function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char] ?? char);
 }
 
-function ToolbarButton({ label, active, disabled, onClick, children }: { label: string; active?: boolean; disabled?: boolean; onClick: () => void; children: React.ReactNode }) {
+function ToolbarButton({ label, active, disabled, onClick, children }: { label: string; active?: boolean; disabled?: boolean; onClick: () => void; children: ReactNode }) {
   return <button type="button" title={label} aria-label={label} disabled={disabled} onClick={onClick} className={`grid size-9 place-items-center rounded-lg border text-sm transition-colors disabled:opacity-40 ${active ? "border-primary/40 bg-primary/10 text-primary" : "border-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"}`}>{children}</button>;
 }
 
@@ -56,7 +56,7 @@ export function BlogEditor({ initial, onSaved }: RichEditorProps) {
   const qc = useQueryClient();
   const bodyFileRef = useRef<HTMLInputElement>(null);
   const coverFileRef = useRef<HTMLInputElement>(null);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);\n  const inlineUploadRef = useRef<ImageUploadHandler>(() => undefined);
   const savedOnce = useRef(false);
   const [v, setV] = useState<Partial<BlogPost>>(initial ?? {
     title: "", slug: "", excerpt: "", content: "", category: "", tags: [],
@@ -90,19 +90,19 @@ export function BlogEditor({ initial, onSaved }: RichEditorProps) {
     immediatelyRender: false,
     editorProps: {
       attributes: { class: "blog-tiptap-content", spellcheck: "true", "aria-label": "Article body" },
-      handleDrop: (view, event, _slice, moved) => {
+      handleDrop: (_view, event, _slice, moved) => {
         if (moved || !event.dataTransfer?.files?.length) return false;
         const file = Array.from(event.dataTransfer.files).find((x) => x.type.startsWith("image/"));
         if (!file) return false;
         event.preventDefault();
-        void uploadInlineImage(file);
+        inlineUploadRef.current(file);
         return true;
       },
       handlePaste: (_view, event) => {
         const file = Array.from(event.clipboardData?.files ?? []).find((x) => x.type.startsWith("image/"));
         if (!file) return false;
         event.preventDefault();
-        void uploadInlineImage(file);
+        inlineUploadRef.current(file);
         return true;
       },
     },
@@ -146,7 +146,7 @@ export function BlogEditor({ initial, onSaved }: RichEditorProps) {
     } catch (error) { toast.error(friendlyError(error)); }
   };
 
-  const doSave = useCallback(async (mode: "draft" | "published" = "draft", notify = true) => {
+  const doSave = useCallback(async (mode: "draft" | "published" | "scheduled" = "draft", notify = true) => {
     const content = editor?.getHTML() ?? v.content ?? "";
     const text = editor?.getText() ?? "";
     if (!v.title?.trim() || !v.slug?.trim() || !text.trim()) {
@@ -159,16 +159,16 @@ export function BlogEditor({ initial, onSaved }: RichEditorProps) {
         if (notify) toast.error("This article slug is already in use.");
         return null;
       }
-      const status = mode;
+      const status = mode;\n      if (status === "scheduled" && (!v.scheduled_at || new Date(v.scheduled_at).getTime() <= Date.now())) {\n        if (notify) toast.error("Choose a future publish date and time.");\n        return null;\n      }
       const post = await savePost({
         ...v, id: initial?.id, title: v.title.trim(), slug: v.slug.trim(),
         excerpt: v.excerpt ?? "", content, status,
-        published_at: status === "published" ? (v.published_at ?? new Date().toISOString()) : v.published_at ?? null,
+        published_at: status === "published" ? (v.published_at ?? new Date().toISOString()) : null,\n        scheduled_at: status === "scheduled" ? v.scheduled_at ?? null : null,
       });
       savedOnce.current = true;
       await qc.invalidateQueries({ queryKey: ["admin", "blog"] });
       await qc.invalidateQueries({ queryKey: ["blog"] });
-      if (notify) toast.success(status === "published" ? "Article published" : "Draft saved");
+      if (notify) toast.success(status === "published" ? "Article published" : status === "scheduled" ? "Article scheduled" : "Draft saved");
       onSaved(post.id);
       return post.id;
     } catch (error) {
@@ -180,9 +180,9 @@ export function BlogEditor({ initial, onSaved }: RichEditorProps) {
   useEffect(() => {
     if (!editor || !v.title?.trim() || !v.slug?.trim() || !editor.getText().trim()) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => { void doSave("draft", false); }, 1800);
+    saveTimer.current = setTimeout(() => {\n      const currentStatus = v.status === "published" ? "published" : "draft";\n      void doSave(currentStatus, false);\n    }, 1800);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
-  }, [v.title, v.slug, v.content, v.excerpt, v.category, v.tags, v.cover_image, v.meta_title, v.meta_description, editor, doSave]);
+  }, [v.title, v.slug, v.content, v.excerpt, v.category, v.tags, v.cover_image, v.meta_title, v.meta_description, v.status, editor, doSave]);
 
   const addTag = () => {
     const clean = tagDraft.trim().replace(/^#/, "");
@@ -232,7 +232,7 @@ export function BlogEditor({ initial, onSaved }: RichEditorProps) {
           <span className="hidden text-xs text-muted-foreground sm:block">{busy ? "Saving…" : savedOnce.current ? "Autosaved" : "Draft workspace"}</span>
           <Button variant="outline" size="icon" aria-label="Toggle editor theme" onClick={() => setDarkWriting((x)=>!x)}>{darkWriting?<Sun className="size-4"/>:<Moon className="size-4"/>}</Button>
           <Button variant="outline" disabled={busy} onClick={() => void doSave("draft")}><Save className="mr-2 size-4"/>Save draft</Button>
-          <Button disabled={busy} onClick={() => void publish()}>{busy?<Loader2 className="mr-2 size-4 animate-spin"/>:null}Publish</Button>
+          <Button disabled={busy} variant="outline" onClick={() => void schedule()}>Schedule</Button>\n          <Button disabled={busy} onClick={() => void publish()}>{busy?<Loader2 className="mr-2 size-4 animate-spin"/>:null}Publish</Button>
         </div>
       </div>
 
@@ -276,7 +276,7 @@ export function BlogEditor({ initial, onSaved }: RichEditorProps) {
               <Button variant={preview?"default":"outline"} size="sm" onClick={()=>setPreview((x)=>!x)}><Eye className="mr-2 size-4"/>{preview?"Editor":"Preview"}</Button>
             </div>
             <input ref={bodyFileRef} hidden type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(e)=>{insertImage(e.target.files?.[0]);e.currentTarget.value="";}}/>
-            {preview ? <div className="prose-blog min-h-[560px] p-6" dangerouslySetInnerHTML={{__html: editor?.getHTML() ?? ""}}/> : <EditorContent editor={editor} className="blog-tiptap-surface"/>}
+            {preview ? <div className="prose-blog min-h-[560px] p-6"><MarkdownContent content={editor?.getHTML() ?? ""}/></div> : <EditorContent editor={editor} className="blog-tiptap-surface"/>}
             <div className="flex flex-wrap items-center justify-between gap-2 border-t px-4 py-3 text-xs text-muted-foreground"><span>{stats.words.toLocaleString()} words · {stats.reading} min read</span><span>{uploading?"Uploading image…":"Changes autosave to draft"}</span></div>
           </div>
           {editor?.isActive("image") && <div className="rounded-xl border bg-card p-4"><div className="mb-3 flex items-center justify-between"><p className="font-medium">Selected image</p><Button size="icon" variant="ghost" onClick={()=>editor.chain().focus().deleteSelection().run()}><X className="size-4"/></Button></div><div className="grid gap-3 sm:grid-cols-2"><label className="text-xs text-muted-foreground">Alt text<Input className="mt-1" value={imageAlt} onChange={e=>setImageAlt(e.target.value)}/></label><label className="text-xs text-muted-foreground">Caption / title<Input className="mt-1" value={captionText} onChange={e=>setCaptionText(e.target.value)}/></label></div><Button className="mt-3" size="sm" onClick={updateImageDetails}>Apply image details</Button></div>}
@@ -290,10 +290,10 @@ export function BlogEditor({ initial, onSaved }: RichEditorProps) {
         </section>
 
         <aside className="space-y-4 xl:sticky xl:top-24">
-          <div className="rounded-2xl border bg-card p-4 shadow-sm"><h2 className="font-semibold">Publishing</h2><p className="mt-1 text-xs text-muted-foreground">Current workflow supports drafts and immediate publishing.</p><label className="mt-4 block text-xs text-muted-foreground">Publish date<input type="datetime-local" className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground" value={v.published_at?new Date(new Date(v.published_at).getTime()-new Date(v.published_at).getTimezoneOffset()*60000).toISOString().slice(0,16):""} onChange={e=>set("published_at",e.target.value?new Date(e.target.value).toISOString():null)}/></label></div>
+          <div className="rounded-2xl border bg-card p-4 shadow-sm"><h2 className="font-semibold">Publishing</h2><p className="mt-1 text-xs text-muted-foreground">Choose draft, publish now, or schedule for later.</p>\n            <label className="mt-4 block text-xs text-muted-foreground">Author name<Input className="mt-1" value={v.author_name??""} onChange={e=>set("author_name",e.target.value)}/></label>\n            <label className="mt-3 block text-xs text-muted-foreground">Scheduled publish time<input type="datetime-local" className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground" value={v.scheduled_at?new Date(new Date(v.scheduled_at).getTime()-new Date(v.scheduled_at).getTimezoneOffset()*60000).toISOString().slice(0,16):""} onChange={e=>set("scheduled_at",e.target.value?new Date(e.target.value).toISOString():null)}/></label><label className="mt-4 block text-xs text-muted-foreground">Publish date<input type="datetime-local" className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm text-foreground" value={v.published_at?new Date(new Date(v.published_at).getTime()-new Date(v.published_at).getTimezoneOffset()*60000).toISOString().slice(0,16):""} onChange={e=>set("published_at",e.target.value?new Date(e.target.value).toISOString():null)}/></label></div>
           <div className="rounded-2xl border bg-card p-4 shadow-sm"><h2 className="font-semibold">Featured image</h2><button type="button" onClick={()=>coverFileRef.current?.click()} className="mt-3 grid aspect-video w-full place-items-center overflow-hidden rounded-xl border-2 border-dashed bg-muted/40 text-sm text-muted-foreground hover:bg-muted">{v.cover_image?<img src={coverImageUrl(v.cover_image)} alt="Article cover preview" className="h-full w-full object-cover"/>:<span><ImagePlus className="mx-auto mb-2 size-6"/>Upload cover image</span>}</button><input ref={coverFileRef} hidden type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={e=>{void uploadCover(e.target.files?.[0]);e.currentTarget.value="";}}/><p className="mt-2 text-xs text-muted-foreground">JPG, PNG, WebP or GIF · up to 5 MB</p><Button variant="ghost" size="sm" className="mt-1" onClick={()=>set("cover_image","")}>Remove cover</Button></div>
           <div className="rounded-2xl border bg-card p-4 shadow-sm"><h2 className="font-semibold">Tags</h2><div className="mt-3 flex gap-2"><Input value={tagDraft} onChange={e=>setTagDraft(e.target.value)} placeholder="Add tag" onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();addTag();}}}/><Button variant="outline" onClick={addTag}>Add</Button></div><div className="mt-3 flex flex-wrap gap-2">{(v.tags??[]).map(tag=><span key={tag} className="inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs">{tag}<button type="button" aria-label={`Remove ${tag}`} onClick={()=>set("tags",(v.tags??[]).filter(x=>x!==tag))}>×</button></span>)}</div></div>
-          <div className="rounded-2xl border bg-card p-4 shadow-sm"><h2 className="font-semibold">Search appearance</h2><label className="mt-3 block text-xs text-muted-foreground">SEO title<Input className="mt-1" maxLength={70} value={v.meta_title??""} onChange={e=>set("meta_title",e.target.value)}/></label><label className="mt-3 block text-xs text-muted-foreground">Meta description<Textarea className="mt-1" maxLength={160} rows={3} value={v.meta_description??""} onChange={e=>set("meta_description",e.target.value)}/></label><label className="mt-3 block text-xs text-muted-foreground">Open Graph image URL<input className="mt-1 h-10 w-full rounded-md border bg-background px-3 text-sm" value={v.seo_description??""} onChange={e=>set("seo_description",e.target.value)} placeholder="Optional social image URL"/></label></div>
+          <div className="rounded-2xl border bg-card p-4 shadow-sm"><h2 className="font-semibold">Search appearance</h2><label className="mt-3 block text-xs text-muted-foreground">SEO title<Input className="mt-1" maxLength={70} value={v.meta_title??""} onChange={e=>set("meta_title",e.target.value)}/></label><label className="mt-3 block text-xs text-muted-foreground">Meta description<Textarea className="mt-1" maxLength={160} rows={3} value={v.meta_description??""} onChange={e=>set("meta_description",e.target.value)}/></label><label className="mt-3 block text-xs text-muted-foreground">Open Graph image URL<Input className="mt-1" value={v.og_image??""} onChange={e=>set("og_image",e.target.value)} placeholder="Optional image URL (defaults to cover)"/></label></div>
         </aside>
       </div>
     </div>
