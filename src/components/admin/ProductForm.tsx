@@ -19,7 +19,7 @@ import { AdminFileField, type PickedFile } from "@/components/admin/AdminFileFie
 import { BUCKETS, LIMITS, friendlyError, removeFile, uploadFile, type AdminProduct } from "@/lib/admin";
 import { categoriesQuery } from "@/lib/catalog";
 import { discountPercent, slugify, validateProductPricing } from "@/lib/format";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";\nimport { publicImageUrl } from "@/lib/image-storage";
 
 type FormState = {
   product_type: "pdf" | "physical";
@@ -102,7 +102,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
       : emptyState,
   );
   const [slugTouched, setSlugTouched] = useState(!!product);
-  const [cover, setCover] = useState<PickedFile | null>(null);
+  const [cover, setCover] = useState<PickedFile | null>(null);\n  const [galleryFiles, setGalleryFiles] = useState<PickedFile[]>([]);\n  const [galleryPaths, setGalleryPaths] = useState<string[]>(product?.product_images ?? []);
   const [pdf, setPdf] = useState<PickedFile | null>(null);
   const [preview, setPreview] = useState<PickedFile | null>(null);
   const [paths, setPaths] = useState({
@@ -193,7 +193,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         uploaded.push({ bucket: BUCKETS.cover, path });
         next.cover_image = path;
       }
-      if (pdf && form.product_type === "pdf" && !form.is_free) {
+      const nextGallery = [...galleryPaths];\n      for (const image of galleryFiles) {\n        setStatus("Uploading product gallery images…");\n        const { path } = await uploadFile(BUCKETS.cover, image.file, "products");\n        uploaded.push({ bucket: BUCKETS.cover, path });\n        nextGallery.push(path);\n      }\n      if (pdf && form.product_type === "pdf" && !form.is_free) {
         setStatus("Uploading product PDF…");
         const { path } = await uploadFile(BUCKETS.file, pdf.file, "files");
         uploaded.push({ bucket: BUCKETS.file, path });
@@ -227,7 +227,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         stock_quantity: form.product_type === "physical" ? Number(form.stock_quantity) : null,
         stock_status: form.product_type === "physical" ? form.stock_status : null,
         low_stock_threshold: form.product_type === "physical" && form.low_stock_threshold !== "" ? Number(form.low_stock_threshold) : null,
-        cover_image: next.cover_image,
+        cover_image: next.cover_image,\n        product_images: nextGallery.slice(0, 8),
         pdf_file: form.product_type === "pdf"
           ? (form.is_free ? form.google_drive_url.trim() : next.pdf_file) || null
           : null,
