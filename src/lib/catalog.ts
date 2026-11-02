@@ -108,7 +108,6 @@ export const adminProductsQuery = () =>
         .from("products")
         .select(PRODUCT_FIELDS)
         .is("seller_id", null)
-        .neq("status", "pending")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as Product[];
