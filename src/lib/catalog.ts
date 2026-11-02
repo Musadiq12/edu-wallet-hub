@@ -76,7 +76,7 @@ export const productsQuery = (opts?: {
         .order("created_at", { ascending: false });
       if (opts?.featured) q = q.eq("is_featured", true);
       if (opts?.free !== undefined) q = q.eq("is_free", opts.free);
-      q = q.limit(opts?.limit ?? 16);
+      if (opts?.limit !== undefined) q = q.limit(opts.limit);
       const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as unknown as Product[];
@@ -108,7 +108,6 @@ export const adminProductsQuery = () =>
         .from("products")
         .select(PRODUCT_FIELDS)
         .is("seller_id", null)
-        .neq("status", "pending")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as unknown as Product[];
