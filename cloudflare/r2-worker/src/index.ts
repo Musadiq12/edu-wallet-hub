@@ -145,7 +145,7 @@ export default {
       const key = safeKey(url.searchParams.get("key") || "");
       if (!key.startsWith("covers/") || key.includes("..")) return new Response("Not found.", { status: 404 });
       const parsedWidth = Number.parseInt(url.searchParams.get("width") || "400", 10);
-      const width = Number.isFinite(parsedWidth) ? Math.min(1200, Math.max(80, parsedWidth)) : 400;
+      const width = Number.isFinite(parsedWidth) ? Math.min(2000, Math.max(80, parsedWidth)) : 400;
       const parsedQuality = Number.parseInt(url.searchParams.get("quality") || "78", 10);
       const quality = Number.isFinite(parsedQuality) ? Math.min(90, Math.max(45, parsedQuality)) : 78;
       const requestedFormat = (url.searchParams.get("format") || "auto").toLowerCase();
