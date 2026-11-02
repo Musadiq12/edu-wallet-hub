@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ProductImageZoom } from "@/components/ProductImageZoom";
 import { useSiteSettings } from "@/lib/settings";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -13,7 +14,6 @@ import { ArrowRight, Eye, FileText, ShieldCheck, ShoppingBag } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { CoverImage } from "@/components/CoverImage";
 import { EmptyState } from "@/components/EmptyState";
 import { categoriesQuery, productBySlugQuery, signedUrl } from "@/lib/catalog";
 import { discountPercent, effectivePrice, formatPrice, hasDiscount } from "@/lib/format";
@@ -268,7 +268,7 @@ function ProductDetail() {
         <div className="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(320px,0.82fr)_minmax(0,1.18fr)] lg:gap-12">
           <div className="lg:sticky lg:top-24">
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-              <CoverImage path={p.cover_image} title={p.title} />
+              <ProductImageZoom path={p.cover_image} title={p.title} />
             </div>
             <p className="mt-3 text-center text-xs text-muted-foreground">{p.product_type === "physical" ? "Physical book / printed notes" : "Digital PDF resource"}</p>
           </div>
