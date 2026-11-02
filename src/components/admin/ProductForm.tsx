@@ -20,6 +20,7 @@ import { BUCKETS, LIMITS, friendlyError, removeFile, uploadFile, type AdminProdu
 import { categoriesQuery } from "@/lib/catalog";
 import { discountPercent, slugify, validateProductPricing } from "@/lib/format";
 import { supabase } from "@/integrations/supabase/client";
+import { publicImageUrl } from "@/lib/image-storage";
 
 type FormState = {
   product_type: "pdf" | "physical";
@@ -103,6 +104,8 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
   );
   const [slugTouched, setSlugTouched] = useState(!!product);
   const [cover, setCover] = useState<PickedFile | null>(null);
+  const [galleryFiles, setGalleryFiles] = useState<PickedFile[]>([]);
+  const [galleryPaths, setGalleryPaths] = useState<string[]>(product?.product_images ?? []);
   const [pdf, setPdf] = useState<PickedFile | null>(null);
   const [preview, setPreview] = useState<PickedFile | null>(null);
   const [paths, setPaths] = useState({
@@ -193,6 +196,13 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         uploaded.push({ bucket: BUCKETS.cover, path });
         next.cover_image = path;
       }
+      const nextGallery = [...galleryPaths];
+      for (const image of galleryFiles) {
+        setStatus("Uploading additional product images…");
+        const { path } = await uploadFile(BUCKETS.cover, image.file, "products");
+        uploaded.push({ bucket: BUCKETS.cover, path });
+        nextGallery.push(path);
+      }
       if (pdf && form.product_type === "pdf" && !form.is_free) {
         setStatus("Uploading product PDF…");
         const { path } = await uploadFile(BUCKETS.file, pdf.file, "files");
@@ -228,6 +238,7 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
         stock_status: form.product_type === "physical" ? form.stock_status : null,
         low_stock_threshold: form.product_type === "physical" && form.low_stock_threshold !== "" ? Number(form.low_stock_threshold) : null,
         cover_image: next.cover_image,
+        product_images: nextGallery.slice(0, 7),
         pdf_file: form.product_type === "pdf"
           ? (form.is_free ? form.google_drive_url.trim() : next.pdf_file) || null
           : null,
@@ -241,6 +252,9 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
       if (saveError) throw saveError;
 
       if (product) {
+        for (const oldPath of (product.product_images ?? []).filter((path) => !nextGallery.includes(path))) {
+          await removeFile(BUCKETS.cover, oldPath);
+        }
         if (cover && paths.cover_image && paths.cover_image !== next.cover_image) await removeFile(BUCKETS.cover, paths.cover_image);
         if (pdf && !form.is_free && paths.pdf_file && paths.pdf_file !== next.pdf_file) await removeFile(BUCKETS.file, paths.pdf_file);
         if (preview && paths.preview_file && paths.preview_file !== next.preview_file) await removeFile(BUCKETS.preview, paths.preview_file);
@@ -401,11 +415,44 @@ export function ProductForm({ product }: { product?: AdminProduct | null }) {
       <section className="space-y-4">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Product image</h2>
         <AdminFileField
-          id="cover" label="Product cover image" kind="image" accept="image/*"
-          maxBytes={LIMITS.coverBytes} help="JPG or PNG, up to 5 MB."
+          id="cover" label="Primary product image" kind="image" accept="image/*"
+          maxBytes={LIMITS.coverBytes} help="JPG, PNG or WebP, up to 5 MB."
           existingPath={paths.cover_image} picked={cover} busy={busy} status={status ?? ""}
           onPick={setCover} onRemoveExisting={() => setPaths((p) => ({ ...p, cover_image: null }))}
         />
+        <div className="space-y-2">
+          <Label htmlFor="product-gallery">Additional product images (up to 7)</Label>
+          <input
+            id="product-gallery"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            multiple
+            disabled={busy || galleryPaths.length + galleryFiles.length >= 7}
+            onChange={(event) => {
+              const selected = Array.from(event.target.files ?? []).slice(0, 7 - galleryPaths.length - galleryFiles.length);
+              const valid = selected.filter((file) => file.type.startsWith("image/") && file.size <= LIMITS.coverBytes);
+              if (valid.length !== selected.length) toast.error("Each image must be a supported image file no larger than 5 MB.");
+              setGalleryFiles((current) => [...current, ...valid.map((file) => ({ file, previewUrl: URL.createObjectURL(file) }))]);
+              event.target.value = "";
+            }}
+            className="block w-full text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-muted file:px-3 file:py-2 file:text-sm file:font-medium"
+          />
+          <div className="flex flex-wrap gap-2">
+            {galleryPaths.map((path) => (
+              <div key={path} className="relative size-16 overflow-hidden rounded-lg border">
+                <img src={publicImageUrl("product-covers", path, 160) ?? ""} alt="Saved product image" className="h-full w-full object-cover" />
+                <button type="button" aria-label="Remove saved image" onClick={() => setGalleryPaths((current) => current.filter((item) => item !== path))} className="absolute right-0 top-0 grid size-6 place-items-center rounded-bl bg-black/75 text-white">×</button>
+              </div>
+            ))}
+            {galleryFiles.map((item, index) => (
+              <div key={item.file.name + index} className="relative size-16 overflow-hidden rounded-lg border">
+                <img src={item.previewUrl} alt="New product image preview" className="h-full w-full object-cover" />
+                <button type="button" aria-label="Remove selected image" onClick={() => setGalleryFiles((current) => current.filter((_, i) => i !== index))} className="absolute right-0 top-0 grid size-6 place-items-center rounded-bl bg-black/75 text-white">×</button>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">Add up to seven extra angles or detail shots. Images upload when you save the product.</p>
+        </div>
       </section>
 
       {form.is_free ? (
