@@ -8,7 +8,8 @@ WITH CHECK (
   bucket_id = 'product-covers'
   AND (storage.foldername(name))[1] = (select auth.uid())::text
   AND public.current_user_is_seller()
-  AND name ~ ('^' || (select auth.uid())::text || '/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+[.](jpg|jpeg|png|webp|gif)
+  AND name ~ ('^' || (select auth.uid())::text || '/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+[.](jpg|jpeg|png|webp|gif)$')
+);
 
 DROP POLICY IF EXISTS seller_product_covers_delete ON storage.objects;
 CREATE POLICY seller_product_covers_delete ON storage.objects
@@ -17,7 +18,8 @@ USING (
   bucket_id = 'product-covers'
   AND (storage.foldername(name))[1] = (select auth.uid())::text
   AND public.current_user_is_seller()
-  AND name ~ ('^' || (select auth.uid())::text || '/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+[.](jpg|jpeg|png|webp|gif)
+  AND name ~ ('^' || (select auth.uid())::text || '/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+[.](jpg|jpeg|png|webp|gif)$')
+);
 
 CREATE OR REPLACE FUNCTION public.seller_set_product_images(
   p_product_id uuid,
