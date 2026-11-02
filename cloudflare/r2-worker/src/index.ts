@@ -5,7 +5,7 @@ type Env = {
   SUPABASE_SERVER_KEY: string;
   DOWNLOAD_SIGNING_SECRET: string;
   DELIVERY_SECRET: string;
-  ALLOWED_ORIGIN?: string;
+  ALLOWED_ORIGIN?: string;\n  BLOG_CRON_SECRET: string;
 };
 
 const MAX_PDF_BYTES = 50 * 1024 * 1024;
