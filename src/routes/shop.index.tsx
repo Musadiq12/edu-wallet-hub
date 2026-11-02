@@ -112,7 +112,7 @@ function Shop() {
           />
         </div>
 
-        <div className="hidden" role="group" aria-label="Filter resources by category">
+        <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Filter resources by category">
           {tabs.map((t) => (
             <button
               key={t.slug}
