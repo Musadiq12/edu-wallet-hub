@@ -152,6 +152,11 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
       closeZoom();
       return;
     }
+    if (event.key === "Tab") {
+      event.preventDefault();
+      closeButtonRef.current?.focus();
+      return;
+    }
     const step = 32;
     const { width, height } = zoomBoundsRef.current;
     const maxX = (width * (scale - 1)) / 2;
@@ -368,7 +373,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
           role="dialog"
           aria-modal="true"
           aria-label={`Zoomed image of ${title}`}
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/95 p-3 sm:p-8"
+          className="fixed inset-0 z-[40] flex items-center justify-center bg-black/95 p-3 sm:p-8"
           onKeyDown={handleZoomKeyDown}
         >
           <button
