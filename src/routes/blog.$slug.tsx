@@ -12,10 +12,10 @@ import "@/components/blog-editor.css";
 export const Route = createFileRoute("/blog/$slug")({
   loader: ({context,params}) => context.queryClient.ensureQueryData(postBySlugQuery(params.slug)),
   head: ({loaderData,params}) => {
-    const p=loaderData as {title?:string;meta_title?:string;seo_title?:string|null;excerpt?:string;meta_description?:string;cover_image?:string}|undefined;
+    const p=loaderData as {title?:string;meta_title?:string;seo_title?:string|null;excerpt?:string;meta_description?:string;cover_image?:string;og_image?:string|null}|undefined;
     const title=p?.seo_title?.trim()||buildTitle([p?.meta_title||p?.title||"Exam Preparation Blog",BRAND]);
     const description=buildMeta(p?.meta_description||p?.excerpt||siteConfig.shortDescription);
-    return {meta:[{title},{name:"description",content:description},{property:"og:title",content:title},{property:"og:description",content:description},{property:"og:type",content:"article"},{property:"og:url",content:absoluteUrl(`/blog/${params.slug}`)},...(p?.cover_image?[{property:"og:image",content:coverImageUrl(p.cover_image)}]:[]),...(!p?[{name:"robots",content:"noindex"}]:[])],links:p?[{rel:"canonical",href:absoluteUrl(`/blog/${params.slug}`)}]:[]};
+    return {meta:[{title},{name:"description",content:description},{property:"og:title",content:title},{property:"og:description",content:description},{property:"og:type",content:"article"},{property:"og:url",content:absoluteUrl(`/blog/${params.slug}`)},...((p?.og_image||p?.cover_image)?[{property:"og:image",content:(p?.og_image||coverImageUrl(p.cover_image))}]:[]),...(!p?[{name:"robots",content:"noindex"}]:[])],links:p?[{rel:"canonical",href:absoluteUrl(`/blog/${params.slug}`)}]:[]};
   },
   component: Page,
 });
@@ -37,17 +37,17 @@ function Page() {
   const rel=useQuery(relatedProductsQuery(p??undefined));
   const outline=useMemo(()=>p?collectHeadings(p.content):[],[p?.content]);
   if(!p)return <main className="page-container py-12 text-center"><EmptyState title="Article not found" description="This article may have been unpublished or moved."/><Link to="/blog" className="text-primary underline">Browse all articles</Link></main>;
-  const image=p.cover_image?coverImageUrl(p.cover_image):"";
+  const image=p.cover_image?coverImageUrl(p.cover_image):"";\n  const socialImage=p.og_image || image;
   const htmlContent=/<(p|h[1-6]|ul|ol|blockquote|figure|img|table|pre|iframe|hr|div)\b/i.test(p.content);
   const htmlContentWithIds=htmlContent?addHeadingIds(p.content):p.content;
   const shareUrl=typeof window!=="undefined"?window.location.href:absoluteUrl(`/blog/${p.slug}`);
   const share=async()=>{if(typeof navigator!=="undefined"&&navigator.share){try{await navigator.share({title:p.title,text:p.excerpt,url:shareUrl});}catch{return;}}else if(typeof navigator!=="undefined"&&navigator.clipboard){await navigator.clipboard.writeText(shareUrl);}};
-  const ld={"@context":"https://schema.org","@type":"BlogPosting",headline:p.title,description:p.meta_description||p.excerpt,mainEntityOfPage:absoluteUrl(`/blog/${p.slug}`),...(image?{image:[image]}:{}),...(p.published_at?{datePublished:p.published_at}:{}),dateModified:p.updated_at,author:{"@type":"Organization",name:siteConfig.fallbackBrand.brandName},publisher:{"@type":"Organization",name:siteConfig.fallbackBrand.brandName}};
+  const ld={"@context":"https://schema.org","@type":"BlogPosting",headline:p.title,description:p.meta_description||p.excerpt,mainEntityOfPage:absoluteUrl(`/blog/${p.slug}`),...(socialImage?{image:[socialImage]}:{}),...(p.published_at?{datePublished:p.published_at}:{}),dateModified:p.updated_at,author:{"@type":"Person",name:p.author_name||siteConfig.fallbackBrand.brandName},publisher:{"@type":"Organization",name:siteConfig.fallbackBrand.brandName}};
   return <main className="page-container max-w-6xl py-8 sm:py-12">
     <article className="mx-auto max-w-4xl">
       {image&&<img src={image} alt={p.title? `Cover image for ${p.title}`:"Article cover"} width="1200" height="675" loading="eager" fetchPriority="high" decoding="async" className="mb-8 max-h-[500px] w-full rounded-2xl object-cover"/>}
       <div className="mx-auto max-w-3xl">
-        <p className="text-sm font-semibold text-primary">{p.category} <span className="px-2 text-muted-foreground">·</span>{readingTimeMinutes(p.content)} min read</p>
+        <p className="text-sm font-semibold text-primary">{p.category} <span className="px-2 text-muted-foreground">·</span>{readingTimeMinutes(p.content)} min read</p>\n        <p className="mt-2 text-sm text-muted-foreground">By {p.author_name || siteConfig.fallbackBrand.brandName}</p>
         <p className="mt-2 text-sm text-muted-foreground"><time dateTime={p.published_at??p.created_at}>Published {new Date(p.published_at??p.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"long",year:"numeric",timeZone:"UTC"})}</time></p>
         <h1 className="mt-4 font-serif text-3xl font-bold leading-tight tracking-tight sm:text-5xl">{p.title}</h1>
         <p className="mt-5 text-lg leading-relaxed text-muted-foreground">{p.excerpt}</p>
