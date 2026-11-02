@@ -271,6 +271,7 @@ export type Database = {
           course_id?: string | null
           course_label?: string | null
           cover_image?: string | null
+          product_images?: string[]
           created_at?: string
           created_by?: string | null
           description?: string | null
