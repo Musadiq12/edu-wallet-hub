@@ -32,6 +32,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
   const mainImageRef = useRef<HTMLImageElement>(null);
   const lensRef = useRef<HTMLDivElement>(null);
   const zoomFrameRef = useRef<HTMLDivElement>(null);
+  const zoomImageRef = useRef<HTMLImageElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const boundsRef = useRef<DOMRect | null>(null);
   const pointerRef = useRef<Point>({ x: 0, y: 0 });
@@ -129,6 +130,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
 
   const closeZoom = () => {
     setZoomOpen(false);
+    mainFrameRef.current?.focus();
     setScale(1);
     setPan({ x: 0, y: 0 });
     touchPointsRef.current.clear();
@@ -230,12 +232,17 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     const frame = zoomFrameRef.current;
     if (!frame) return;
     const measure = () => {
-      const rect = frame.getBoundingClientRect();
-      zoomBoundsRef.current = { width: rect.width, height: rect.height };
+      const imageRect = zoomImageRef.current?.getBoundingClientRect();
+      const frameRect = frame.getBoundingClientRect();
+      zoomBoundsRef.current = {
+        width: imageRect?.width || frameRect.width,
+        height: imageRect?.height || frameRect.height,
+      };
     };
     measure();
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
     observer?.observe(frame);
+    if (zoomImageRef.current) observer?.observe(zoomImageRef.current);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeButtonRef.current?.focus();
@@ -384,10 +391,15 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
           >
             {!highReady && !highFailed && <div className="absolute inset-0 animate-pulse bg-white/10" role="status" aria-label="Loading high-resolution image" />}
             <img
+              ref={zoomImageRef}
               src={highReady ? highUrl ?? mainUrl : mainUrl}
               alt={`Zoomed view of ${title}, image ${selected + 1}`}
               decoding="async"
               draggable={false}
+              onLoad={() => {
+                const rect = zoomImageRef.current?.getBoundingClientRect();
+                if (rect) zoomBoundsRef.current = { width: rect.width, height: rect.height };
+              }}
               onError={() => {
                 if (highReady) {
                   setHighFailed(true);
