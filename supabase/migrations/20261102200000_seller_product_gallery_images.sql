@@ -212,7 +212,7 @@ begin
     perform set_config('app.seller_product_write','enabled',true);
     insert into public.products(
       title,slug,description,whats_included,category_id,course_label,subject_label,keywords,
-      price,discounted_price,cover_image,product_images,pdf_file,preview_file,page_count,seller_cover_source_url,
+      price,discounted_price,cover_image,pdf_file,preview_file,page_count,seller_cover_source_url,product_images,
       seller_rights_confirmed_at,format,is_free,is_featured,is_active,is_demo,stock_quantity,
       stock_status,low_stock_threshold,is_archived,created_by,seller_id,status,submitted_at,revision_of
     ) values (
@@ -247,9 +247,6 @@ begin
   return v_has_orders;
 end;
 $$;
-
-revoke all on function public.seller_create_product(text,text,text,text,text,numeric,text,text,text,uuid,integer,text,boolean) from public,anon;
-grant execute on function public.seller_create_product(text,text,text,text,text,numeric,text,text,text,uuid,integer,text,boolean) to authenticated;
 )) then
     raise exception 'invalid product details or rights declaration' using errcode='22023';
   end if;
@@ -313,9 +310,6 @@ grant execute on function public.seller_create_product(text,text,text,text,text,
   return v_has_orders;
 end;
 $$;
-
-revoke all on function public.seller_create_product(text,text,text,text,text,numeric,text,text,text,uuid,integer,text,boolean) from public,anon;
-grant execute on function public.seller_create_product(text,text,text,text,text,numeric,text,text,text,uuid,integer,text,boolean) to authenticated;
 
 REVOKE ALL ON FUNCTION public.seller_update_product(uuid,text,text,text,text,text,numeric,text,text,text,uuid,integer,text,boolean,text[]) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.seller_update_product(uuid,text,text,text,text,text,numeric,text,text,text,uuid,integer,text,boolean,text[]) TO authenticated;
