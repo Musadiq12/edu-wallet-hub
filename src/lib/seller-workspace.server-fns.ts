@@ -94,7 +94,7 @@ function safeMessage(error: unknown, fallback: string) {
 
 function safeFilenamePart(name: string) {
   const withoutExtension = name.replace(/\.pdf$/i, "");
-  const cleaned = withoutExtension.normalize("NFKD").replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
+  const cleaned = withoutExtension.replace(/\.[^.]+$/, "").normalize("NFKD").replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
   return (cleaned || "study-note").slice(0, 80);
 }
 
@@ -143,7 +143,8 @@ async function makeSellerImagePath(context: SellerContext, originalName: string)
   const extension = originalName.toLowerCase().split(".").pop() ?? "";
   if (!["jpg","jpeg","png","webp","gif"].includes(extension)) throw new Error("Use a JPG, PNG, WebP or GIF image.");
   const folderId = crypto.randomUUID();
-  const fileName = crypto.randomUUID() + "_" + safeFilenamePart(originalName).slice(0, 60) + "." + extension;
+  const imageBase = originalName.replace(/\.[^.]+$/, "").normalize("NFKD").replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "product-image";
+  const fileName = crypto.randomUUID() + "_" + imageBase.slice(0, 60) + "." + extension;
   return context.userId + "/" + folderId + "/" + fileName;
 }
 
@@ -240,7 +241,6 @@ export const sellerCreateProduct = createServerFn({method:"POST"})
       p_subject_label:data.subject,p_price:data.price,p_pdf_path:data.pdfPath,p_preview_path:data.previewPath??null,
       p_whats_included:data.whatsIncluded,p_category_id:data.categoryId,p_page_count:data.pageCount,
       p_seller_cover_source_url:data.cover?.source??null,p_rights_confirmed:data.rightsConfirmed,
-      p_product_images:data.productImages,
       p_discounted_price:data.discountedPrice,
       p_product_images:data.productImages,
     });
@@ -291,7 +291,7 @@ export const sellerDeleteProduct = createServerFn({method:"POST"})
   });
 
 export const sellerSaveProductEdit = createServerFn({method:"POST"})
-  .validator((input:{accessToken:string;id:string;title:string;description:string;whatsIncluded:string;categoryId:string|null;pageCount:number;coverSourceUrl:string|null;rightsConfirmed:true;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null})=>{
+  .validator((input:{accessToken:string;id:string;title:string;description:string;whatsIncluded:string;categoryId:string|null;pageCount:number;coverSourceUrl:string|null;rightsConfirmed:true;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null;productImages?:string[]})=>{
     const parsed=productInputSchema.parse(input);
     const cover=validateCoverSourceUrl(parsed.coverSourceUrl);
     return {...parsed,cover,accessToken:z.string().min(1).parse(input.accessToken),id:productIdSchema.parse(input.id)};
@@ -303,6 +303,7 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
     if(readError||!existing) throw new Error("This product could not be found.");
     await verifyStoredPdf(context,data.pdfPath,20*1024*1024);
     if(data.previewPath) await verifyStoredPdf(context,data.previewPath,5*1024*1024);
+    for (const path of data.productImages) await verifyStoredImage(context, path);
     const {data:hasOrders,error}=await context.client.rpc("seller_update_product",{
       p_product_id:data.id,p_title:data.title,
       p_slug:data.title.toLowerCase().trim().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,100)+"-"+crypto.randomUUID().slice(0,8),
@@ -310,9 +311,11 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
       p_pdf_path:data.pdfPath,p_preview_path:data.previewPath??null,
       p_whats_included:data.whatsIncluded,p_category_id:data.categoryId,p_page_count:data.pageCount,
       p_seller_cover_source_url:data.cover?.source??null,p_rights_confirmed:data.rightsConfirmed,
+      p_product_images:data.productImages,
     });
     if(error){
       await removePrivateFiles(context,[data.pdfPath!==existing.pdf_file?data.pdfPath:null,data.previewPath!==existing.preview_file?data.previewPath:null]);
+      if (data.productImages.length) await context.client.storage.from("product-covers").remove(data.productImages);
       throw new Error(safeMessage(error,"Could not update this product."));
     }
     if(!hasOrders&&existing.status!=="approved"&&existing.status!=="published") await removePrivateFiles(context,[data.pdfPath!==existing.pdf_file?existing.pdf_file:null,data.previewPath!==existing.preview_file?existing.preview_file:null]);
