@@ -3,19 +3,13 @@ import { createPortal } from "react-dom";
 import { X, ZoomIn } from "lucide-react";
 import { publicImageUrl } from "@/lib/image-storage";
 
-// Tune the zoom experience here.
 const ZOOM_FACTOR = 2.5;
 const MAX_TOUCH_ZOOM = 3;
 const LENS_SIZE = 176;
 const HIGH_RES_WIDTH = 1600;
 
 type Point = { x: number; y: number };
-type Props = {
-  path: string | null;
-  title: string;
-  /** Optional gallery paths; the current product record only has cover_image. */
-  images?: string[];
-};
+type Props = { path: string | null; title: string; images?: string[] };
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -63,10 +57,8 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     const bounds = boundsRef.current;
     const lens = lensRef.current;
     const image = mainImageRef.current;
-    const highImage = highImageRef.current;
-    if (!bounds || !lens || !image || !highImage || !hoveringRef.current) return;
+    if (!bounds || !lens || !image || !highImageRef.current || !hoveringRef.current) return;
 
-    // Match object-contain geometry, including portrait covers and letterboxing.
     const naturalWidth = image.naturalWidth || 800;
     const naturalHeight = image.naturalHeight || 600;
     const fit = Math.min(bounds.width / naturalWidth, bounds.height / naturalHeight);
@@ -80,41 +72,39 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     const lensHeight = Math.min(LENS_SIZE, visibleHeight);
     const lensX = clamp(pointerX - lensWidth / 2, 0, visibleWidth - lensWidth);
     const lensY = clamp(pointerY - lensHeight / 2, 0, visibleHeight - lensHeight);
-    const zoomedWidth = visibleWidth * ZOOM_FACTOR;
-    const zoomedHeight = visibleHeight * ZOOM_FACTOR;
 
     lens.style.width = `${lensWidth}px`;
     lens.style.height = `${lensHeight}px`;
     lens.style.transform = `translate3d(${offsetX + lensX}px,${offsetY + lensY}px,0)`;
     lens.style.backgroundImage = `url("${highUrl}")`;
-    lens.style.backgroundSize = `${zoomedWidth}px ${zoomedHeight}px`;
+    lens.style.backgroundSize = `${visibleWidth * ZOOM_FACTOR}px ${visibleHeight * ZOOM_FACTOR}px`;
     lens.style.backgroundPosition = `-${pointerX * ZOOM_FACTOR - lensWidth / 2}px -${pointerY * ZOOM_FACTOR - lensHeight / 2}px`;
     lens.style.display = "block";
   }, [highUrl]);
 
   const preloadHighResolution = useCallback(() => {
     if (!highUrl || highImageRef.current || highFailed) return;
-    const image = new Image();
-    image.decoding = "async";
-    image.onload = () => {
-      const natural = mainImageRef.current;
-      if (!natural || image.naturalWidth <= natural.naturalWidth * 1.5) {
+    const highImage = new Image();
+    highImage.decoding = "async";
+    highImage.onload = () => {
+      const mainImage = mainImageRef.current;
+      if (!mainImage || highImage.naturalWidth <= mainImage.naturalWidth * 1.5) {
         setHighFailed(true);
         hideLens();
         return;
       }
-      highImageRef.current = image;
+      highImageRef.current = highImage;
       setHighReady(true);
       if (hoveringRef.current) {
         cancelAnimationFrame(rafRef.current);
         rafRef.current = requestAnimationFrame(paintLens);
       }
     };
-    image.onerror = () => {
+    highImage.onerror = () => {
       setHighFailed(true);
       hideLens();
     };
-    image.src = highUrl;
+    highImage.src = highUrl;
   }, [highUrl, highFailed, hideLens, paintLens]);
 
   const updateMainPointer = (event: PointerEvent<HTMLDivElement>) => {
@@ -144,7 +134,6 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     touchPointsRef.current.clear();
     pinchRef.current = null;
     dragRef.current = null;
-    mainFrameRef.current?.focus();
   };
 
   const handleMainKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -164,10 +153,10 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     const { width, height } = zoomBoundsRef.current;
     const maxX = (width * (scale - 1)) / 2;
     const maxY = (height * (scale - 1)) / 2;
-    if (event.key === "ArrowLeft") setPan((p) => ({ ...p, x: clamp(p.x + step, -maxX, maxX) }));
-    if (event.key === "ArrowRight") setPan((p) => ({ ...p, x: clamp(p.x - step, -maxX, maxX) }));
-    if (event.key === "ArrowUp") setPan((p) => ({ ...p, y: clamp(p.y + step, -maxY, maxY) }));
-    if (event.key === "ArrowDown") setPan((p) => ({ ...p, y: clamp(p.y - step, -maxY, maxY) }));
+    if (event.key === "ArrowLeft") setPan((value) => ({ ...value, x: clamp(value.x + step, -maxX, maxX) }));
+    if (event.key === "ArrowRight") setPan((value) => ({ ...value, x: clamp(value.x - step, -maxX, maxX) }));
+    if (event.key === "ArrowUp") setPan((value) => ({ ...value, y: clamp(value.y + step, -maxY, maxY) }));
+    if (event.key === "ArrowDown") setPan((value) => ({ ...value, y: clamp(value.y - step, -maxY, maxY) }));
   };
 
   const handleTouchDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -193,24 +182,20 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
 
     if (points.size === 2 && pinchRef.current) {
       const [a, b] = Array.from(points.values());
-      const nextScale = clamp(
-        pinchRef.current.scale * distance(a, b) / Math.max(1, pinchRef.current.distance),
-        1,
-        MAX_TOUCH_ZOOM,
-      );
+      const nextScale = clamp(pinchRef.current.scale * distance(a, b) / Math.max(1, pinchRef.current.distance), 1, MAX_TOUCH_ZOOM);
       setScale(nextScale);
       if (nextScale === 1) setPan({ x: 0, y: 0 });
       return;
     }
 
     if (points.size === 1 && dragRef.current && scale > 1) {
-      const { origin, pan: startPan } = dragRef.current;
+      const { origin, pan: startingPan } = dragRef.current;
       const { width, height } = zoomBoundsRef.current;
       const maxX = width * (scale - 1) / 2;
       const maxY = height * (scale - 1) / 2;
       setPan({
-        x: clamp(startPan.x + event.clientX - origin.x, -maxX, maxX),
-        y: clamp(startPan.y + event.clientY - origin.y, -maxY, maxY),
+        x: clamp(startingPan.x + event.clientX - origin.x, -maxX, maxX),
+        y: clamp(startingPan.y + event.clientY - origin.y, -maxY, maxY),
       });
     }
   };
@@ -222,7 +207,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     if (points.size === 1) {
       const [point] = Array.from(points.values());
       dragRef.current = { origin: point, pan };
-    } else if (points.size === 0) {
+    } else if (!points.size) {
       dragRef.current = null;
     }
   };
@@ -262,6 +247,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
 
   useEffect(() => {
     const resize = () => {
+      hoveringRef.current = false;
       hideLens();
       if (zoomOpen) closeZoom();
       boundsRef.current = null;
