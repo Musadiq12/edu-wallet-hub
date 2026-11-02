@@ -20,7 +20,7 @@ export type Product = {
   keywords: string | null;
   price: number | string;
   discounted_price: number | string | null;
-  cover_image: string | null;
+  cover_image: string | null;\n  product_images: string[];
   pdf_file: string | null;
   preview_file: string | null;
   page_count: number | null;
@@ -43,7 +43,7 @@ export type Category = {
 };
 
 const PRODUCT_FIELDS =
-  "id,product_type,title,seo_title,seo_description,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,seller_id,status,stock_quantity,stock_status,low_stock_threshold,created_at";
+  "id,product_type,title,seo_title,seo_description,slug,description,whats_included,category_id,course_label,subject_label,keywords,price,discounted_price,cover_image,product_images,pdf_file,preview_file,page_count,format,is_free,is_featured,is_active,is_demo,seller_id,status,stock_quantity,stock_status,low_stock_threshold,created_at";
 
 export const categoriesQuery = () =>
   queryOptions({
