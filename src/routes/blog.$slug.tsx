@@ -37,7 +37,8 @@ function Page() {
   const rel=useQuery(relatedProductsQuery(p??undefined));
   const outline=useMemo(()=>p?collectHeadings(p.content):[],[p?.content]);
   if(!p)return <main className="page-container py-12 text-center"><EmptyState title="Article not found" description="This article may have been unpublished or moved."/><Link to="/blog" className="text-primary underline">Browse all articles</Link></main>;
-  const image=p.cover_image?coverImageUrl(p.cover_image):"";\n  const socialImage=p.og_image || image;
+  const image=p.cover_image?coverImageUrl(p.cover_image):"";
+  const socialImage=p.og_image || image;
   const htmlContent=/<(p|h[1-6]|ul|ol|blockquote|figure|img|table|pre|iframe|hr|div)\b/i.test(p.content);
   const htmlContentWithIds=htmlContent?addHeadingIds(p.content):p.content;
   const shareUrl=typeof window!=="undefined"?window.location.href:absoluteUrl(`/blog/${p.slug}`);
