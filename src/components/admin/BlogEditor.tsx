@@ -232,7 +232,7 @@ export function BlogEditor({ initial, onSaved }: RichEditorProps) {
           <span className="hidden text-xs text-muted-foreground sm:block">{busy ? "Saving…" : savedOnce.current ? "Autosaved" : "Draft workspace"}</span>
           <Button variant="outline" size="icon" aria-label="Toggle editor theme" onClick={() => setDarkWriting((x)=>!x)}>{darkWriting?<Sun className="size-4"/>:<Moon className="size-4"/>}</Button>
           <Button variant="outline" disabled={busy} onClick={() => void doSave("draft")}><Save className="mr-2 size-4"/>Save draft</Button>
-          <Button disabled={busy} variant="outline" onClick={() => void schedule()}>Schedule</Button>\n          <Button disabled={busy} onClick={() => void publish()}>{busy?<Loader2 className="mr-2 size-4 animate-spin"/>:null}Publish</Button>
+          <Button disabled={busy} variant="outline" onClick={() => void schedule()}>Schedule</Button>\n          <Button disabled={busy} variant="outline" onClick={() => void schedule()}>Schedule</Button>\n          <Button disabled={busy} onClick={() => void publish()}>{busy?<Loader2 className="mr-2 size-4 animate-spin"/>:null}Publish</Button>
         </div>
       </div>
 
