@@ -27,7 +27,7 @@ function getDistance(a: Point, b: Point) {
 
 export function ProductImageZoom({ path, title, images }: Props) {
   const imagePaths = Array.from(new Set([path, ...(images ?? [])].filter((item): item is string => Boolean(item))));
-  const [selected, setSelected] = useState(0);
+  const [selected, setSelected] = useState(0);\n  const [zoomBounds, setZoomBounds] = useState({ width: 0, height: 0 });
 
   const [zoomOpen, setZoomOpen] = useState(false);
   const [hiResReady, setHiResReady] = useState(false);
