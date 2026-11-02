@@ -389,7 +389,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
             onPointerCancel={handleTouchEnd}
             onDoubleClick={() => setScale((value) => value === 1 ? 2 : 1)}
           >
-            {!highReady && !highFailed && <div className="absolute inset-0 animate-pulse bg-white/10" aria-label="Loading high-resolution image" />}
+            {!highReady && !highFailed && <div className="absolute inset-0 animate-pulse bg-white/10" role="status" aria-label="Loading high-resolution image" />}
             <img
               ref={zoomImageRef}
               src={highReady ? highUrl ?? mainUrl : mainUrl}
