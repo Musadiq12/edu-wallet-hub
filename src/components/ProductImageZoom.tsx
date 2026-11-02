@@ -295,9 +295,9 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     <div className="space-y-3">
       <div
         ref={mainFrameRef}
-        role="button"
-        tabIndex={0}
-        aria-label={`View larger image of ${title}`}
+        role={canZoom ? "button" : "img"}
+        tabIndex={canZoom ? 0 : undefined}
+        aria-label={canZoom ? `View larger image of ${title}` : `Image of ${title}`}
         className={`relative aspect-[4/3] w-full overflow-hidden bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${canZoom ? "cursor-zoom-in" : "cursor-default"}`}
         onPointerEnter={(event) => {
           if (event.pointerType !== "mouse" || !canZoom) return;
