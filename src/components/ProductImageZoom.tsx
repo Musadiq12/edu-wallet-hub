@@ -39,6 +39,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
   const hoveringRef = useRef(false);
   const rafRef = useRef(0);
   const highImageRef = useRef<HTMLImageElement | null>(null);
+  const highImageRequestRef = useRef<HTMLImageElement | null>(null);
   const touchPointsRef = useRef(new Map<number, Point>());
   const pinchRef = useRef<{ distance: number; scale: number } | null>(null);
   const dragRef = useRef<{ origin: Point; pan: Point } | null>(null);
@@ -85,10 +86,13 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
   }, [highUrl]);
 
   const preloadHighResolution = useCallback(() => {
-    if (!highUrl || highImageRef.current || highFailed) return;
+    if (!highUrl || highImageRef.current || highImageRequestRef.current || highFailed) return;
     const highImage = new Image();
+    highImageRequestRef.current = highImage;
     highImage.decoding = "async";
     highImage.onload = () => {
+      if (highImageRequestRef.current !== highImage) return;
+      highImageRequestRef.current = null;
       const mainImage = mainImageRef.current;
       const mainWidth = mainImage?.naturalWidth || 800;
       if (!mainImage || highImage.naturalWidth <= mainWidth * 1.5) {
@@ -108,6 +112,8 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
       }
     };
     highImage.onerror = () => {
+      if (highImageRequestRef.current !== highImage) return;
+      highImageRequestRef.current = null;
       setHighFailed(true);
       hideLens();
       setZoomOpen(false);
@@ -235,6 +241,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     setHighReady(false);
     setHighFailed(false);
     highImageRef.current = null;
+    highImageRequestRef.current = null;
     setScale(1);
     setPan({ x: 0, y: 0 });
     hoveringRef.current = false;
@@ -363,6 +370,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
                   setHighReady(false);
                   setHighFailed(false);
                   highImageRef.current = null;
+                  highImageRequestRef.current = null;
                   setScale(1);
                   setPan({ x: 0, y: 0 });
                   hoveringRef.current = false;
