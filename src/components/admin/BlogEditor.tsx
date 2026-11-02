@@ -35,24 +35,27 @@ function toEditorContent(content: string) {
   const trimmed = content.trim();
   if (!trimmed) return "";
   if (trimmed.startsWith("<")) return trimmed;
+
   // Legacy Markdown posts remain editable without attempting unsafe HTML parsing.
-  const blocks = trimmed.split(/
-\s*
-/).map((block) => {
+  const blocks = trimmed.split(/\n\s*\n/).map((block) => {
     const heading = block.match(/^(#{1,4})\s+([\s\S]+)$/);
-    if (heading) return `<h${heading[1].length}>${escapeHtml(heading[2])}</h${heading[1].length}>`;
-    if (/^>\s?/m.test(block)) return `<blockquote><p>${escapeHtml(block.replace(/^>\s?/gm, "").replace(/
-/g, " "))}</p></blockquote>`;
-    if (/^\d+\.\s/m.test(block)) return `<ol>${block.split("
-").map(x=>`<li><p>${escapeHtml(x.replace(/^\d+\.\s/,""))}</p></li>`).join("")}</ol>`;
-    if (/^[-*+]\s/m.test(block)) return `<ul>${block.split("
-").map(x=>`<li><p>${escapeHtml(x.replace(/^[-*+]\s/,""))}</p></li>`).join("")}</ul>`;
-    return `<p>${escapeHtml(block).replace(/
-/g,"<br>")}</p>`;
+    if (heading) {
+      const level = heading[1].length;
+      return `<h${level}>${escapeHtml(heading[2])}</h${level}>`;
+    }
+    if (/^>\s?/m.test(block)) {
+      return `<blockquote><p>${escapeHtml(block.replace(/^>\s?/gm, "").replace(/\n/g, " "))}</p></blockquote>`;
+    }
+    if (/^\d+\.\s/m.test(block)) {
+      return `<ol>${block.split("\n").map((line) => `<li><p>${escapeHtml(line.replace(/^\d+\.\s/, ""))}</p></li>`).join("")}</ol>`;
+    }
+    if (/^[-*+]\s/m.test(block)) {
+      return `<ul>${block.split("\n").map((line) => `<li><p>${escapeHtml(line.replace(/^[-*+]\s/, ""))}</p></li>`).join("")}</ul>`;
+    }
+    return `<p>${escapeHtml(block).replace(/\n/g, "<br>")}</p>`;
   });
   return blocks.join("");
 }
-
 function escapeHtml(value: string) {
   return value.replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char] ?? char);
 }
