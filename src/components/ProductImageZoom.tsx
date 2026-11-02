@@ -28,7 +28,6 @@ function getDistance(a: Point, b: Point) {
 export function ProductImageZoom({ path, title, images }: Props) {
   const imagePaths = Array.from(new Set([path, ...(images ?? [])].filter((item): item is string => Boolean(item))));
   const [selected, setSelected] = useState(0);
-  const [zoomBounds, setZoomBounds] = useState({ width: 0, height: 0 });
 
   const [zoomOpen, setZoomOpen] = useState(false);
   const [hiResReady, setHiResReady] = useState(false);
@@ -36,12 +35,12 @@ export function ProductImageZoom({ path, title, images }: Props) {
   const [touchScale, setTouchScale] = useState(1);
   const [touchPan, setTouchPan] = useState<Point>({ x: 0, y: 0 });
   const imageRef = useRef<HTMLImageElement>(null);
-  const frameRef = useRef<HTMLDivElement>(null);
+  const mainFrameRef = useRef<HTMLDivElement>(null);
+  const zoomFrameRef = useRef<HTMLDivElement>(null);
   const panelImageRef = useRef<HTMLImageElement>(null);
   const lensRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
   const highImageRef = useRef<HTMLImageElement | null>(null);
-  const zoomFrameRef = useRef<HTMLDivElement>(null);
   const boundsRef = useRef<DOMRect | null>(null);
   const pointerRef = useRef<Point>({ x: 0, y: 0 });
   const rafRef = useRef(0);
@@ -93,7 +92,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
     if (!bounds || !lensRef.current || !indicatorRef.current) return;
     const x = clamp(pointerRef.current.x, 0, bounds.width);
     const y = clamp(pointerRef.current.y, 0, bounds.height);
-    const lens = MODE === "lens" ? lensRef.current : indicatorRef.current;
+    const lens = MODE === "lens" ? lensRef.current! : indicatorRef.current;
     const size = MODE === "lens" ? LENS_SIZE : 72;
     const xRatio = bounds.width ? x / bounds.width : 0.5;
     const yRatio = bounds.height ? y / bounds.height : 0.5;
@@ -176,7 +175,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
       if (nextScale === 1) setTouchPan({ x: 0, y: 0 });
     } else if (points.size === 1 && dragRef.current && touchScale > 1) {
       const delta = dragRef.current;
-      const rect = frameRef.current?.getBoundingClientRect();
+      const rect = zoomFrameRef.current?.getBoundingClientRect();
       const maxX = ((rect?.width ?? 0) * (touchScale - 1)) / 2;
       const maxY = ((rect?.height ?? 0) * (touchScale - 1)) / 2;
       setTouchPan({
@@ -329,7 +328,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
             <X className="h-6 w-6" />
           </button>
           <div
-            ref={frameRef}
+            ref={zoomFrameRef}
             className="relative h-[min(82dvh,900px)] w-full touch-none overflow-hidden"
             onPointerDown={onTouchPointerDown}
             onPointerMove={onTouchPointerMove}
