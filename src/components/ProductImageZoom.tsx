@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type PointerEvent, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { X, ZoomIn } from "lucide-react";
 import { publicImageUrl } from "@/lib/image-storage";
@@ -28,6 +28,7 @@ function getDistance(a: Point, b: Point) {
 export function ProductImageZoom({ path, title, images }: Props) {
   const imagePaths = Array.from(new Set([path, ...(images ?? [])].filter((item): item is string => Boolean(item))));
   const [selected, setSelected] = useState(0);
+
   const [zoomOpen, setZoomOpen] = useState(false);
   const [hiResReady, setHiResReady] = useState(false);
   const [hiResFailed, setHiResFailed] = useState(false);
@@ -42,7 +43,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
   const boundsRef = useRef<DOMRect | null>(null);
   const pointerRef = useRef<Point>({ x: 0, y: 0 });
   const rafRef = useRef(0);
-  const activePointerRef = useRef<number | null>(null);
+  const touchPointsRef = useRef<Map<number, Point>>(new Map());
   const pinchRef = useRef<{ distance: number; scale: number } | null>(null);
   const dragRef = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const currentPath = imagePaths[selected] ?? null;
@@ -102,7 +103,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
     indicatorRef.current.style.transform = `translate3d(${left}px,${top}px,0)`;
     indicatorRef.current.style.display = "block";
 
-    if (panelImageRef.current && hiResReady && highImageRef.current) {
+    if (MODE === "panel" && panelImageRef.current && hiResReady && highImageRef.current) {
       const width = bounds.width * ZOOM_FACTOR;
       const height = bounds.height * ZOOM_FACTOR;
       panelImageRef.current.style.width = `${width}px`;
@@ -111,7 +112,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
     }
   }, [hiResReady]);
 
-  const handlePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handlePointerMove = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType !== "mouse" || !hiResReady || !boundsRef.current) return;
     pointerRef.current = {
       x: event.clientX - boundsRef.current.left,
@@ -143,7 +144,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
     dragRef.current = null;
   };
 
-  const onTouchPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+  const onTouchPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (!zoomOpen || event.pointerType === "mouse") return;
     event.currentTarget.setPointerCapture(event.pointerId);
     activePointerRef.current = event.pointerId;
@@ -161,7 +162,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
     }
   };
 
-  const onTouchPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+  const onTouchPointerMove = (event: PointerEvent<HTMLDivElement>) => {
     if (!zoomOpen || event.pointerType === "mouse") return;
     const target = event.currentTarget as HTMLDivElement & { __points?: Map<number, Point> };
     const points = target.__points;
@@ -192,7 +193,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
     if (!target.__points?.size) dragRef.current = null;
   };
 
-  const handleKeys = (event: React.KeyboardEvent<HTMLDivElement>) => {
+  const handleKeys = (event: KeyboardEvent<HTMLDivElement>) => {
     if (!zoomOpen && (event.key === "Enter" || event.key === " ")) {
       event.preventDefault();
       openTouchZoom();
@@ -310,7 +311,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
                 aria-label={`Show image ${index + 1} of ${title}`}
                 aria-pressed={selected === index}
                 onClick={() => { setSelected(index); resetZoomAsset(); }}
-                className={`h-16 w-16 shrink-0 overflow-hidden rounded-lg border bg-muted p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${selected === index ? "border-primary ring-1 ring-primary" : "border-border"}`}
+                className={`h-16 min-h-11 w-16 min-w-11 shrink-0 overflow-hidden rounded-lg border bg-muted p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${selected === index ? "border-primary ring-1 ring-primary" : "border-border"}`}
               >
                 <img src={thumbnail ?? undefined} alt="" width={160} height={120} loading="lazy" decoding="async" className="h-full w-full object-contain" />
               </button>
