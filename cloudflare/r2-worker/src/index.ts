@@ -6,6 +6,7 @@ type Env = {
   DOWNLOAD_SIGNING_SECRET: string;
   DELIVERY_SECRET: string;
   ALLOWED_ORIGIN?: string;
+  BLOG_CRON_SECRET: string;
 };
 
 const MAX_PDF_BYTES = 50 * 1024 * 1024;
@@ -120,6 +121,42 @@ async function verifyDownloadSignature(key: string, exp: number, signature: stri
 }
 
 export default {
+  async scheduled(_controller: ScheduledController, env: Env) {
+    const now = new Date().toISOString();
+    const response = await fetch(
+      `${env.SUPABASE_URL}/rest/v1/blog_posts?status=eq.scheduled&scheduled_at=lte.${encodeURIComponent(now)}&select=id,scheduled_at`,
+      {
+        headers: {
+          apikey: env.SUPABASE_SERVER_KEY,
+          Authorization: `Bearer ${env.SUPABASE_SERVER_KEY}`,
+          Accept: "application/json",
+        },
+      },
+    );
+    if (!response.ok) throw new Error("Could not load scheduled articles.");
+    const posts = await response.json() as Array<{ id: string; scheduled_at: string | null }>;
+    for (const post of posts) {
+      const update = await fetch(
+        `${env.SUPABASE_URL}/rest/v1/blog_posts?id=eq.${encodeURIComponent(post.id)}&status=eq.scheduled&scheduled_at=lte.${encodeURIComponent(now)}`,
+        {
+          method: "PATCH",
+          headers: {
+            apikey: env.SUPABASE_SERVER_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVER_KEY}`,
+            "Content-Type": "application/json",
+            Prefer: "return=minimal",
+          },
+          body: JSON.stringify({
+            status: "published",
+            published_at: post.scheduled_at ?? now,
+            scheduled_at: null,
+            updated_at: now,
+          }),
+        },
+      );
+      if (!update.ok) throw new Error(`Could not publish scheduled article ${post.id}.`);
+    }
+  },
   async fetch(request: Request, env: Env) {
     if (request.method === "OPTIONS") {
       return new Response(null, {

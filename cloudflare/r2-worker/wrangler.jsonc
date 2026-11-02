@@ -4,6 +4,7 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-10-01",
   "cache": { "enabled": true },
+  "triggers": { "crons": ["*/5 * * * *"] },
   "r2_buckets": [
     {
       "binding": "PRODUCTS",
