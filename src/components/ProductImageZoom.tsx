@@ -90,9 +90,14 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     highImage.decoding = "async";
     highImage.onload = () => {
       const mainImage = mainImageRef.current;
-      if (!mainImage || highImage.naturalWidth <= mainImage.naturalWidth * 1.5) {
+      const mainWidth = mainImage?.naturalWidth || 800;
+      if (!mainImage || highImage.naturalWidth <= mainWidth * 1.5) {
         setHighFailed(true);
         hideLens();
+        setZoomOpen(false);
+        setScale(1);
+        setPan({ x: 0, y: 0 });
+        mainFrameRef.current?.focus();
         return;
       }
       highImageRef.current = highImage;
@@ -105,6 +110,10 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     highImage.onerror = () => {
       setHighFailed(true);
       hideLens();
+      setZoomOpen(false);
+      setScale(1);
+      setPan({ x: 0, y: 0 });
+      mainFrameRef.current?.focus();
     };
     highImage.src = highUrl;
   }, [highUrl, highFailed, hideLens, paintLens]);
@@ -410,6 +419,10 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
                 if (highReady) {
                   setHighFailed(true);
                   setHighReady(false);
+                  setZoomOpen(false);
+                  setScale(1);
+                  setPan({ x: 0, y: 0 });
+                  mainFrameRef.current?.focus();
                 }
               }}
               className="absolute inset-0 m-auto max-h-full max-w-full select-none object-contain"
