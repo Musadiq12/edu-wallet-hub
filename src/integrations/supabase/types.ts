@@ -446,6 +446,10 @@ export type Database = {
       }
     }
     Functions: {
+      seller_set_product_images: {
+        Args: { p_product_id: string; p_product_images: string[] }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
