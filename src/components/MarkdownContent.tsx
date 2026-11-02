@@ -30,7 +30,7 @@ export function MarkdownContent({ content }: { content: string }) {
   const blocks = content.split(/\n\s*\n/);
   return <>{blocks.map((raw,i)=>{
     const block=raw.trim(); if(!block)return null;
-    if(/^\`\`\`/.test(block))return <pre key={i}><code>{block.replace(/^\`\`\`[^\n]*\n?/,"").replace(/\n?\`\`\`$/,"")}</code></pre>;
+    if(/^```/.test(block))return <pre key={i}><code>{block.replace(/^```[^\n]*\n?/,"").replace(/\n?```$/,"")}</code></pre>;
     if(/^---+$/.test(block))return <hr key={i}/>;
     const heading=block.match(/^(#{1,4})\s+(.+)$/);
     if(heading){const Tag=`h${heading[1].length}` as keyof JSX.IntrinsicElements;return <Tag key={i}>{inline(heading[2])}</Tag>;}
