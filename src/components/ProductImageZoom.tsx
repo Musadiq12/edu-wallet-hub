@@ -205,7 +205,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
       return;
     }
     const step = 32;
-    const rect = frameRef.current?.getBoundingClientRect();
+    const rect = zoomFrameRef.current?.getBoundingClientRect();
     const maxX = ((rect?.width ?? 0) * (touchScale - 1)) / 2;
     const maxY = ((rect?.height ?? 0) * (touchScale - 1)) / 2;
     if (event.key === "ArrowLeft") setTouchPan((p) => ({ ...p, x: clamp(p.x + step, -maxX, maxX) }));
