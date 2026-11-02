@@ -93,17 +93,9 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     highImage.onload = () => {
       if (highImageRequestRef.current !== highImage) return;
       highImageRequestRef.current = null;
-      const mainImage = mainImageRef.current;
-      const mainWidth = mainImage?.naturalWidth || 800;
-      if (!mainImage || highImage.naturalWidth <= mainWidth * 1.5) {
-        setHighFailed(true);
-        hideLens();
-        setZoomOpen(false);
-        setScale(1);
-        setPan({ x: 0, y: 0 });
-        mainFrameRef.current?.focus();
-        return;
-      }
+      // The image service uses scale-down, so a 1600px request may return
+      // the original 800–1200px asset. That is still zoomable; do not disable
+      // the magnifier merely because the source cannot be upscaled.
       highImageRef.current = highImage;
       setHighReady(true);
       if (hoveringRef.current) {
