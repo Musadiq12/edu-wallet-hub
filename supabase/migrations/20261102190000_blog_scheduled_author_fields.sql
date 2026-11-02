@@ -1,6 +1,7 @@
 alter table public.blog_posts
   add column if not exists author_name text,
-  add column if not exists scheduled_at timestamptz;
+  add column if not exists scheduled_at timestamptz,
+  add column if not exists og_image text;
 
 alter table public.blog_posts
   drop constraint if exists blog_posts_status_check;
