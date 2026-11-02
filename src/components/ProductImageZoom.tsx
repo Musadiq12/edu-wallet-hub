@@ -44,6 +44,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
   const dragRef = useRef<{ origin: Point; pan: Point } | null>(null);
   const zoomBoundsRef = useRef({ width: 0, height: 0 });
 
+  const pathsKey = paths.join("|");
   const currentPath = paths[selected] ?? null;
   const mainUrl = currentPath ? publicImageUrl("product-covers", currentPath, 800) : null;
   const highUrl = currentPath ? publicImageUrl("product-covers", currentPath, HIGH_RES_WIDTH) : null;
@@ -225,7 +226,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     hoveringRef.current = false;
     touchPointsRef.current.clear();
     hideLens();
-  }, [paths.join("|"), hideLens]);
+  }, [pathsKey, hideLens]);
 
   useEffect(() => {
     if (!zoomOpen) return;
