@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type PointerEvent, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type PointerEvent, type KeyboardEvent, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import { X, ZoomIn } from "lucide-react";
 import { publicImageUrl } from "@/lib/image-storage";
@@ -28,6 +28,7 @@ function getDistance(a: Point, b: Point) {
 export function ProductImageZoom({ path, title, images }: Props) {
   const imagePaths = Array.from(new Set([path, ...(images ?? [])].filter((item): item is string => Boolean(item))));
   const [selected, setSelected] = useState(0);
+  const [dialogBounds, setDialogBounds] = useState({ width: 0, height: 0 });
 
   const [zoomOpen, setZoomOpen] = useState(false);
   const [hiResReady, setHiResReady] = useState(false);
@@ -49,7 +50,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
   const currentPath = imagePaths[selected] ?? null;
   const imageUrl = currentPath ? publicImageUrl("product-covers", currentPath, 800) : null;
   const highUrl = currentPath ? publicImageUrl("product-covers", currentPath, HI_RES_WIDTH) : null;
-  const zoomAvailable = Boolean(imageUrl && highUrl && currentPath);
+  const zoomAvailable = Boolean(imageUrl && highUrl && currentPath) && !hiResFailed;
   const zoomSource = hiResReady && highImageRef.current ? highUrl : imageUrl;
 
   const resetZoomAsset = useCallback(() => {
@@ -232,7 +233,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
       window.removeEventListener("orientationchange", update);
       cancelAnimationFrame(rafRef.current);
     };
-  }, [cacheBounds, zoomOpen]);
+  }, [zoomOpen]);
 
   useEffect(() => {
     if (!zoomOpen) return;
@@ -333,7 +334,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
           <div
             ref={frameRef}
             className="relative h-[min(82dvh,900px)] w-full touch-none overflow-hidden"
-            onPointerDown={onTouchPointerDown}
+            onPointerDown={onTouchPointerDown}\n            onPointerEnter={cacheDialogBounds}
             onPointerMove={onTouchPointerMove}
             onPointerUp={onTouchPointerUp}
             onPointerCancel={onTouchPointerUp}
@@ -345,7 +346,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
               alt={`Zoomed view of ${title}, image ${selected + 1}`}
               decoding="async"
               draggable={false}
-              onError={() => setHiResFailed(true)}
+              onError={() => { if (hiResReady) { setHiResFailed(true); setHiResReady(false); } }}
               className="absolute inset-0 m-auto max-h-full max-w-full select-none object-contain"
               style={{ transform: `translate3d(${touchPan.x}px,${touchPan.y}px,0) scale(${touchScale})`, transformOrigin: "center", touchAction: "none" }}
             />
