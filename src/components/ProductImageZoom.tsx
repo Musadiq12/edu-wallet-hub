@@ -32,17 +32,20 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
   const mainImageRef = useRef<HTMLImageElement>(null);
   const lensRef = useRef<HTMLDivElement>(null);
   const zoomFrameRef = useRef<HTMLDivElement>(null);
+  const zoomImageRef = useRef<HTMLImageElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const boundsRef = useRef<DOMRect | null>(null);
   const pointerRef = useRef<Point>({ x: 0, y: 0 });
   const hoveringRef = useRef(false);
   const rafRef = useRef(0);
   const highImageRef = useRef<HTMLImageElement | null>(null);
+  const highImageRequestRef = useRef<HTMLImageElement | null>(null);
   const touchPointsRef = useRef(new Map<number, Point>());
   const pinchRef = useRef<{ distance: number; scale: number } | null>(null);
   const dragRef = useRef<{ origin: Point; pan: Point } | null>(null);
   const zoomBoundsRef = useRef({ width: 0, height: 0 });
 
+  const pathsKey = paths.join("|");
   const currentPath = paths[selected] ?? null;
   const mainUrl = currentPath ? publicImageUrl("product-covers", currentPath, 800) : null;
   const highUrl = currentPath ? publicImageUrl("product-covers", currentPath, HIGH_RES_WIDTH) : null;
@@ -83,14 +86,22 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
   }, [highUrl]);
 
   const preloadHighResolution = useCallback(() => {
-    if (!highUrl || highImageRef.current || highFailed) return;
+    if (!highUrl || highImageRef.current || highImageRequestRef.current || highFailed) return;
     const highImage = new Image();
+    highImageRequestRef.current = highImage;
     highImage.decoding = "async";
     highImage.onload = () => {
+      if (highImageRequestRef.current !== highImage) return;
+      highImageRequestRef.current = null;
       const mainImage = mainImageRef.current;
-      if (!mainImage || highImage.naturalWidth <= mainImage.naturalWidth * 1.5) {
+      const mainWidth = mainImage?.naturalWidth || 800;
+      if (!mainImage || highImage.naturalWidth <= mainWidth * 1.5) {
         setHighFailed(true);
         hideLens();
+        setZoomOpen(false);
+        setScale(1);
+        setPan({ x: 0, y: 0 });
+        mainFrameRef.current?.focus();
         return;
       }
       highImageRef.current = highImage;
@@ -101,8 +112,14 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
       }
     };
     highImage.onerror = () => {
+      if (highImageRequestRef.current !== highImage) return;
+      highImageRequestRef.current = null;
       setHighFailed(true);
       hideLens();
+      setZoomOpen(false);
+      setScale(1);
+      setPan({ x: 0, y: 0 });
+      mainFrameRef.current?.focus();
     };
     highImage.src = highUrl;
   }, [highUrl, highFailed, hideLens, paintLens]);
@@ -129,6 +146,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
 
   const closeZoom = () => {
     setZoomOpen(false);
+    mainFrameRef.current?.focus();
     setScale(1);
     setPan({ x: 0, y: 0 });
     touchPointsRef.current.clear();
@@ -147,6 +165,11 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     if (event.key === "Escape") {
       event.preventDefault();
       closeZoom();
+      return;
+    }
+    if (event.key === "Tab") {
+      event.preventDefault();
+      closeButtonRef.current?.focus();
       return;
     }
     const step = 32;
@@ -218,24 +241,30 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     setHighReady(false);
     setHighFailed(false);
     highImageRef.current = null;
+    highImageRequestRef.current = null;
     setScale(1);
     setPan({ x: 0, y: 0 });
     hoveringRef.current = false;
     touchPointsRef.current.clear();
     hideLens();
-  }, [path, hideLens]);
+  }, [pathsKey, hideLens]);
 
   useEffect(() => {
     if (!zoomOpen) return;
     const frame = zoomFrameRef.current;
     if (!frame) return;
     const measure = () => {
-      const rect = frame.getBoundingClientRect();
-      zoomBoundsRef.current = { width: rect.width, height: rect.height };
+      const imageRect = zoomImageRef.current?.getBoundingClientRect();
+      const frameRect = frame.getBoundingClientRect();
+      zoomBoundsRef.current = {
+        width: imageRect?.width || frameRect.width,
+        height: imageRect?.height || frameRect.height,
+      };
     };
     measure();
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
     observer?.observe(frame);
+    if (zoomImageRef.current) observer?.observe(zoomImageRef.current);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     closeButtonRef.current?.focus();
@@ -273,9 +302,9 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     <div className="space-y-3">
       <div
         ref={mainFrameRef}
-        role="button"
-        tabIndex={0}
-        aria-label={`View larger image of ${title}`}
+        role={canZoom ? "button" : "img"}
+        tabIndex={canZoom ? 0 : undefined}
+        aria-label={canZoom ? `View larger image of ${title}` : `Image of ${title}`}
         className={`relative aspect-[4/3] w-full overflow-hidden bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${canZoom ? "cursor-zoom-in" : "cursor-default"}`}
         onPointerEnter={(event) => {
           if (event.pointerType !== "mouse" || !canZoom) return;
@@ -341,6 +370,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
                   setHighReady(false);
                   setHighFailed(false);
                   highImageRef.current = null;
+                  highImageRequestRef.current = null;
                   setScale(1);
                   setPan({ x: 0, y: 0 });
                   hoveringRef.current = false;
@@ -360,7 +390,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
           role="dialog"
           aria-modal="true"
           aria-label={`Zoomed image of ${title}`}
-          className="fixed inset-0 z-[90] flex items-center justify-center bg-black/95 p-3 sm:p-8"
+          className="fixed inset-0 z-[40] flex items-center justify-center bg-black/95 p-3 sm:p-8"
           onKeyDown={handleZoomKeyDown}
         >
           <button
@@ -384,14 +414,23 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
           >
             {!highReady && !highFailed && <div className="absolute inset-0 animate-pulse bg-white/10" role="status" aria-label="Loading high-resolution image" />}
             <img
+              ref={zoomImageRef}
               src={highReady ? highUrl ?? mainUrl : mainUrl}
               alt={`Zoomed view of ${title}, image ${selected + 1}`}
               decoding="async"
               draggable={false}
+              onLoad={() => {
+                const rect = zoomImageRef.current?.getBoundingClientRect();
+                if (rect) zoomBoundsRef.current = { width: rect.width, height: rect.height };
+              }}
               onError={() => {
                 if (highReady) {
                   setHighFailed(true);
                   setHighReady(false);
+                  setZoomOpen(false);
+                  setScale(1);
+                  setPan({ x: 0, y: 0 });
+                  mainFrameRef.current?.focus();
                 }
               }}
               className="absolute inset-0 m-auto max-h-full max-w-full select-none object-contain"

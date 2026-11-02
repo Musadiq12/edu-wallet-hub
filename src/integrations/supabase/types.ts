@@ -211,6 +211,7 @@ export type Database = {
           course_id: string | null
           course_label: string | null
           cover_image: string | null
+          product_images: string[]
           created_at: string
           created_by: string | null
           description: string | null
@@ -240,6 +241,7 @@ export type Database = {
           course_id?: string | null
           course_label?: string | null
           cover_image?: string | null
+          product_images?: string[]
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -269,6 +271,7 @@ export type Database = {
           course_id?: string | null
           course_label?: string | null
           cover_image?: string | null
+          product_images?: string[]
           created_at?: string
           created_by?: string | null
           description?: string | null
@@ -443,6 +446,10 @@ export type Database = {
       }
     }
     Functions: {
+      seller_set_product_images: {
+        Args: { p_product_id: string; p_product_images: string[] }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

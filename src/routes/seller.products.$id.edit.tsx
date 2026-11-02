@@ -14,12 +14,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { SellerLayout } from "@/components/seller/SellerLayout";
 import { SellerRouteGuard } from "@/components/seller/SellerRouteGuard";
 import { sellerAccessToken,sellerProductQuery } from "@/lib/seller-workspace";
-import { sellerCreatePrivateUploadPath,sellerSaveProductEdit } from "@/lib/seller-workspace.server-fns";
+import { sellerCreatePrivateUploadPath,sellerCreateImageUploadPath,sellerSaveProductEdit } from "@/lib/seller-workspace.server-fns";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route=createFileRoute("/seller/products/$id/edit")({component:EditSellerProduct});
 const exams=["NEET","JEE","UPSC","SSC","CGL","CLAT","CA","Other"] as const;
-type Product={id:string;title:string;description:string;whats_included:string|null;category_id:string|null;page_count:number|null;seller_cover_source_url:string|null;course_label:string;subject_label:string;price:number;pdf_file:string;preview_file:string|null;status:string;is_archived:boolean;rejection_reason?:string|null;review_feedback?:string|null};
+type Product={id:string;product_images:string[];title:string;description:string;whats_included:string|null;category_id:string|null;page_count:number|null;seller_cover_source_url:string|null;course_label:string;subject_label:string;price:number;pdf_file:string;preview_file:string|null;status:string;is_archived:boolean;rejection_reason?:string|null;review_feedback?:string|null};
 type Kind="pdf"|"preview";
 const MAX_PDF=20*1024*1024,MAX_PREVIEW=5*1024*1024;
 function EditSellerProduct(){
@@ -35,7 +35,7 @@ function EditSellerProduct(){
 function ProductEditForm({product}:{product:Product}){
  const navigate=useNavigate(),qc=useQueryClient(),lock=useRef(false);
  const [title,setTitle]=useState(product.title),[description,setDescription]=useState(product.description??""),[included,setIncluded]=useState(product.whats_included??""),[categoryId,setCategoryId]=useState(product.category_id??""),[pageCount,setPageCount]=useState(String(product.page_count??"")),[coverUrl,setCoverUrl]=useState(product.seller_cover_source_url??""),[rightsConfirmed,setRightsConfirmed]=useState(false),[exam,setExam]=useState(product.course_label??"Other"),[subject,setSubject]=useState(product.subject_label??""),[price,setPrice]=useState(String(product.price??""));
- const [pdf,setPdf]=useState<File|null>(null),[preview,setPreview]=useState<File|null>(null),[removePreview,setRemovePreview]=useState(false);
+ const [pdf,setPdf]=useState<File|null>(null),[preview,setPreview]=useState<File|null>(null),[removePreview,setRemovePreview]=useState(false),[galleryFiles,setGalleryFiles]=useState<File[]>([]);
  const [busy,setBusy]=useState(false),[error,setError]=useState(""),[confirm,setConfirm]=useState(false);
  const [mainPath,setMainPath]=useState(product.pdf_file),[previewPath,setPreviewPath]=useState<string|null>(product.preview_file??null);
  const approved=product.status==="published"||product.status==="approved";
@@ -67,18 +67,26 @@ function ProductEditForm({product}:{product:Product}){
   if(!/^(?:\d{1,4})(?:\.\d{1,2})?$/.test(price)||!Number.isFinite(amount)||amount<10||amount>5000){setError("Enter a price between ₹10 and ₹5,000.");return;}
   lock.current=true;setBusy(true);setError("");
   let newMain:string|null=null,newPreview:string|null=null;
+  const uploadedImages:string[]=[];
   try{
    const token=await sellerAccessToken();
    if(pdf)newMain=await upload(pdf,"pdf",token);
    if(preview)newPreview=await upload(preview,"preview",token);
+   for (const file of galleryFiles) {
+    const {path}=await sellerCreateImageUploadPath({data:{accessToken:token,originalName:file.name}});
+    const {error:imageError}=await supabase.storage.from("product-covers").upload(path,file,{upsert:false,cacheControl:"31536000",contentType:file.type});
+    if(imageError)throw new Error("A product image failed to upload.");
+    uploadedImages.push(path);
+   }
    const nextPdf=newMain??mainPath;
    const nextPreview=newPreview??(removePreview?null:previewPath);
-   await sellerSaveProductEdit({data:{accessToken:token,id:product.id,title:title.trim(),description:description.trim(),whatsIncluded:included.trim(),categoryId:categoryId||null,pageCount:Number(pageCount),coverSourceUrl:coverUrl.trim()||null,rightsConfirmed,exam,subject:subject.trim(),price:amount,pdfPath:nextPdf,previewPath:nextPreview}});
-   newMain=null;newPreview=null;
+   await sellerSaveProductEdit({data:{accessToken:token,id:product.id,title:title.trim(),description:description.trim(),whatsIncluded:included.trim(),categoryId:categoryId||null,pageCount:Number(pageCount),coverSourceUrl:coverUrl.trim()||null,rightsConfirmed,exam,subject:subject.trim(),price:amount,pdfPath:nextPdf,previewPath:nextPreview,productImages:[...product.product_images,...uploadedImages]}});
+   newMain=null;newPreview=null;uploadedImages.length=0;
    await qc.invalidateQueries({queryKey:["seller","products"]});await qc.invalidateQueries({queryKey:["seller","product",product.id]});
    toast.success(approved?"Changes submitted as a new review revision.":"Product resubmitted for review.");void navigate({to:"/seller/products",replace:true});
   }catch(err){
    const paths=[newMain,newPreview].filter((v):v is string=>!!v);if(paths.length)await supabase.storage.from("product-files").remove(paths).catch(()=>undefined);
+   if(uploadedImages.length)await supabase.storage.from("product-covers").remove(uploadedImages).catch(()=>undefined);
    const message=err instanceof Error?err.message:"Could not save changes. Try again.";setError(message);toast.error(message);
   }finally{setBusy(false);lock.current=false;}
  };
@@ -92,6 +100,7 @@ function ProductEditForm({product}:{product:Product}){
    <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Category</Label><Select value={categoryId} onValueChange={setCategoryId}><SelectTrigger><SelectValue placeholder="Select category"/></SelectTrigger><SelectContent>{[["3a642021-05c1-4c2a-bc4d-6d3c7b5c6b6a","NEET"],["51c4edb1-0ac0-44cd-bcef-99835648aa3a","JEE"],["ba141727-d59b-42ea-b6ce-925b4c7ec34a","UPSC"],["65defbd0-0e6c-4019-9842-a9b4afcf5b0c","SSC CGL"],["f7fb3a0f-7819-4034-ba13-871517741477","Banking"],["a79d40a2-ac36-43ba-a5c0-d8e74d08254a","CLAT"],["2f4d397d-3868-4e43-a3ce-4a08588b40d8","CA"],["44a493ab-8a74-4010-9d95-71c56284ddf2","Study Notes"],["dc16bca8-95d1-4af6-b100-899025718e59","Exam Guide"],["c7f04a19-1e37-4259-ae9d-168fb5eedd93","Guess Paper"],["d3cc142c-2693-49e8-8517-37a8b29cc660","Solved Papers"],["2e6313ee-3da1-4a54-93ae-3500ebc4a35a","Previous Year Papers"],["8b39909b-4420-42cf-b87a-33bfcaf56f7a","Assignments"],["35c2d793-02e2-4c46-930c-569371b8ad59","Books / E-Books"],["27fd9e5a-9d6d-4830-b164-c4d464bfa5cd","Practice Material"]].map(([id,label])=><SelectItem key={id} value={id}>{label}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label>Exam</Label><Select value={exam} onValueChange={setExam}><SelectTrigger><SelectValue/></SelectTrigger><SelectContent>{exams.map(x=><SelectItem key={x} value={x}>{x}</SelectItem>)}</SelectContent></Select></div><div className="space-y-2"><Label htmlFor="edit-subject">Subject</Label><Input id="edit-subject" value={subject} maxLength={60} onChange={e=>setSubject(e.target.value)} required/></div></div>
    <div className="space-y-2"><Label htmlFor="edit-pages">PDF page count</Label><Input id="edit-pages" type="number" min="1" max="99999" value={pageCount} onChange={e=>setPageCount(e.target.value)} required/></div>
    <div className="space-y-2"><Label htmlFor="edit-cover">Proposed cover image (Google Drive link)</Label><Input id="edit-cover" type="url" value={coverUrl} onChange={e=>setCoverUrl(e.target.value)} placeholder="https://drive.google.com/file/d/…/view"/></div>
+   <div className="space-y-2"><Label htmlFor="edit-gallery">Additional product images (up to 7)</Label><Input id="edit-gallery" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple disabled={busy||product.product_images.length+galleryFiles.length>=7} onChange={event=>{const files=Array.from(event.target.files??[]).slice(0,7-product.product_images.length-galleryFiles.length);const valid=files.filter(file=>file.type.startsWith("image/")&&file.size>0&&file.size<=5*1024*1024);if(valid.length!==files.length)setError("Each image must be a supported image up to 5 MB.");setGalleryFiles(current=>[...current,...valid].slice(0,7-product.product_images.length));event.target.value="";}}/>{galleryFiles.length>0&&<p className="text-xs text-muted-foreground">{galleryFiles.length} new image(s) selected: {galleryFiles.map(file=>file.name).join(", ")}</p>}<p className="text-xs text-muted-foreground">Existing gallery: {product.product_images.length} image(s). Add more JPG, PNG or WebP files, up to 5 MB each.</p></div>
    <div className="space-y-2"><Label htmlFor="edit-price">Price (INR ₹)</Label><Input id="edit-price" type="number" min="10" max="5000" step="0.01" value={price} onChange={e=>setPrice(e.target.value)} required/></div>
    <div className="space-y-2"><Label htmlFor="edit-pdf">Replace notes PDF (optional)</Label><label htmlFor="edit-pdf" className="flex cursor-pointer items-center gap-3 rounded-lg border border-dashed border-border p-4"><UploadCloud className="size-5"/><span className="min-w-0 text-sm">{pdf?.name??"Choose a new PDF (max 20 MB)"}</span></label><input id="edit-pdf" type="file" accept="application/pdf,.pdf" className="sr-only" onChange={e=>pick(e.target.files?.[0]??null,"pdf")}/><p className="text-xs text-muted-foreground">Current file: {product.pdf_file?.split("/").pop()}</p></div>
    <div className="space-y-2"><Label htmlFor="edit-preview">Preview PDF (optional)</Label><Input id="edit-preview" type="file" accept="application/pdf,.pdf" onChange={e=>pick(e.target.files?.[0]??null,"preview")}/>{preview&&<p className="text-xs text-muted-foreground">{preview.name}</p>}{previewPath&&!removePreview&&<button type="button" className="text-xs text-destructive underline" onClick={()=>setRemovePreview(true)}>Remove current preview</button>}</div>

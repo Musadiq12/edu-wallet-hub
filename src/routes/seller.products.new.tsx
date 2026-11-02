@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { SellerLayout } from "@/components/seller/SellerLayout";
 import { SellerRouteGuard } from "@/components/seller/SellerRouteGuard";
 import { sellerAccessToken } from "@/lib/seller-workspace";
-import { sellerCreatePrivateUploadPath, sellerCreateProduct } from "@/lib/seller-workspace.server-fns";
+import { sellerCreatePrivateUploadPath, sellerCreateImageUploadPath, sellerCreateProduct } from "@/lib/seller-workspace.server-fns";
 import { supabase } from "@/integrations/supabase/client";
 
 export const Route=createFileRoute("/seller/products/new")({component:NewSellerProduct});
@@ -45,7 +45,7 @@ function Field({label,htmlFor,required,help,children}:{label:string;htmlFor:stri
 function NewSellerProduct(){
  const navigate=useNavigate(),qc=useQueryClient(),lock=useRef(false);
  const [title,setTitle]=useState(""),[description,setDescription]=useState(""),[included,setIncluded]=useState(""),[categoryId,setCategoryId]=useState(""),[exam,setExam]=useState(""),[subject,setSubject]=useState(""),[price,setPrice]=useState(""),[discountedPrice,setDiscountedPrice]=useState(""),[pageCount,setPageCount]=useState(""),[coverUrl,setCoverUrl]=useState(""),[rightsConfirmed,setRightsConfirmed]=useState(false);
- const [pdf,setPdf]=useState<File|null>(null),[preview,setPreview]=useState<File|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState("");
+ const [pdf,setPdf]=useState<File|null>(null),[preview,setPreview]=useState<File|null>(null),[galleryFiles,setGalleryFiles]=useState<File[]>([]),[busy,setBusy]=useState(false),[error,setError]=useState("");
  const pick=(file:File|null,kind:Kind)=>{
   if(!file){if(kind==="pdf")setPdf(null);else setPreview(null);return;}
   const limit=kind==="pdf"?MAX_PDF:MAX_PREVIEW;
@@ -76,17 +76,25 @@ function NewSellerProduct(){
   if(!pdf){setError("Upload your main notes PDF.");return;}
   lock.current=true;setBusy(true);setError("");
   let mainPath:string|null=null,previewPath:string|null=null;
+  const uploadedImages:string[]=[];
   try{
    const token=await sellerAccessToken();
    mainPath=await upload(pdf,"pdf",token);
    if(preview)previewPath=await upload(preview,"preview",token);
-   await sellerCreateProduct({data:{accessToken:token,title:title.trim(),description:description.trim(),whatsIncluded:included.trim(),categoryId:categoryId||null,pageCount:Number(pageCount),coverSourceUrl:coverUrl.trim()||null,rightsConfirmed,exam,subject:subject.trim(),price:amount,discountedPrice:discountAmount,pdfPath:mainPath,previewPath}});
-   mainPath=null;previewPath=null;
+   for (const file of galleryFiles) {
+    const {path}=await sellerCreateImageUploadPath({data:{accessToken:token,originalName:file.name}});
+    const {error:imageError}=await supabase.storage.from("product-covers").upload(path,file,{upsert:false,cacheControl:"31536000",contentType:file.type});
+    if(imageError)throw new Error("A product image failed to upload.");
+    uploadedImages.push(path);
+   }
+   await sellerCreateProduct({data:{accessToken:token,title:title.trim(),description:description.trim(),whatsIncluded:included.trim(),categoryId:categoryId||null,pageCount:Number(pageCount),coverSourceUrl:coverUrl.trim()||null,rightsConfirmed,exam,subject:subject.trim(),price:amount,discountedPrice:discountAmount,pdfPath:mainPath,previewPath,productImages:uploadedImages}});
+   mainPath=null;previewPath=null;uploadedImages.length=0;
    await qc.invalidateQueries({queryKey:["seller","products"]});
    toast.success("Product submitted for review.");
    void navigate({to:"/seller/products",replace:true});
   }catch(err){
    if(mainPath||previewPath){const paths=[mainPath,previewPath].filter((p):p is string=>!!p);await supabase.storage.from("product-files").remove(paths).catch(()=>undefined);}
+   if(uploadedImages.length)await supabase.storage.from("product-covers").remove(uploadedImages).catch(()=>undefined);
    const message=err instanceof Error?err.message:"Could not upload this product. Please try again.";
    setError(message);toast.error(message);
   }finally{setBusy(false);lock.current=false;}
@@ -114,6 +122,12 @@ function NewSellerProduct(){
      <Section number="03" title="Upload your files" description="Your main PDF is required. A sample preview is optional.">
       <div className="space-y-2"><Label htmlFor="seller-pdf">Study notes PDF <span className="text-destructive">*</span></Label><label htmlFor="seller-pdf" className="group flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-4 py-8 text-center transition-colors hover:border-primary/50 hover:bg-primary/[0.03]"><span className="grid size-11 place-items-center rounded-xl bg-primary/10 text-primary"><UploadCloud className="size-5"/></span><span className="mt-3 text-sm font-semibold">{pdf?.name??"Choose your PDF"}</span><span className="mt-1 text-xs text-muted-foreground">PDF format · Up to 20 MB</span><span className="mt-3 rounded-lg border bg-background px-3 py-1.5 text-xs font-medium group-hover:border-primary/30">Browse files</span></label><input id="seller-pdf" type="file" accept="application/pdf,.pdf" className="sr-only" onChange={e=>pick(e.target.files?.[0]??null,"pdf")}/>{pdf&&<div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3 text-sm"><FileText className="size-4 shrink-0 text-primary"/><span className="min-w-0 flex-1 truncate">{pdf.name}</span><span className="text-xs text-muted-foreground">{(pdf.size/1024/1024).toFixed(2)} MB</span><button type="button" aria-label="Remove main PDF" className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive" onClick={()=>setPdf(null)}><X className="size-4"/></button></div>}</div>
       <div className="grid gap-4 sm:grid-cols-2"><Field label="Number of pages" htmlFor="seller-page-count" required help="Total pages in your main PDF."><Input id="seller-page-count" type="number" min="1" max="99999" step="1" value={pageCount} onChange={e=>setPageCount(e.target.value)} placeholder="e.g. 120" required className="h-11"/></Field><Field label="Sample preview PDF" htmlFor="seller-preview" help="Optional sample pages for customers · Up to 5 MB."><Input id="seller-preview" type="file" accept="application/pdf,.pdf" onChange={e=>pick(e.target.files?.[0]??null,"preview")} className="h-11 file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-2 file:py-1 file:text-xs"/>{preview&&<div className="flex items-center gap-2 text-xs text-muted-foreground"><FileText className="size-4"/><span className="min-w-0 flex-1 truncate">{preview.name} · {(preview.size/1024/1024).toFixed(2)} MB</span><button type="button" className="text-destructive" onClick={()=>setPreview(null)}>Remove</button></div>}</Field></div>
+      <div className="space-y-2">
+       <Label htmlFor="seller-gallery">Additional product images (optional, up to 7)</Label>
+       <Input id="seller-gallery" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple disabled={busy || galleryFiles.length >= 7} onChange={event=>{const files=Array.from(event.target.files??[]).slice(0,7-galleryFiles.length);const valid=files.filter(file=>file.type.startsWith("image/")&&file.size>0&&file.size<=5*1024*1024);if(valid.length!==files.length)setError("Each image must be a supported image up to 5 MB.");setGalleryFiles(current=>[...current,...valid].slice(0,7));event.target.value="";}} className="h-11 file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-2 file:py-1 file:text-xs"/>
+       {galleryFiles.length>0&&<div className="flex flex-wrap gap-2">{galleryFiles.map((file,index)=><div key={file.name+index} className="flex items-center gap-2 rounded-lg border p-2 text-xs"><ImagePlus className="size-4 text-primary"/><span className="max-w-36 truncate">{file.name}</span><button type="button" onClick={()=>setGalleryFiles(current=>current.filter((_,i)=>i!==index))} aria-label="Remove image" className="text-destructive">×</button></div>)}</div>}
+       <p className="text-xs text-muted-foreground">Upload extra angles or close-up details. JPG, PNG, WebP or GIF · 5 MB each.</p>
+      </div>
      </Section>
      <div className="my-7 border-t"/>
      <Section number="04" title="Cover image and confirmation" description="Suggest a cover image and confirm your right to distribute the material.">
