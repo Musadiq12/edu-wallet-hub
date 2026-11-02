@@ -5,14 +5,16 @@ import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
-import Table from "@tiptap/extension-table";
+import { Table } from "@tiptap/extension-table";
 import TableRow from "@tiptap/extension-table-row";
 import TableHeader from "@tiptap/extension-table-header";
 import TableCell from "@tiptap/extension-table-cell";
 import Youtube from "@tiptap/extension-youtube";
 import Placeholder from "@tiptap/extension-placeholder";
 import TextAlign from "@tiptap/extension-text-align";
-import { lowlight } from "lowlight";
+import { common, createLowlight } from "lowlight";
+
+const lowlight = createLowlight(common);
 import CodeBlockLowlight from "@tiptap/extension-code-block-lowlight";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
