@@ -71,7 +71,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
     image.decoding = "async";
     image.onload = () => {
       const mainWidth = imageRef.current?.getBoundingClientRect().width ?? 0;
-      if (mainWidth > 0 && image.naturalWidth <= mainWidth * 1.5) {
+      if (image.naturalWidth <= (mainWidth || 800) * 1.5) {
         setHiResFailed(true);
         return;
       }
@@ -92,7 +92,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
     if (!bounds || !lensRef.current || !indicatorRef.current) return;
     const x = clamp(pointerRef.current.x, 0, bounds.width);
     const y = clamp(pointerRef.current.y, 0, bounds.height);
-    const lens = MODE === "lens" ? lensRef.current! : indicatorRef.current;
+    const lens = MODE === "lens" ? lensRef.current! : indicatorRef.current!;
     const size = MODE === "lens" ? LENS_SIZE : 72;
     const xRatio = bounds.width ? x / bounds.width : 0.5;
     const yRatio = bounds.height ? y / bounds.height : 0.5;
