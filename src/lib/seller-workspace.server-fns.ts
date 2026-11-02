@@ -28,6 +28,7 @@ const productInputSchema = z.object({
   discountedPrice: z.number().finite().min(1).max(4999.99).refine(v => Math.round(v*100) === v*100).nullable().default(null),
   pdfPath: z.string().min(1).max(500),
   previewPath: z.string().max(500).nullable().optional(),
+  productImages: z.array(z.string().min(1).max(500)).max(7).default([]),
 });
 
 function validateCoverSourceUrl(value: string | null) {
@@ -124,6 +125,28 @@ async function verifyStoredPdf(context: SellerContext, path: string, maxBytes: n
   }
 }
 
+async function verifyStoredImage(context: SellerContext, path: string) {
+  const pattern = new RegExp("^" + context.userId + "/[0-9a-f-]{36}/[0-9a-f-]{36}_[A-Za-z0-9_-]+\\.(?:jpg|jpeg|png|webp|gif)$", "i");
+  if (!pattern.test(path)) throw new Error("Invalid product image path.");
+  const folder = path.split("/").slice(0, 2).join("/");
+  const name = path.split("/").pop()!;
+  const { data, error } = await context.client.storage.from("product-covers").list(folder, { search: name, limit: 1 });
+  const file = data?.find((item) => item.name === name);
+  const mime = String(file?.metadata?.mimetype ?? "");
+  const size = Number(file?.metadata?.size ?? 0);
+  if (error || !file || !["image/jpeg","image/png","image/webp","image/gif"].includes(mime) || size <= 0 || size > 5 * 1024 * 1024) {
+    throw new Error("Upload a supported image no larger than 5 MB.");
+  }
+}
+
+async function makeSellerImagePath(context: SellerContext, originalName: string) {
+  const extension = originalName.toLowerCase().split(".").pop() ?? "";
+  if (!["jpg","jpeg","png","webp","gif"].includes(extension)) throw new Error("Use a JPG, PNG, WebP or GIF image.");
+  const folderId = crypto.randomUUID();
+  const fileName = crypto.randomUUID() + "_" + safeFilenamePart(originalName).slice(0, 60) + "." + extension;
+  return context.userId + "/" + folderId + "/" + fileName;
+}
+
 async function removePrivateFiles(context: SellerContext, paths: Array<string | null | undefined>) {
   const ownPaths = [...new Set(paths.filter((p): p is string =>
     typeof p === "string" && p.startsWith(context.userId + "/")))];
@@ -193,7 +216,7 @@ export const sellerGetProduct = createServerFn({method:"POST"})
     try {
       const {userId,client}=await requireSeller(data.accessToken);
       const {data:row,error}=await client.from("products")
-        .select("id,title,slug,description,whats_included,category_id,page_count,seller_cover_source_url,seller_rights_confirmed_at,course_label,subject_label,price,pdf_file,preview_file,status,is_archived,is_active,created_at,rejection_reason,review_feedback")
+        .select("id,title,slug,description,whats_included,category_id,page_count,seller_cover_source_url,seller_rights_confirmed_at,course_label,subject_label,price,pdf_file,preview_file,product_images,status,is_archived,is_active,created_at,rejection_reason,review_feedback")
         .eq("id",data.id).eq("seller_id",userId).is("deleted_at",null).maybeSingle();
       if(error || !row) throw new Error("product not found");
       return row;
@@ -201,7 +224,7 @@ export const sellerGetProduct = createServerFn({method:"POST"})
   });
 
 export const sellerCreateProduct = createServerFn({method:"POST"})
-  .validator((input:{accessToken:string;title:string;description:string;whatsIncluded:string;categoryId:string|null;pageCount:number;coverSourceUrl:string|null;rightsConfirmed:true;exam:string;subject:string;price:number;discountedPrice?:number|null;pdfPath:string;previewPath?:string|null}) => {
+  .validator((input:{accessToken:string;title:string;description:string;whatsIncluded:string;categoryId:string|null;pageCount:number;coverSourceUrl:string|null;rightsConfirmed:true;exam:string;subject:string;price:number;discountedPrice?:number|null;pdfPath:string;previewPath?:string|null;productImages?:string[]}) => {
     const parsed=productInputSchema.parse(input);
     const cover=validateCoverSourceUrl(parsed.coverSourceUrl);
     return { ...parsed, cover, accessToken:z.string().min(1).parse(input.accessToken) };
@@ -210,16 +233,20 @@ export const sellerCreateProduct = createServerFn({method:"POST"})
     const context=await requireSeller(data.accessToken);
     await verifyStoredPdf(context,data.pdfPath,20*1024*1024);
     if(data.previewPath) await verifyStoredPdf(context,data.previewPath,5*1024*1024);
+    for (const path of data.productImages) await verifyStoredImage(context, path);
     const slug=data.title.toLowerCase().trim().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,100)+"-"+crypto.randomUUID().slice(0,8);
     const {data:id,error}=await context.client.rpc("seller_create_product",{
       p_title:data.title,p_slug:slug,p_description:data.description,p_exam_label:data.exam,
       p_subject_label:data.subject,p_price:data.price,p_pdf_path:data.pdfPath,p_preview_path:data.previewPath??null,
       p_whats_included:data.whatsIncluded,p_category_id:data.categoryId,p_page_count:data.pageCount,
       p_seller_cover_source_url:data.cover?.source??null,p_rights_confirmed:data.rightsConfirmed,
+      p_product_images:data.productImages,
       p_discounted_price:data.discountedPrice,
+      p_product_images:data.productImages,
     });
     if(error){
       await removePrivateFiles(context,[data.pdfPath,data.previewPath]);
+      if (data.productImages.length) await context.client.storage.from("product-covers").remove(data.productImages);
       throw new Error(safeMessage(error,"Could not save your product. Please try again."));
     }
     return {id};
@@ -235,6 +262,16 @@ export const sellerCreatePrivateUploadPath = createServerFn({method:"POST"})
   .handler(async({data})=>{
     const context=await requireSeller(data.accessToken);
     return {path:await makePrivatePdfPath(context,data.originalName)};
+  });
+
+export const sellerCreateImageUploadPath = createServerFn({method:"POST"})
+  .validator((input:{accessToken:string;originalName:string})=>{
+    if (!input || typeof input.accessToken !== "string" || typeof input.originalName !== "string") throw new Error("Choose an image file.");
+    return {accessToken:input.accessToken,originalName:input.originalName};
+  })
+  .handler(async({data})=>{
+    const context=await requireSeller(data.accessToken);
+    return {path:await makeSellerImagePath(context,data.originalName)};
   });
 
 export const sellerDeleteProduct = createServerFn({method:"POST"})
