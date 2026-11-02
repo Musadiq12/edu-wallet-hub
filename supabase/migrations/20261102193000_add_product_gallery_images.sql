@@ -29,6 +29,11 @@ BEGIN
     RAISE EXCEPTION 'Invalid product type';
   END IF;
 
+  IF jsonb_typeof(COALESCE(_payload->'product_images', '[]'::jsonb)) <> 'array'
+     OR jsonb_array_length(COALESCE(_payload->'product_images', '[]'::jsonb)) > 7 THEN
+    RAISE EXCEPTION 'A product can have at most seven additional images';
+  END IF;
+
   IF v_product_type = 'physical' THEN
     IF COALESCE(_payload->>'stock_quantity', '') !~ '^\d+$'
        OR (_payload->>'stock_quantity')::numeric > 2147483647 THEN
