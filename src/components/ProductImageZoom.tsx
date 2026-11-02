@@ -223,7 +223,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     hoveringRef.current = false;
     touchPointsRef.current.clear();
     hideLens();
-  }, [path, hideLens]);
+  }, [paths.join("|"), hideLens]);
 
   useEffect(() => {
     if (!zoomOpen) return;
