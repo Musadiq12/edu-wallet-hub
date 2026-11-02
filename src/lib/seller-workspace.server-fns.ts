@@ -94,7 +94,7 @@ function safeMessage(error: unknown, fallback: string) {
 
 function safeFilenamePart(name: string) {
   const withoutExtension = name.replace(/\.pdf$/i, "");
-  const cleaned = withoutExtension.replace(/\.[^.]+$/, "").normalize("NFKD").replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
+  const cleaned = withoutExtension.normalize("NFKD").replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "");
   return (cleaned || "study-note").slice(0, 80);
 }
 
