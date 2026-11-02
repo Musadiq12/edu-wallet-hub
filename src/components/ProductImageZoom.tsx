@@ -28,6 +28,7 @@ function getDistance(a: Point, b: Point) {
 export function ProductImageZoom({ path, title, images }: Props) {
   const imagePaths = Array.from(new Set([path, ...(images ?? [])].filter((item): item is string => Boolean(item))));
   const [selected, setSelected] = useState(0);
+  const [zoomBounds, setZoomBounds] = useState({ width: 0, height: 0 });
 
   const [zoomOpen, setZoomOpen] = useState(false);
   const [hiResReady, setHiResReady] = useState(false);
@@ -40,6 +41,7 @@ export function ProductImageZoom({ path, title, images }: Props) {
   const lensRef = useRef<HTMLDivElement>(null);
   const indicatorRef = useRef<HTMLDivElement>(null);
   const highImageRef = useRef<HTMLImageElement | null>(null);
+  const zoomFrameRef = useRef<HTMLDivElement>(null);
   const boundsRef = useRef<DOMRect | null>(null);
   const pointerRef = useRef<Point>({ x: 0, y: 0 });
   const rafRef = useRef(0);
@@ -284,8 +286,8 @@ export function ProductImageZoom({ path, title, images }: Props) {
           draggable={false}
           className="absolute inset-0 h-full w-full select-none object-contain"
         />
-        <div ref={lensRef} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 hidden rounded-full border-2 border-white bg-no-repeat shadow-[0_2px_12px_rgba(0,0,0,.35)]" style={{ width: LENS_SIZE, height: LENS_SIZE, backgroundImage: hiResReady ? `url("${highUrl}")` : "none", backgroundSize: `${ZOOM_FACTOR * 100}% ${ZOOM_FACTOR * 100}%` }} />
-        <div ref={indicatorRef} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 hidden h-[72px] w-[72px] border border-primary bg-primary/10" />
+        {MODE === "lens" && <div ref={lensRef} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 hidden rounded-full border-2 border-white bg-no-repeat shadow-[0_2px_12px_rgba(0,0,0,.35)]" style={{ width: LENS_SIZE, height: LENS_SIZE, backgroundImage: hiResReady ? `url("${highUrl}")` : "none", backgroundSize: `${ZOOM_FACTOR * 100}% ${ZOOM_FACTOR * 100}%` }} />}
+        {MODE === "panel" && <div ref={indicatorRef} aria-hidden="true" className="pointer-events-none absolute left-0 top-0 hidden h-[72px] w-[72px] border border-primary bg-primary/10" />}
         {MODE === "panel" && hiResReady && (
           <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-full z-10 hidden w-full overflow-hidden border border-border bg-card lg:block">
             <img ref={panelImageRef} alt="" className="absolute left-0 top-0 max-w-none" />
