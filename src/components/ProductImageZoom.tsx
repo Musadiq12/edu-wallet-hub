@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { X, ZoomIn } from "lucide-react";
 import { publicImageUrl } from "@/lib/image-storage";
 
-// Tune these values without changing the interaction code.
+// Tune the zoom experience here.
 const ZOOM_FACTOR = 2.5;
 const MAX_TOUCH_ZOOM = 3;
 const LENS_SIZE = 176;
@@ -13,7 +13,7 @@ type Point = { x: number; y: number };
 type Props = {
   path: string | null;
   title: string;
-  /** Gallery support is ready for a future product image array. */
+  /** Optional gallery paths; the current product record only has cover_image. */
   images?: string[];
 };
 
@@ -38,7 +38,6 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
   const mainImageRef = useRef<HTMLImageElement>(null);
   const lensRef = useRef<HTMLDivElement>(null);
   const zoomFrameRef = useRef<HTMLDivElement>(null);
-  const zoomImageRef = useRef<HTMLImageElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const boundsRef = useRef<DOMRect | null>(null);
   const pointerRef = useRef<Point>({ x: 0, y: 0 });
@@ -67,7 +66,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     const highImage = highImageRef.current;
     if (!bounds || !lens || !image || !highImage || !hoveringRef.current) return;
 
-    // Match object-contain geometry so portrait and landscape covers align correctly.
+    // Match object-contain geometry, including portrait covers and letterboxing.
     const naturalWidth = image.naturalWidth || 800;
     const naturalHeight = image.naturalHeight || 600;
     const fit = Math.min(bounds.width / naturalWidth, bounds.height / naturalHeight);
@@ -98,8 +97,8 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     const image = new Image();
     image.decoding = "async";
     image.onload = () => {
-      const renderedWidth = mainImageRef.current?.getBoundingClientRect().width ?? 0;
-      if (image.naturalWidth <= (renderedWidth || 800) * 1.5) {
+      const natural = mainImageRef.current;
+      if (!natural || image.naturalWidth <= natural.naturalWidth * 1.5) {
         setHighFailed(true);
         hideLens();
         return;
@@ -236,6 +235,8 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     highImageRef.current = null;
     setScale(1);
     setPan({ x: 0, y: 0 });
+    hoveringRef.current = false;
+    touchPointsRef.current.clear();
     hideLens();
   }, [path, hideLens]);
 
@@ -261,9 +262,9 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
 
   useEffect(() => {
     const resize = () => {
-      boundsRef.current = mainFrameRef.current?.getBoundingClientRect() ?? null;
       hideLens();
       if (zoomOpen) closeZoom();
+      boundsRef.current = null;
     };
     window.addEventListener("resize", resize);
     window.addEventListener("orientationchange", resize);
@@ -294,6 +295,10 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
           if (event.pointerType !== "mouse" || !canZoom) return;
           hoveringRef.current = true;
           boundsRef.current = mainFrameRef.current?.getBoundingClientRect() ?? null;
+          pointerRef.current = {
+            x: event.clientX - (boundsRef.current?.left ?? 0),
+            y: event.clientY - (boundsRef.current?.top ?? 0),
+          };
           preloadHighResolution();
         }}
         onPointerMove={updateMainPointer}
@@ -327,7 +332,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
         <div
           ref={lensRef}
           aria-hidden="true"
-          className="pointer-events-none absolute left-0 top-0 hidden rounded-full border-2 border-white shadow-[0_2px_12px_rgba(0,0,0,.35)]"
+          className="pointer-events-none absolute left-0 top-0 hidden rounded-full border-2 border-white shadow-[0_2px_12px_rgba(0,0,0,.35)] motion-reduce:transition-none"
         />
         <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-background/90 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm">
           <ZoomIn className="h-3.5 w-3.5" aria-hidden="true" /> Tap or hover to zoom
@@ -352,6 +357,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
                   highImageRef.current = null;
                   setScale(1);
                   setPan({ x: 0, y: 0 });
+                  hoveringRef.current = false;
                   hideLens();
                 }}
                 className={`h-16 min-h-11 w-16 min-w-11 shrink-0 overflow-hidden rounded-lg border bg-muted p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${selected === index ? "border-primary ring-1 ring-primary" : "border-border"}`}
@@ -382,6 +388,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
           </button>
           <div
             ref={zoomFrameRef}
+            tabIndex={-1}
             className="relative h-[min(82dvh,900px)] w-full touch-none overflow-hidden"
             onPointerDown={handleTouchDown}
             onPointerMove={handleTouchMove}
@@ -391,7 +398,6 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
           >
             {!highReady && !highFailed && <div className="absolute inset-0 animate-pulse bg-white/10" role="status" aria-label="Loading high-resolution image" />}
             <img
-              ref={zoomImageRef}
               src={highReady ? highUrl ?? mainUrl : mainUrl}
               alt={`Zoomed view of ${title}, image ${selected + 1}`}
               decoding="async"
@@ -400,8 +406,6 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
                 if (highReady) {
                   setHighFailed(true);
                   setHighReady(false);
-                } else {
-                  setHighFailed(true);
                 }
               }}
               className="absolute inset-0 m-auto max-h-full max-w-full select-none object-contain"
