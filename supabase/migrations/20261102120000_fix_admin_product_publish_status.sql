@@ -117,14 +117,6 @@ REVOKE EXECUTE ON FUNCTION public.admin_upsert_product(uuid, jsonb) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION public.admin_upsert_product(uuid, jsonb) FROM anon;
 GRANT EXECUTE ON FUNCTION public.admin_upsert_product(uuid, jsonb) TO authenticated;
 
--- Repair only admin-owned, active, unarchived legacy rows that were wrongly
--- created as pending by the previous RPC. Seller moderation state is untouched.
-UPDATE public.products
-SET status = 'approved',
-    published_at = COALESCE(published_at, now()),
-    updated_at = now()
-WHERE seller_id IS NULL
-  AND status = 'pending'
-  AND is_active = true
-  AND is_archived = false
-  AND deleted_at IS NULL;
+-- Existing legacy pending admin rows are exposed in the admin list after the
+-- frontend query fix. Saving one through this authenticated admin RPC moves it
+-- to approved. Seller-owned pending submissions remain untouched.
