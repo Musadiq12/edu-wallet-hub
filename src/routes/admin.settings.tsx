@@ -22,6 +22,7 @@ type EditableHeroSlide = {
   secondary: string;
   imageUrl: string;
   mobileImageUrl?: string;
+  alt?: string;
 };
 
 function AdminSettings() {
@@ -72,11 +73,11 @@ function AdminSettings() {
         const mobilePicked = pickedMobileHeroImages[index];
         if (desktopPicked) {
           const { path } = await uploadFile(BUCKETS.cover, desktopPicked.file, "hero-banners");
-          updatedSlides[index] = { ...slide, imageUrl: publicImageUrl(BUCKETS.cover, path) ?? "" };
+          updatedSlides[index] = { ...slide, imageUrl: publicImageUrl(BUCKETS.cover, path, 1920) ?? "" };
         }
         if (mobilePicked) {
           const { path } = await uploadFile(BUCKETS.cover, mobilePicked.file, "hero-banners-mobile");
-          updatedSlides[index] = { ...(updatedSlides[index] ?? slide), mobileImageUrl: publicImageUrl(BUCKETS.cover, path) ?? "" };
+          updatedSlides[index] = { ...(updatedSlides[index] ?? slide), mobileImageUrl: publicImageUrl(BUCKETS.cover, path, 1080) ?? "" };
         }
       }
       await saveSettings({
@@ -134,10 +135,39 @@ function AdminSettings() {
             {heroSlides.slice(0, 3).map((slide, index) => (
               <section key={index} className="space-y-3 rounded-xl border border-border p-4">
                 <h3 className="font-semibold">Slide {index + 1}</h3>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`hero-eyebrow-${index}`}>Eyebrow</Label>
+                    <Input id={`hero-eyebrow-${index}`} value={slide.eyebrow ?? ""} onChange={(event) => setHeroSlides((current) => current.map((item, i) => i === index ? { ...item, eyebrow: event.target.value } : item))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`hero-title-${index}`}>Title</Label>
+                    <Input id={`hero-title-${index}`} value={slide.title ?? ""} onChange={(event) => setHeroSlides((current) => current.map((item, i) => i === index ? { ...item, title: event.target.value } : item))} />
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor={`hero-description-${index}`}>Subtitle / description</Label>
+                    <Input id={`hero-description-${index}`} value={slide.description ?? ""} onChange={(event) => setHeroSlides((current) => current.map((item, i) => i === index ? { ...item, description: event.target.value } : item))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`hero-cta-${index}`}>Button text</Label>
+                    <Input id={`hero-cta-${index}`} value={slide.cta ?? ""} onChange={(event) => setHeroSlides((current) => current.map((item, i) => i === index ? { ...item, cta: event.target.value } : item))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor={`hero-link-${index}`}>Button link</Label>
+                    <select id={`hero-link-${index}`} value={slide.to ?? "/shop"} onChange={(event) => setHeroSlides((current) => current.map((item, i) => i === index ? { ...item, to: event.target.value } : item))} className="h-11 w-full rounded-md border border-input bg-background px-3 text-sm">
+                      <option value="/shop">Shop</option>
+                      <option value="/free-resources">Free resources</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5 sm:col-span-2">
+                    <Label htmlFor={`hero-alt-${index}`}>Image alt text</Label>
+                    <Input id={`hero-alt-${index}`} value={slide.alt ?? ""} placeholder="Describe the banner for screen readers" onChange={(event) => setHeroSlides((current) => current.map((item, i) => i === index ? { ...item, alt: event.target.value } : item))} />
+                  </div>
+                </div>
                 <AdminFileField
                   id={`hero-image-${index}`}
                   label="Desktop banner image"
-                  help="Wide image for computers. Recommended 1920 × 700 px, maximum 5 MB."
+                  help="Desktop image. Recommended 1920 × 800 px (or wider 21:9), PNG/WebP/JPG, maximum 5 MB. Upload at full resolution; avoid screenshots."
                   accept="image/*"
                   maxBytes={LIMITS.coverBytes}
                   kind="image"
@@ -148,7 +178,7 @@ function AdminSettings() {
                 <AdminFileField
                   id={`hero-mobile-image-${index}`}
                   label="Mobile banner image (recommended)"
-                  help="Portrait image for phones. Recommended 900 × 1200 px. This prevents the desktop banner from being cropped on mobile. Maximum 5 MB."
+                  help="Mobile image. Recommended 1080 × 1350 px (4:5). Upload a separate composition for phones; maximum 5 MB. If omitted, the desktop image is used."
                   accept="image/*"
                   maxBytes={LIMITS.coverBytes}
                   kind="image"
