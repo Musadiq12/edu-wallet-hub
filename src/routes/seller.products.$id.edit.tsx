@@ -38,7 +38,7 @@ function ProductEditForm({product}:{product:Product}){
  const [title,setTitle]=useState(product.title),[description,setDescription]=useState(product.description??""),[included,setIncluded]=useState(product.whats_included??""),[categoryId,setCategoryId]=useState(product.category_id??""),[pageCount,setPageCount]=useState(String(product.page_count??"")),[coverUrl,setCoverUrl]=useState(product.seller_cover_source_url??""),[rightsConfirmed,setRightsConfirmed]=useState(false),[exam,setExam]=useState(product.course_label??"Other"),[subject,setSubject]=useState(product.subject_label??""),[price,setPrice]=useState(String(product.price??"")),[discountedPrice,setDiscountedPrice]=useState(product.discounted_price==null?"":String(product.discounted_price));
  const [pdf,setPdf]=useState<File|null>(null),[preview,setPreview]=useState<File|null>(null),[removePreview,setRemovePreview]=useState(false),[galleryFiles,setGalleryFiles]=useState<File[]>([]);
  const [busy,setBusy]=useState(false),[error,setError]=useState(""),[confirm,setConfirm]=useState(false);
- const [mainPath,setMainPath]=useState(product.pdf_file),[previewPath,setPreviewPath]=useState<string|null>(product.preview_file??null);
+ const [mainPath]=useState(product.pdf_file),[previewPath,setPreviewPath]=useState<string|null>(product.preview_file??null);
  const approved=product.status==="published"||product.status==="approved";
  if(product.is_archived)return <Card><CardContent className="space-y-2 p-5"><p className="font-semibold">This product is archived and cannot be edited.</p><Button asChild variant="outline"><Link to="/seller/products">Back to products</Link></Button></CardContent></Card>;
  const pick=(file:File|null,kind:Kind)=>{
@@ -68,6 +68,10 @@ function ProductEditForm({product}:{product:Product}){
   if(!/^(?:\d{1,4})(?:\.\d{1,2})?$/.test(price)||!Number.isFinite(amount)||amount<10||amount>5000){setError("Enter a price between ₹10 and ₹5,000.");return;}
   lock.current=true;setBusy(true);setError("");
   let newMain:string|null=null,newPreview:string|null=null;
+  const discount=discountedPrice.trim()===""?null:Number(discountedPrice);
+  if(discount!==null&&(!/^(?:\\d{1,4})(?:\\.\\d{1,2})?$/.test(discountedPrice)||!Number.isFinite(discount))){setError("Enter a valid discounted price or leave it blank.");return;}
+  const pricingError=validateProductPricing(amount,discount,false);
+  if(pricingError){setError(pricingError);return;}
   const uploadedImages:string[]=[];
   try{
    const token=await sellerAccessToken();
