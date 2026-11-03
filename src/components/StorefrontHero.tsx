@@ -144,7 +144,7 @@ export function StorefrontHero() {
 
   return (
     <section
-      className="w-full px-0 pt-3 sm:px-4 sm:pt-5 lg:px-6"
+      className="mx-auto mb-8 w-full max-w-[1232px] px-3 pt-4 md:px-3 lg:px-4"
       aria-roledescription="carousel"
       aria-label="EduWallet featured resources"
       tabIndex={0}
@@ -238,7 +238,7 @@ export function StorefrontHero() {
                 >
                   <span
                     className={cn(
-                      "block h-2 rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.35)] transition-[width,background-color] duration-300 motion-reduce:transition-none",
+                      "block h-2 rounded-full transition-[width,background-color] duration-300 motion-reduce:transition-none",
                       index === active ? "w-6 bg-[#0F5132]" : "w-2 bg-white/70"
                     )}
                   />
