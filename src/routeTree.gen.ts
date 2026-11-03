@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as BecomeSellerRouteImport } from './routes/become-seller'
+import { Route as CartRouteImport } from './routes/cart'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
@@ -79,6 +80,11 @@ const AdminRoute = AdminRouteImport.update({
 const BecomeSellerRoute = BecomeSellerRouteImport.update({
   id: '/become-seller',
   path: '/become-seller',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CartRoute = CartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContactRoute = ContactRouteImport.update({
@@ -322,6 +328,7 @@ export interface FileRoutesByFullPath {
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
   '/become-seller': typeof BecomeSellerRoute
+  '/cart': typeof CartRoute
   '/contact': typeof ContactRoute
   '/cookies': typeof CookiesRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -374,6 +381,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/become-seller': typeof BecomeSellerRoute
+  '/cart': typeof CartRoute
   '/contact': typeof ContactRoute
   '/cookies': typeof CookiesRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -428,6 +436,7 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/admin': typeof AdminRouteWithChildren
   '/become-seller': typeof BecomeSellerRoute
+  '/cart': typeof CartRoute
   '/contact': typeof ContactRoute
   '/cookies': typeof CookiesRoute
   '/forgot-password': typeof ForgotPasswordRoute
@@ -483,6 +492,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/become-seller'
+    | '/cart'
     | '/contact'
     | '/cookies'
     | '/forgot-password'
@@ -535,6 +545,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/become-seller'
+    | '/cart'
     | '/contact'
     | '/cookies'
     | '/forgot-password'
@@ -588,6 +599,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/admin'
     | '/become-seller'
+    | '/cart'
     | '/contact'
     | '/cookies'
     | '/forgot-password'
@@ -642,6 +654,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   AdminRoute: typeof AdminRouteWithChildren
   BecomeSellerRoute: typeof BecomeSellerRoute
+  CartRoute: typeof CartRoute
   ContactRoute: typeof ContactRoute
   CookiesRoute: typeof CookiesRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
@@ -697,6 +710,13 @@ declare module '@tanstack/react-router' {
       path: '/become-seller'
       fullPath: '/become-seller'
       preLoaderRoute: typeof BecomeSellerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cart': {
+      id: '/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof CartRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/contact': {
@@ -1098,6 +1118,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   AdminRoute: AdminRouteWithChildren,
   BecomeSellerRoute: BecomeSellerRoute,
+  CartRoute: CartRoute,
   ContactRoute: ContactRoute,
   CookiesRoute: CookiesRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
