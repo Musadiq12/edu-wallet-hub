@@ -238,7 +238,7 @@ export function StorefrontHero() {
                 >
                   <span
                     className={cn(
-                      "block h-2 rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.35)] transition-[width,background-color] duration-300",
+                      "block h-2 rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.35)] transition-[width,background-color] duration-300 motion-reduce:transition-none",
                       index === active ? "w-6 bg-[#0F5132]" : "w-2 bg-white/70"
                     )}
                   />
