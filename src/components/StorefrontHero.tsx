@@ -112,7 +112,6 @@ export function StorefrontHero() {
   const goTo = (index: number) => setActive((index + heroSlides.length) % heroSlides.length);
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse") return;
-    event.currentTarget.setPointerCapture(event.pointerId);
     touchStart.current = { x: event.clientX, y: event.clientY };
   };
   const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
@@ -198,10 +197,18 @@ export function StorefrontHero() {
             <Link
               to={slide.to}
               aria-label={slide.cta}
-              className="group absolute bottom-[6%] left-[4.7%] z-20 flex h-[12.6%] w-[22.9%] items-center justify-center gap-1 overflow-hidden rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-1 text-center text-[clamp(0.55rem,1.1vw,1.35rem)] font-semibold leading-none text-white shadow-lg shadow-violet-950/20 transition duration-200 hover:brightness-110 hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-violet-700 active:scale-[0.98]"
+              className="group absolute bottom-[6%] left-[4.7%] z-20 hidden h-[12.6%] w-[22.9%] items-center justify-center gap-1 overflow-hidden rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-2 text-center text-[clamp(0.55rem,1.1vw,1.35rem)] font-semibold leading-none text-white shadow-lg shadow-violet-950/20 transition duration-200 hover:brightness-110 hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-violet-700 active:scale-[0.98] sm:flex"
             >
               <span className="truncate">{slide.cta}</span><ArrowRight className="h-[1em] w-[1em] shrink-0 transition-transform group-hover:translate-x-1" aria-hidden="true" />
             </Link>
+            <div className="bg-background px-4 py-3 sm:hidden">
+              <Link
+                to={slide.to}
+                className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:brightness-110 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                {slide.cta}<ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </div>
           </div>
         )}
         {heroSlides.length > 1 && (
