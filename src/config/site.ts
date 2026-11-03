@@ -16,5 +16,5 @@ export const siteConfig = {
     "EduWallet is an independent educational resource platform. It is not affiliated with or endorsed by any examination authority, university, board or institution.",
   assignmentDisclaimer:
     "We provide original educational reference and guidance material. Students are responsible for understanding and submitting their own academic work in accordance with their institution's rules.",
-  analyticsMeasurementId: "",
+  analyticsMeasurementId: "G-98TTS5EC52",
 } as const;
