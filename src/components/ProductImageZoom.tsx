@@ -27,6 +27,9 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
   const [highFailed, setHighFailed] = useState(false);
   const [scale, setScale] = useState(1);
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
+  const [touchZoom, setTouchZoom] = useState<Point | null>(null);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartRef = useRef<Point | null>(null);
 
   const mainFrameRef = useRef<HTMLDivElement>(null);
   const mainImageRef = useRef<HTMLImageElement>(null);
@@ -141,9 +144,47 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     mainFrameRef.current?.focus();
     setScale(1);
     setPan({ x: 0, y: 0 });
+    setTouchZoom(null);
+    clearLongPress();
     touchPointsRef.current.clear();
     pinchRef.current = null;
     dragRef.current = null;
+  };
+
+  const clearLongPress = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  const handleMainTouchStart = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse" || !canZoom) return;
+    clearLongPress();
+    const bounds = mainFrameRef.current?.getBoundingClientRect();
+    if (!bounds) return;
+    const point = { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+    touchStartRef.current = { x: event.clientX, y: event.clientY };
+    longPressTimerRef.current = setTimeout(() => {
+      setTouchZoom(point);
+      longPressTimerRef.current = null;
+    }, 450);
+  };
+
+  const handleMainTouchMove = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === "mouse") return;
+    const bounds = mainFrameRef.current?.getBoundingClientRect();
+    if (!bounds) return;
+    if (longPressTimerRef.current) {
+      const start = touchStartRef.current;
+      if (start && Math.hypot(event.clientX - start.x, event.clientY - start.y) > 12) clearLongPress();
+    }
+    if (touchZoom) setTouchZoom({ x: event.clientX - bounds.left, y: event.clientY - bounds.top });
+  };
+
+  const handleMainTouchEnd = () => {
+    clearLongPress();
+    setTouchZoom(null);
   };
 
   const handleMainKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -226,6 +267,8 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
       dragRef.current = null;
     }
   };
+
+  useEffect(() => () => clearLongPress(), []);
 
   useEffect(() => {
     setSelected(0);
@@ -314,12 +357,14 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
           hideLens();
           boundsRef.current = null;
         }}
-        onPointerDown={(event) => {
-          if (event.pointerType !== "mouse") {
-            event.preventDefault();
-            openZoom();
-          }
+        onPointerDown={handleMainTouchStart}
+        onPointerMove={(event) => {
+          updateMainPointer(event);
+          handleMainTouchMove(event);
         }}
+        onPointerUp={handleMainTouchEnd}
+        onPointerCancel={handleMainTouchEnd}
+        onContextMenu={(event) => event.preventDefault()}
         onKeyDown={handleMainKeyDown}
         onClick={(event) => {
           if (event.detail === 0) openZoom();
@@ -334,7 +379,11 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
           loading="eager"
           decoding="async"
           draggable={false}
-          className="absolute inset-0 h-full w-full select-none object-contain"
+          className="absolute inset-0 h-full w-full select-none object-contain transition-transform duration-100"
+          style={touchZoom ? {
+            transform: "scale(2.2)",
+            transformOrigin: `${touchZoom.x}px ${touchZoom.y}px`,
+          } : undefined}
         />
         <div
           ref={lensRef}
@@ -342,7 +391,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
           className="pointer-events-none absolute left-0 top-0 hidden rounded-full border-2 border-white shadow-[0_2px_12px_rgba(0,0,0,.35)] motion-reduce:transition-none"
         />
         <span className="pointer-events-none absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-full bg-background/90 px-3 py-1.5 text-xs font-medium text-foreground shadow-sm">
-          <ZoomIn className="h-3.5 w-3.5" aria-hidden="true" /> Tap or hover to zoom
+          <ZoomIn className="h-3.5 w-3.5" aria-hidden="true" /> <span className="hidden sm:inline">Hover to zoom</span><span className="sm:hidden">Hold to zoom</span>
         </span>
       </div>
 
