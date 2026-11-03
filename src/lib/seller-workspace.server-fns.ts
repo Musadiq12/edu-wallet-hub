@@ -326,11 +326,6 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
       .select("pdf_file,preview_file,product_images,status,discounted_price")
       .eq("id",data.id).eq("seller_id",context.userId).is("deleted_at",null).maybeSingle();
     if(readError||!existing) throw new Error("This product could not be found.");
-    const {data:pendingRevision,error:revisionReadError}=await context.client.from("products")
-      .select("id,pdf_file,preview_file")
-      .eq("seller_id",context.userId).eq("revision_of",data.id)
-      .eq("status","pending").is("deleted_at",null).maybeSingle();
-    if(revisionReadError) throw new Error("Could not load the pending product update. Refresh and try again.");
     await verifyStoredPdf(context,data.pdfPath,20*1024*1024);
     if(data.previewPath) await verifyStoredPdf(context,data.previewPath,5*1024*1024);
     for (const path of data.productImages) await verifyStoredImage(context,path);
@@ -354,10 +349,8 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
       console.error("Seller product gallery update failed after product save:",imageSaveError);
       throw new Error("Product details were saved, but the image gallery could not be updated. Refresh before retrying.");
     }
-    const oldPdf=pendingRevision?.pdf_file??existing.pdf_file;
-    const oldPreview=pendingRevision?.preview_file??existing.preview_file;
-    if(data.pdfPath!==oldPdf || data.previewPath!==oldPreview) {
-      await removePrivateFiles(context,[data.pdfPath!==oldPdf?oldPdf:null,data.previewPath!==oldPreview?oldPreview:null]);
+    if(data.pdfPath!==existing.pdf_file || data.previewPath!==existing.preview_file) {
+      await removePrivateFiles(context,[data.pdfPath!==existing.pdf_file?existing.pdf_file:null,data.previewPath!==existing.preview_file?existing.preview_file:null]);
     }
     return {ok:true,hasOrders};
   });
