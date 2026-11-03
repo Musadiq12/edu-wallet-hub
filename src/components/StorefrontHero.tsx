@@ -160,7 +160,7 @@ export function StorefrontHero() {
       {firstSlide?.mobileImageUrl && <link rel="preload" as="image" href={firstSlide.mobileImageUrl} fetchPriority="high" media="(max-width: 639px)" />}
       {(slide.imageUrl || slide.mobileImageUrl) && <h1 className="sr-only">Exam study notes, PDFs and solved papers for NEET, JEE, UPSC, SSC CGL, Banking and CLAT</h1>}
       <div
-        className={cn("relative isolate mx-auto w-full max-w-[1920px] overflow-hidden rounded-2xl bg-gradient-to-br shadow-[0_8px_28px_rgba(15,81,50,0.12)]", slide.accent || "from-primary/10 via-background to-background", (slide.imageUrl || slide.mobileImageUrl) && "aspect-[4/5] sm:aspect-[21/9]")}
+        className={cn("relative isolate mx-auto w-full max-w-[1920px] overflow-hidden rounded-2xl bg-gradient-to-br shadow-[0_8px_28px_rgba(15,81,50,0.12)]", slide.accent || "from-primary/10 via-background to-background")}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={() => { touchStart.current = null; setPaused(false); }}
@@ -197,18 +197,18 @@ export function StorefrontHero() {
             </div>
           </div>
         ) : (
-          <div className="group/banner relative z-10 h-full w-full sm:aspect-[21/9]">
+          <div className="group/banner relative z-10 w-full">
             <motion.div key={active} initial={reducedMotion ? false : { opacity: 0.35 }} animate={{ opacity: 1 }} transition={{ duration: reducedMotion ? 0 : 0.5, ease: "easeOut" }} className="h-full w-full">
-            <picture className="block h-full w-full">
-              {slide.mobileImageUrl && <source media="(max-width: 639px)" srcSet={bannerSrcSet(slide.mobileImageUrl, [640, 900, 1080]) ?? slide.mobileImageUrl} />}
+            <picture className="block w-full">
+              {slide.mobileImageUrl && <source media="(max-width: 767px)" srcSet={bannerSrcSet(slide.mobileImageUrl, [640, 768, 1080]) ?? slide.mobileImageUrl} width="1080" height="1350" />}
               <img
                 src={resizedBannerUrl(slide.imageUrl || slide.mobileImageUrl || "", 1920)}
                 srcSet={bannerSrcSet(slide.imageUrl || slide.mobileImageUrl || "", [960, 1280, 1600, 1920])}
                 sizes="100vw"
                 alt={slide.alt || `EduWallet study resources banner, slide ${active + 1}`}
                 width="1920"
-                height="800"
-                className="block h-full w-full max-w-full select-none object-cover transition-[filter] duration-200 group-hover/banner:brightness-[1.04] motion-reduce:transition-none"
+                height="640"
+                className="block h-auto w-full max-w-full select-none object-contain transition-[filter] duration-200 group-hover/banner:brightness-[1.04] motion-reduce:transition-none"
                 fetchPriority={active === 0 ? "high" : "auto"}
                 loading={active === 0 ? "eager" : "lazy"}
                 decoding="async"
