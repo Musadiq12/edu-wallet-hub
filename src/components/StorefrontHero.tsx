@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSiteSettings } from "@/lib/settings";
@@ -175,6 +176,7 @@ export function StorefrontHero() {
           </div>
         ) : (
           <div className="relative z-10 w-full">
+            <motion.div key={active} initial={{ opacity: 0.35 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, ease: "easeOut" }}>
             <picture>
               {slide.mobileImageUrl && <source media="(max-width: 639px)" srcSet={bannerSrcSet(slide.mobileImageUrl, [640, 900, 1080]) ?? slide.mobileImageUrl} />}
               <img
@@ -191,6 +193,7 @@ export function StorefrontHero() {
                 draggable={false}
               />
             </picture>
+            </motion.div>
             <Link
               to={slide.to}
               aria-label={slide.cta}
