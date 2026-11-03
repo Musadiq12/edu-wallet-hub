@@ -98,6 +98,7 @@ export function StorefrontHero() {
   const [reducedMotion, setReducedMotion] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const slide = heroSlides[active] ?? heroSlides[0];
+  const firstSlide = heroSlides[0];
   const interval = DEFAULT_INTERVAL;
 
   useEffect(() => {
@@ -155,13 +156,14 @@ export function StorefrontHero() {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
       }}
     >
+      {firstSlide?.imageUrl && <link rel="preload" as="image" href={resizedBannerUrl(firstSlide.imageUrl, 1920)} fetchPriority="high" media="(min-width: 640px)" />}
+      {firstSlide?.mobileImageUrl && <link rel="preload" as="image" href={firstSlide.mobileImageUrl} fetchPriority="high" media="(max-width: 639px)" />}
       {(slide.imageUrl || slide.mobileImageUrl) && <h1 className="sr-only">Exam study notes, PDFs and solved papers for NEET, JEE, UPSC, SSC CGL, Banking and CLAT</h1>}
       <div
-        className={cn("relative isolate mx-auto w-full max-w-[1920px] overflow-hidden rounded-2xl bg-gradient-to-br shadow-[0_8px_28px_rgba(15,81,50,0.12)]", slide.accent || "from-primary/10 via-background to-background")}
-        style={slide.imageUrl || slide.mobileImageUrl ? { aspectRatio: "4 / 5" } : undefined}
+        className={cn("relative isolate mx-auto w-full max-w-[1920px] overflow-hidden rounded-2xl bg-gradient-to-br shadow-[0_8px_28px_rgba(15,81,50,0.12)]", slide.accent || "from-primary/10 via-background to-background", (slide.imageUrl || slide.mobileImageUrl) && "aspect-[4/5] sm:aspect-[21/9]")}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
-        onPointerCancel={() => { touchStart.current = null; }}
+        onPointerCancel={() => { touchStart.current = null; setPaused(false); }}
       >
         {!(slide.imageUrl || slide.mobileImageUrl) ? (
           <div className="relative z-10 grid min-h-[340px] items-center gap-8 px-6 py-12 sm:px-10 lg:min-h-[390px] lg:grid-cols-[1.1fr_.9fr] lg:px-14">
@@ -197,7 +199,7 @@ export function StorefrontHero() {
         ) : (
           <div className="group/banner relative z-10 h-full w-full sm:aspect-[21/9]">
             <motion.div key={active} initial={reducedMotion ? false : { opacity: 0.35 }} animate={{ opacity: 1 }} transition={{ duration: reducedMotion ? 0 : 0.5, ease: "easeOut" }} className="h-full w-full">
-            <picture>
+            <picture className="block h-full w-full">
               {slide.mobileImageUrl && <source media="(max-width: 639px)" srcSet={bannerSrcSet(slide.mobileImageUrl, [640, 900, 1080]) ?? slide.mobileImageUrl} />}
               <img
                 src={resizedBannerUrl(slide.imageUrl || slide.mobileImageUrl || "", 1920)}
