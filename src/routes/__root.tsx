@@ -16,6 +16,7 @@ import { defaultSettings, settingsQuery, useSiteSettings } from "@/lib/settings"
 import { supabase } from "@/integrations/supabase/client";
 import { CookieConsent } from "@/components/CookieConsent";
 import { AnnouncementMarquee } from "@/components/AnnouncementMarquee";
+import { CartProvider } from "@/lib/cart";
 
 const RECOVERY_FLAG = "edu-wallet-password-recovery";
 
@@ -141,6 +142,7 @@ function RootComponent() {
   if (initialSettings && !queryClient.getQueryData(key)) queryClient.setQueryData(key, initialSettings, { updatedAt: Date.now() });
 
   return <QueryClientProvider client={queryClient}>
+    <CartProvider>
     <RecoveryRedirectHandler />
     <Analytics />
     <div className={isAdminRoute ? "min-h-screen" : isAuthPage ? "min-h-screen" : "flex min-h-screen flex-col"}>
@@ -151,5 +153,6 @@ function RootComponent() {
     </div>
     <Toaster position="top-center" />
     {!isAdminRoute && <CookieConsent />}
+    </CartProvider>
   </QueryClientProvider>;
 }
