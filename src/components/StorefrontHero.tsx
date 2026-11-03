@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
-import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,7 @@ const slides: HeroSlide[] = [
   },
 ];
 
-const DEFAULT_INTERVAL = 4500;
+const DEFAULT_INTERVAL = 5000;
 
 function parseSlides(value: string): HeroSlide[] {
   if (!value.trim()) return slides;
@@ -95,23 +95,34 @@ export function StorefrontHero() {
   const heroSlides = useMemo(() => parseSlides(settings.heroSlides), [settings.heroSlides]);
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const slide = heroSlides[active] ?? heroSlides[0];
-  const interval = Math.min(30000, Math.max(2500, Number(settings.heroIntervalMs) || DEFAULT_INTERVAL));
+  const firstSlide = heroSlides[0];
+  const interval = DEFAULT_INTERVAL;
 
   useEffect(() => {
     setActive((current) => Math.min(current, heroSlides.length - 1));
   }, [heroSlides.length]);
 
   useEffect(() => {
-    if (heroSlides.length < 2 || paused) return;
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(media.matches);
+    update();
+    media.addEventListener("change", update);
+    return () => media.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (heroSlides.length < 2 || paused || reducedMotion) return;
     const timer = window.setInterval(() => setActive((current) => (current + 1) % heroSlides.length), interval);
     return () => window.clearInterval(timer);
-  }, [heroSlides.length, interval, paused]);
+  }, [heroSlides.length, interval, paused, reducedMotion]);
 
   const goTo = (index: number) => setActive((index + heroSlides.length) % heroSlides.length);
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse") return;
+    setPaused(true);
     touchStart.current = { x: event.clientX, y: event.clientY };
   };
   const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
@@ -120,6 +131,13 @@ export function StorefrontHero() {
     const dy = event.clientY - touchStart.current.y;
     touchStart.current = null;
     if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy)) goTo(active + (dx < 0 ? 1 : -1));
+    setPaused(false);
+  };
+  const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      event.preventDefault();
+      goTo(active + (event.key === "ArrowRight" ? 1 : -1));
+    }
   };
 
   if (!slide) return null;
@@ -129,6 +147,8 @@ export function StorefrontHero() {
       className="w-full px-0 pt-3 sm:px-4 sm:pt-5 lg:px-6"
       aria-roledescription="carousel"
       aria-label="EduWallet featured resources"
+      tabIndex={0}
+      onKeyDown={handleKeyDown}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
@@ -136,12 +156,14 @@ export function StorefrontHero() {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
       }}
     >
+      {firstSlide?.imageUrl && <link rel="preload" as="image" href={resizedBannerUrl(firstSlide.imageUrl, 1920)} fetchPriority="high" media="(min-width: 640px)" />}
+      {firstSlide?.mobileImageUrl && <link rel="preload" as="image" href={firstSlide.mobileImageUrl} fetchPriority="high" media="(max-width: 639px)" />}
       {(slide.imageUrl || slide.mobileImageUrl) && <h1 className="sr-only">Exam study notes, PDFs and solved papers for NEET, JEE, UPSC, SSC CGL, Banking and CLAT</h1>}
       <div
-        className={cn("relative isolate mx-auto w-full max-w-[1920px] overflow-hidden border-y border-border/70 bg-gradient-to-br shadow-sm sm:rounded-2xl sm:border", slide.accent || "from-primary/10 via-background to-background")}
+        className={cn("relative isolate mx-auto w-full max-w-[1920px] overflow-hidden rounded-2xl bg-gradient-to-br shadow-[0_8px_28px_rgba(15,81,50,0.12)]", slide.accent || "from-primary/10 via-background to-background", (slide.imageUrl || slide.mobileImageUrl) && "aspect-[4/5] sm:aspect-[21/9]")}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
-        onPointerCancel={() => { touchStart.current = null; }}
+        onPointerCancel={() => { touchStart.current = null; setPaused(false); }}
       >
         {!(slide.imageUrl || slide.mobileImageUrl) ? (
           <div className="relative z-10 grid min-h-[340px] items-center gap-8 px-6 py-12 sm:px-10 lg:min-h-[390px] lg:grid-cols-[1.1fr_.9fr] lg:px-14">
@@ -175,9 +197,9 @@ export function StorefrontHero() {
             </div>
           </div>
         ) : (
-          <div className="relative z-10 w-full">
-            <motion.div key={active} initial={{ opacity: 0.35 }} animate={{ opacity: 1 }} transition={{ duration: 0.4, ease: "easeOut" }}>
-            <picture>
+          <div className="group/banner relative z-10 h-full w-full sm:aspect-[21/9]">
+            <motion.div key={active} initial={reducedMotion ? false : { opacity: 0.35 }} animate={{ opacity: 1 }} transition={{ duration: reducedMotion ? 0 : 0.5, ease: "easeOut" }} className="h-full w-full">
+            <picture className="block h-full w-full">
               {slide.mobileImageUrl && <source media="(max-width: 639px)" srcSet={bannerSrcSet(slide.mobileImageUrl, [640, 900, 1080]) ?? slide.mobileImageUrl} />}
               <img
                 src={resizedBannerUrl(slide.imageUrl || slide.mobileImageUrl || "", 1920)}
@@ -186,7 +208,7 @@ export function StorefrontHero() {
                 alt={slide.alt || `EduWallet study resources banner, slide ${active + 1}`}
                 width="1920"
                 height="800"
-                className="block h-auto w-full max-w-full select-none object-contain"
+                className="block h-full w-full max-w-full select-none object-cover transition-[filter] duration-200 group-hover/banner:brightness-[1.04] motion-reduce:transition-none"
                 fetchPriority={active === 0 ? "high" : "auto"}
                 loading={active === 0 ? "eager" : "lazy"}
                 decoding="async"
@@ -198,28 +220,32 @@ export function StorefrontHero() {
               to={slide.to}
               aria-label={slide.cta}
               title={slide.cta}
-              className="absolute bottom-[6%] left-[4.7%] z-20 block h-[12.6%] w-[22.9%] rounded-full bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 max-sm:bottom-[8%] max-sm:left-[6%] max-sm:h-[10%] max-sm:w-[58%]"
+              className="absolute bottom-[6%] left-[4.7%] z-20 block h-[12.6%] w-[22.9%] rounded-full bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-emerald-700 focus-visible:ring-offset-2 max-sm:bottom-[8%] max-sm:left-[6%] max-sm:h-[10%] max-sm:w-[58%]"
             />
           </div>
         )}
         {heroSlides.length > 1 && (
-          <>
-            <button type="button" onClick={() => goTo(active - 1)} aria-label="Previous banner" className="absolute left-3 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-black/35 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:left-5 sm:h-12 sm:w-12">
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <button type="button" onClick={() => goTo(active + 1)} aria-label="Next banner" className="absolute right-3 top-1/2 z-30 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 bg-black/35 text-white shadow-lg backdrop-blur-sm transition hover:bg-black/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white sm:right-5 sm:h-12 sm:w-12">
-              <ArrowRight className="h-5 w-5" />
-            </button>
-            <div className="relative z-10 flex items-center justify-between border-t border-border/60 bg-card/90 px-4 py-2.5 sm:px-8">
-              <span className="text-xs font-medium tabular-nums text-muted-foreground">{String(active + 1).padStart(2, "0")} <span className="mx-1 text-border">/</span> {String(heroSlides.length).padStart(2, "0")}</span>
-              <div className="flex items-center gap-2" role="group" aria-label="Choose featured banner">
-                {heroSlides.map((item, index) => (
-                  <button key={item.title} type="button" aria-current={index === active ? "true" : undefined} aria-label={`Show banner ${index + 1}: ${item.title}`} onClick={() => goTo(index)} className={cn("h-2.5 rounded-full transition-all duration-300", index === active ? "w-8 bg-primary" : "w-2.5 bg-muted-foreground/35 hover:bg-muted-foreground/65")} />
-                ))}
-              </div>
-              <button type="button" onClick={() => setPaused((value) => !value)} aria-pressed={paused} className="min-h-8 rounded-md px-2 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{paused ? "Play slides" : "Pause slides"}</button>
+          <div className="absolute inset-x-0 bottom-2 z-30 flex justify-center sm:bottom-3" role="group" aria-label="Carousel pagination">
+            <div className="flex items-center gap-1 rounded-full bg-black/10 px-1 py-0.5 backdrop-blur-[2px]">
+              {heroSlides.map((item, index) => (
+                <button
+                  key={item.title}
+                  type="button"
+                  aria-label={`Go to slide ${index + 1}`}
+                  aria-current={index === active ? "true" : undefined}
+                  onClick={() => goTo(index)}
+                  className="flex h-6 min-w-6 items-center justify-center rounded-full outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-800"
+                >
+                  <span
+                    className={cn(
+                      "block h-2 rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.35)] transition-[width,background-color] duration-300 motion-reduce:transition-none",
+                      index === active ? "w-6 bg-[#0F5132]" : "w-2 bg-white/70"
+                    )}
+                  />
+                </button>
+              ))}
             </div>
-          </>
+          </div>
         )}
       </div>
     </section>
