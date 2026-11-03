@@ -91,42 +91,41 @@ function Shop() {
   return (
     <div className="section-y">
       <div className="page-container">
-        <h1 className="text-3xl font-bold sm:text-4xl">Buy Exam Notes, Solved Papers and Study Material</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-          Buy exam notes, solved papers, guess papers, revision guides and other study resources for NEET, JEE, UPSC, SSC CGL, Banking and CLAT. Review each listing for its actual contents, format, price and delivery details before ordering.
-        </p>
-        <section className="mt-4 max-w-3xl space-y-2 text-sm leading-6 text-muted-foreground" aria-labelledby="shop-guide">
-          <h2 id="shop-guide" className="text-base font-semibold text-foreground">Find the right preparation resource</h2>
-          <p>Search by exam, subject, course, or resource name to narrow the catalogue. Review the description, format, included content, and delivery details on a product page before placing an order.</p>
-          <p>Use study materials as a supplement to the current official syllabus and exam instructions. Product availability and formats can vary by listing.</p>
-        </section>
+        <div className="mb-6 flex flex-col gap-2 border-b border-border pb-5 sm:mb-7 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">EduWallet marketplace</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">Explore Study Materials</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Find notes, solved papers, books and exam resources.</p>
+          </div>
+          <p className="text-xs font-medium text-muted-foreground">NEET · JEE · UPSC · SSC · Banking · CLAT</p>
+        </div>
 
-        <div className="mt-6">
+        <div className="mt-0">
           <label htmlFor="shop-search" className="sr-only">Search resources</label>
           <Input
             id="shop-search"
             value={term}
             onChange={(e) => setTerm(e.target.value)}
             placeholder="Search notes, subjects, courses..."
-            className="h-12 max-w-xl"
+            className="h-12 w-full max-w-2xl rounded-xl bg-card shadow-sm"
           />
         </div>
 
-        <div className="mt-5 flex flex-wrap gap-2" role="group" aria-label="Filter resources by category">
+        <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Filter resources by category">
           {tabs.map((t) => (
             <button
               key={t.slug}
               type="button"
               onClick={() => setCategory(t.slug)}
               aria-pressed={activeCategory === t.slug}
-              className={`rounded-full border px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${activeCategory === t.slug ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
+              className={`rounded-full border px-3.5 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${activeCategory === t.slug ? "border-primary bg-primary text-primary-foreground shadow-sm" : "border-border/80 bg-background text-muted-foreground hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"}`}
             >
               {t.name}
             </button>
           ))}
         </div>
 
-        <div className="mt-8">
+        <div className="mt-6">
           {filtered.length > 0 ? (
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
               {filtered.map((p) => <ProductCard key={p.id} product={p} />)}
