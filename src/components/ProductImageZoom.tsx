@@ -268,6 +268,8 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
     }
   };
 
+  useEffect(() => () => clearLongPress(), []);
+
   useEffect(() => {
     setSelected(0);
     setZoomOpen(false);
@@ -362,7 +364,7 @@ export function ProductImageZoom({ path, title, images = [] }: Props) {
         }}
         onPointerUp={handleMainTouchEnd}
         onPointerCancel={handleMainTouchEnd}
-        onContextMenu={(event) => { if (event.pointerType !== "mouse") event.preventDefault(); }}
+        onContextMenu={(event) => event.preventDefault()}
         onKeyDown={handleMainKeyDown}
         onClick={(event) => {
           if (event.detail === 0) openZoom();
