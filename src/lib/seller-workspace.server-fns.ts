@@ -302,19 +302,21 @@ export const sellerDeleteProduct = createServerFn({method:"POST"})
   });
 
 export const sellerSaveProductEdit = createServerFn({method:"POST"})
-  .validator((input:{accessToken:string;id:string;title:string;description:string;whatsIncluded:string;categoryId:string|null;pageCount:number;coverSourceUrl:string|null;rightsConfirmed:true;exam:string;subject:string;price:number;pdfPath:string;previewPath?:string|null;productImages?:string[]})=>{
+  .validator((input:{accessToken:string;id:string;title:string;description:string;whatsIncluded:string;categoryId:string|null;pageCount:number;coverSourceUrl:string|null;rightsConfirmed:true;exam:string;subject:string;price:number;discountedPrice?:number|null;pdfPath:string;previewPath?:string|null;productImages?:string[]})=>{
     const parsed=productInputSchema.parse(input);
     const cover=validateCoverSourceUrl(parsed.coverSourceUrl);
+    if(parsed.discountedPrice!==null && parsed.discountedPrice>=parsed.price) throw new Error("Discounted price must be lower than the original price.");
     return {...parsed,cover,accessToken:z.string().min(1).parse(input.accessToken),id:productIdSchema.parse(input.id)};
   })
   .handler(async({data})=>{
     const context=await requireSeller(data.accessToken);
-    const {data:existing,error:readError}=await context.client.from("products").select("pdf_file,preview_file,product_images,status")
+    const {data:existing,error:readError}=await context.client.from("products")
+      .select("pdf_file,preview_file,product_images,status,discounted_price")
       .eq("id",data.id).eq("seller_id",context.userId).is("deleted_at",null).maybeSingle();
     if(readError||!existing) throw new Error("This product could not be found.");
     await verifyStoredPdf(context,data.pdfPath,20*1024*1024);
     if(data.previewPath) await verifyStoredPdf(context,data.previewPath,5*1024*1024);
-    for (const path of data.productImages) await verifyStoredImage(context, path);
+    for (const path of data.productImages) await verifyStoredImage(context,path);
     const {data:hasOrders,error}=await context.client.rpc("seller_update_product",{
       p_product_id:data.id,p_title:data.title,
       p_slug:data.title.toLowerCase().trim().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,100)+"-"+crypto.randomUUID().slice(0,8),
@@ -322,20 +324,22 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
       p_pdf_path:data.pdfPath,p_preview_path:data.previewPath??null,
       p_whats_included:data.whatsIncluded,p_category_id:data.categoryId,p_page_count:data.pageCount,
       p_seller_cover_source_url:data.cover?.source??null,p_rights_confirmed:data.rightsConfirmed,
+      p_discounted_price:data.discountedPrice,
     });
     if(error){
       await removePrivateFiles(context,[data.pdfPath!==existing.pdf_file?data.pdfPath:null,data.previewPath!==existing.preview_file?data.previewPath:null]);
-      const newlyUploaded = data.productImages.filter((path) => !(existing.product_images ?? []).includes(path));
-      if (newlyUploaded.length) await context.client.storage.from("product-covers").remove(newlyUploaded);
+      const newlyUploaded=data.productImages.filter(path=>!(existing.product_images??[]).includes(path));
+      if(newlyUploaded.length) await context.client.storage.from("product-covers").remove(newlyUploaded);
       throw new Error(safeMessage(error,"Could not update this product."));
     }
     const {error:imageSaveError}=await context.client.rpc("seller_set_product_images",{p_product_id:data.id,p_product_images:data.productImages});
-    if (imageSaveError) {
-      const newlyUploaded = data.productImages.filter((path) => !(existing.product_images ?? []).includes(path));
-      if (newlyUploaded.length) await context.client.storage.from("product-covers").remove(newlyUploaded);
-      throw new Error("Product details were saved, but the image gallery could not be updated. Please retry.");
+    if(imageSaveError){
+      console.error("Seller product gallery update failed after product save:",imageSaveError);
+      throw new Error("Product details were saved, but the image gallery could not be updated. Refresh before retrying.");
     }
-    if(!hasOrders&&existing.status!=="approved"&&existing.status!=="published") await removePrivateFiles(context,[data.pdfPath!==existing.pdf_file?existing.pdf_file:null,data.previewPath!==existing.preview_file?existing.preview_file:null]);
+    if(!hasOrders&&existing.status!=="approved"&&existing.status!=="published") {
+      await removePrivateFiles(context,[data.pdfPath!==existing.pdf_file?existing.pdf_file:null,data.previewPath!==existing.preview_file?existing.preview_file:null]);
+    }
     return {ok:true,hasOrders};
   });
 
