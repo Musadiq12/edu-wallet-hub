@@ -88,7 +88,7 @@ function ProductEditForm({product}:{product:Product}){
    await sellerSaveProductEdit({data:{accessToken:token,id:product.id,title:title.trim(),description:description.trim(),whatsIncluded:included.trim(),categoryId:categoryId||null,pageCount:Number(pageCount),coverSourceUrl:coverUrl.trim()||null,rightsConfirmed,exam,subject:subject.trim(),price:amount,discountedPrice:discount,pdfPath:nextPdf,previewPath:nextPreview,productImages:[...product.product_images,...uploadedImages]}});
    newMain=null;newPreview=null;uploadedImages.length=0;
    await qc.invalidateQueries({queryKey:["seller","products"]});await qc.invalidateQueries({queryKey:["seller","product",product.id]});
-   toast.success(approved?"Changes submitted for this product. Its listing is paused until admin approval.":"Product changes resubmitted for review.");void navigate({to:"/seller/products",replace:true});
+   toast.success(approved?"Product changes submitted for review. Your product will return to the store after approval.":"Product changes resubmitted for review.");void navigate({to:"/seller/products",replace:true});
   }catch(err){
    const paths=[newMain,newPreview].filter((v):v is string=>!!v);if(paths.length)await supabase.storage.from("product-files").remove(paths).catch(()=>undefined);
    if(uploadedImages.length)await supabase.storage.from("product-covers").remove(uploadedImages).catch(()=>undefined);
@@ -97,7 +97,7 @@ function ProductEditForm({product}:{product:Product}){
  };
  const onSubmit=(event:React.FormEvent)=>{event.preventDefault();if(approved)setConfirm(true);else void save()};
  return <>
-  {approved&&<div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-800 dark:text-amber-200">Your changes will be saved to this product and its listing will be paused until an administrator approves them.</div>}
+  {approved&&<div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-800 dark:text-amber-200">Editing a live product sends the updated listing for review. The same product record is updated; no duplicate product is created. The listing is temporarily hidden until approval.</div>}
   <Card className="border-0 shadow-none sm:border sm:shadow-sm"><CardContent className="p-0 sm:p-6"><form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
    <section className="space-y-4 rounded-xl border border-border p-4"><div><h3 className="text-sm font-semibold">Product information</h3><p className="mt-1 text-xs text-muted-foreground">The details customers see in the store.</p></div><div className="space-y-2"><Label htmlFor="edit-title">Product title</Label><Input id="edit-title" value={title} maxLength={120} onChange={e=>setTitle(e.target.value)} required/></div>
    <div className="space-y-2"><Label htmlFor="edit-description">Description</Label><Textarea id="edit-description" rows={3} value={description} maxLength={2000} onChange={e=>setDescription(e.target.value)} required/></div>

@@ -323,12 +323,27 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
   .handler(async({data})=>{
     const context=await requireSeller(data.accessToken);
     const {data:existing,error:readError}=await context.client.from("products")
-      .select("pdf_file,preview_file,product_images,status,discounted_price")
+      .select("pdf_file,preview_file,product_images,status,discounted_price,revision_of")
       .eq("id",data.id).eq("seller_id",context.userId).is("deleted_at",null).maybeSingle();
     if(readError||!existing) throw new Error("This product could not be found.");
+
+    // Legacy published listings may still have a child pending revision from
+    // the previous edit workflow. Canonical same-row edits must not create more
+    // child products; migrate the latest pending child into the canonical row
+    // atomically before applying the seller's new changes.
+    const {data:legacyRevision,error:legacyRevisionError}=await context.client
+      .from("products").select("id,pdf_file,preview_file,product_images")
+      .eq("seller_id",context.userId).eq("revision_of",data.id)
+      .eq("status","pending").is("deleted_at",null)
+      .order("created_at",{ascending:false}).limit(1).maybeSingle();
+    if(legacyRevisionError) throw new Error("Could not load the existing product update. Refresh and try again.");
+
     await verifyStoredPdf(context,data.pdfPath,20*1024*1024);
     if(data.previewPath) await verifyStoredPdf(context,data.previewPath,5*1024*1024);
     for (const path of data.productImages) await verifyStoredImage(context,path);
+
+    // Always update the canonical product row. Legacy child revisions are
+    // retired only after the canonical update and gallery update both succeed.
     const {data:hasOrders,error}=await context.client.rpc("seller_update_product",{
       p_product_id:data.id,p_title:data.title,
       p_slug:data.title.toLowerCase().trim().normalize("NFKD").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,100)+"-"+crypto.randomUUID().slice(0,8),
@@ -344,13 +359,27 @@ export const sellerSaveProductEdit = createServerFn({method:"POST"})
       if(newlyUploaded.length) await context.client.storage.from("product-covers").remove(newlyUploaded);
       throw new Error(safeMessage(error,"Could not update this product."));
     }
+
     const {error:imageSaveError}=await context.client.rpc("seller_set_product_images",{p_product_id:data.id,p_product_images:data.productImages});
     if(imageSaveError){
       console.error("Seller product gallery update failed after product save:",imageSaveError);
       throw new Error("Product details were saved, but the image gallery could not be updated. Refresh before retrying.");
     }
-    if(data.pdfPath!==existing.pdf_file || data.previewPath!==existing.preview_file) {
-      await removePrivateFiles(context,[data.pdfPath!==existing.pdf_file?existing.pdf_file:null,data.previewPath!==existing.preview_file?existing.preview_file:null]);
+
+    if(legacyRevision){
+      const {error:retireError}=await context.client.rpc("seller_retire_legacy_product_revision",{
+        p_product_id:legacyRevision.id,
+      });
+      if(retireError){
+        console.error("Could not retire legacy seller product revision:",retireError);
+        throw new Error("Product changes were saved, but an older pending review copy remains. Contact support before submitting another edit.");
+      }
+    }
+
+    const oldPdf=legacyRevision?.pdf_file??existing.pdf_file;
+    const oldPreview=legacyRevision?.preview_file??existing.preview_file;
+    if(data.pdfPath!==oldPdf || data.previewPath!==oldPreview) {
+      await removePrivateFiles(context,[data.pdfPath!==oldPdf?oldPdf:null,data.previewPath!==oldPreview?oldPreview:null]);
     }
     return {ok:true,hasOrders};
   });
