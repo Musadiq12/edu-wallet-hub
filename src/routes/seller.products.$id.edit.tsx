@@ -66,12 +66,12 @@ function ProductEditForm({product}:{product:Product}){
   if(!exams.includes(exam as typeof exams[number])){setError("Choose an exam.");return;}
   if(subject.trim().length<2||subject.trim().length>60){setError("Subject must be 2–60 characters.");return;}
   if(!/^(?:\d{1,4})(?:\.\d{1,2})?$/.test(price)||!Number.isFinite(amount)||amount<10||amount>5000){setError("Enter a price between ₹10 and ₹5,000.");return;}
-  lock.current=true;setBusy(true);setError("");
-  let newMain:string|null=null,newPreview:string|null=null;
   const discount=discountedPrice.trim()===""?null:Number(discountedPrice);
   if(discount!==null&&(!/^(?:\\d{1,4})(?:\\.\\d{1,2})?$/.test(discountedPrice)||!Number.isFinite(discount))){setError("Enter a valid discounted price or leave it blank.");return;}
   const pricingError=validateProductPricing(amount,discount,false);
   if(pricingError){setError(pricingError);return;}
+  lock.current=true;setBusy(true);setError("");
+  let newMain:string|null=null,newPreview:string|null=null;
   const uploadedImages:string[]=[];
   try{
    const token=await sellerAccessToken();
