@@ -161,6 +161,14 @@ export function StorefrontHero() {
                 decoding="async"
               />
             )}
+            <Link
+              to={slide.to}
+              aria-label={slide.cta}
+              className="group absolute bottom-[6%] left-[4.7%] z-20 flex h-[12.6%] w-[22.9%] items-center justify-center gap-2 overflow-hidden rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-2 text-center text-[clamp(0.55rem,1.1vw,1.35rem)] font-semibold leading-none text-white shadow-lg shadow-violet-950/20 transition duration-200 hover:brightness-110 hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-violet-700 active:scale-[0.98] max-sm:hidden"
+            >
+              <span className="truncate">{slide.cta}</span>
+              <ArrowRight className="h-[1em] w-[1em] shrink-0 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+            </Link>
           </div>
         )}
         {heroSlides.length > 1 && (
