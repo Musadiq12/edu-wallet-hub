@@ -1,14 +1,14 @@
 export const emailEvents = {
-  seller_application_approved: { label: "Application approved", subject: "Your EduWallet seller application is approved", copy: "Your seller application has been approved. You can now access your seller workspace." },
-  seller_application_rejected: { label: "Application rejected", subject: "Update on your EduWallet seller application", copy: "Your seller application could not be approved. Please review the reason below before updating and resubmitting your application." },
-  seller_suspended: { label: "Seller suspended", subject: "Your EduWallet seller account is suspended", copy: "Your seller account has been suspended. Please review the reason below and contact support if you need clarification." },
-  seller_reactivated: { label: "Seller reactivated", subject: "Your EduWallet seller account is active again", copy: "Your seller account has been reactivated. You can access your seller workspace again." },
-  withdrawal_paid: { label: "Withdrawal paid", subject: "Your EduWallet payout has been completed", copy: "Your withdrawal has been marked paid following the manual transfer. The payout details are included below." },
-  withdrawal_rejected: { label: "Withdrawal rejected", subject: "Update on your EduWallet withdrawal request", copy: "Your withdrawal request has been rejected. Please review the reason below and contact support if you need clarification." },
-  seller_product_approved: { label: "Product approved", subject: "Your EduWallet product is approved", copy: "Your product has been approved." },
-  seller_product_rejected: { label: "Product rejected", subject: "Update on your EduWallet product", copy: "Your product could not be approved. Please review the reason below." },
-  sale_verified: { label: "Sale verified", subject: "Your EduWallet sale has been verified", copy: "The payment for your sale has been verified. The sale details are included below." },
-  custom: { label: "Custom operational message", subject: "A message from EduWallet Support", copy: "" },
+  seller_application_approved: { label: "Application approved", subject: "Your EduWallet seller application has been approved", copy: "We have completed the review of your seller application and are pleased to confirm that it has been approved. Your seller workspace is now available." },
+  seller_application_rejected: { label: "Application decision", subject: "An update on your EduWallet seller application", copy: "We have completed the review of your seller application. We are unable to approve it at this time. Please review the decision details below before submitting an updated application." },
+  seller_suspended: { label: "Seller account suspended", subject: "Important: an update to your EduWallet seller account", copy: "Your seller account has been suspended. The reason for this action and any relevant details are provided below. Please contact our support team if you need clarification." },
+  seller_reactivated: { label: "Seller account reactivated", subject: "Your EduWallet seller account is active again", copy: "Your seller account has been reactivated. You may now sign in and continue using your seller workspace." },
+  withdrawal_paid: { label: "Payout confirmation", subject: "Your EduWallet withdrawal has been completed", copy: "We have recorded your withdrawal as paid following the manual transfer to your saved UPI ID. Please review the payout summary below and retain this email for your records." },
+  withdrawal_rejected: { label: "Withdrawal decision", subject: "An update on your EduWallet withdrawal request", copy: "After reviewing your withdrawal request, we are unable to approve it. The reason is provided below. Please contact support if you believe this decision requires further review." },
+  seller_product_approved: { label: "Product approved", subject: "Your EduWallet product has been approved", copy: "Your product has passed our review and is approved for publication on EduWallet. You can review its status in your seller workspace." },
+  seller_product_rejected: { label: "Product review feedback", subject: "Action required: updates to your EduWallet product", copy: "Your product did not pass review in its current form. Please review the feedback below, make the requested changes, and resubmit it for review." },
+  sale_verified: { label: "Sale payment verified", subject: "Payment verified: your EduWallet sale is confirmed", copy: "The customer's payment has been verified and the sale has been recorded in your seller account. The transaction summary is included below." },
+  custom: { label: "Custom operational message", subject: "An important message from EduWallet Support", copy: "" },
 } as const;
 export type EmailEvent = keyof typeof emailEvents;
 export type EmailDetails = Record<string, string | number | null>;
