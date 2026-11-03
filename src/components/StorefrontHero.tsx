@@ -112,7 +112,6 @@ export function StorefrontHero() {
   const goTo = (index: number) => setActive((index + heroSlides.length) % heroSlides.length);
   const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse") return;
-    event.currentTarget.setPointerCapture(event.pointerId);
     touchStart.current = { x: event.clientX, y: event.clientY };
   };
   const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
@@ -198,10 +197,9 @@ export function StorefrontHero() {
             <Link
               to={slide.to}
               aria-label={slide.cta}
-              className="group absolute bottom-[6%] left-[4.7%] z-20 flex h-[12.6%] w-[22.9%] items-center justify-center gap-1 overflow-hidden rounded-full bg-gradient-to-r from-violet-600 to-violet-500 px-1 text-center text-[clamp(0.55rem,1.1vw,1.35rem)] font-semibold leading-none text-white shadow-lg shadow-violet-950/20 transition duration-200 hover:brightness-110 hover:shadow-xl focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white focus-visible:ring-offset-4 focus-visible:ring-offset-violet-700 active:scale-[0.98]"
-            >
-              <span className="truncate">{slide.cta}</span><ArrowRight className="h-[1em] w-[1em] shrink-0 transition-transform group-hover:translate-x-1" aria-hidden="true" />
-            </Link>
+              title={slide.cta}
+              className="absolute bottom-[6%] left-[4.7%] z-20 block h-[12.6%] w-[22.9%] rounded-full bg-transparent outline-none focus-visible:ring-2 focus-visible:ring-emerald-600 focus-visible:ring-offset-2 max-sm:bottom-[8%] max-sm:left-[6%] max-sm:h-[10%] max-sm:w-[58%]"
+            />
           </div>
         )}
         {heroSlides.length > 1 && (
