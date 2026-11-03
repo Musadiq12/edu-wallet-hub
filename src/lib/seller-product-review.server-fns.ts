@@ -119,6 +119,18 @@ export const reviewSellerProduct = createServerFn({method:"POST"})
     const {data:updated,error}=await userClient.rpc("transition_seller_product",{
       p_product_id:data.id,p_action:data.action,p_reason:data.reason,p_admin_notes:data.adminNotes,
     });
-    if(error || !updated) throw new Error("Could not update the seller product review. Refresh and try again.");
+    if(error) {
+      console.error("Seller product review transition failed:", {
+        code:error.code,message:error.message,details:error.details,hint:error.hint,
+        productId:data.id,action:data.action,
+      });
+      throw new Error(
+        error.code==="42501" ? "Your administrator session is not authorized to review this product. Sign in again and retry."
+        : error.code==="22023" ? error.message
+        : error.code==="P0002" ? "This product is no longer awaiting review. Refresh the review queue."
+        : "Could not update the seller product review. Refresh and try again."
+      );
+    }
+    if(!updated) throw new Error("The review action returned no updated product. Refresh the queue and try again.");
     return {ok:true,status:updated.status};
   });
