@@ -211,12 +211,12 @@ export const sellerListProducts = createServerFn({ method: "POST" })
       const pendingParents=new Set(products
         .filter(row=>row.status==="pending"&&row.revision_of)
         .map(row=>row.revision_of as string));
-      return products.filter(row=>!row.revision_of || !pendingParents.has(row.revision_of))
-        .filter(row=>row.revision_of || !pendingParents.has(row.id))
-        .map(row=>({
-          ...row,
-          has_pending_revision:row.status==="published"&&pendingParents.has(row.id),
-        }));
+      // The canonical product remains the seller's editable record.
+      // Legacy revision rows are hidden here to avoid duplicate seller cards.
+      return products.filter(row=>!row.revision_of).map(row=>({
+        ...row,
+        has_pending_revision:pendingParents.has(row.id),
+      }));
     } catch(error) { throw new Error(safeMessage(error,"Could not load your products.")); }
   });
 
