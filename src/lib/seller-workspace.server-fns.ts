@@ -229,7 +229,7 @@ export const sellerGetProduct = createServerFn({method:"POST"})
     try {
       const {userId,client}=await requireSeller(data.accessToken);
       const {data:row,error}=await client.from("products")
-        .select("id,title,slug,description,whats_included,category_id,page_count,seller_cover_source_url,seller_rights_confirmed_at,course_label,subject_label,price,pdf_file,preview_file,product_images,status,is_archived,is_active,created_at,rejection_reason,review_feedback")
+        .select("id,title,slug,description,whats_included,category_id,page_count,seller_cover_source_url,seller_rights_confirmed_at,course_label,subject_label,price,discounted_price,pdf_file,preview_file,product_images,status,is_archived,is_active,created_at,rejection_reason,review_feedback")
         .eq("id",data.id).eq("seller_id",userId).is("deleted_at",null).maybeSingle();
       if(error || !row) throw new Error("product not found");
       return row;
