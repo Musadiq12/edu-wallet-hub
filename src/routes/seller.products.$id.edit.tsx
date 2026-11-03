@@ -88,7 +88,7 @@ function ProductEditForm({product}:{product:Product}){
    await sellerSaveProductEdit({data:{accessToken:token,id:product.id,title:title.trim(),description:description.trim(),whatsIncluded:included.trim(),categoryId:categoryId||null,pageCount:Number(pageCount),coverSourceUrl:coverUrl.trim()||null,rightsConfirmed,exam,subject:subject.trim(),price:amount,discountedPrice:discount,pdfPath:nextPdf,previewPath:nextPreview,productImages:[...product.product_images,...uploadedImages]}});
    newMain=null;newPreview=null;uploadedImages.length=0;
    await qc.invalidateQueries({queryKey:["seller","products"]});await qc.invalidateQueries({queryKey:["seller","product",product.id]});
-   toast.success(approved?"Price and details sent for review. Your live listing remains available until approval.":"Product changes resubmitted for review.");void navigate({to:"/seller/products",replace:true});
+   toast.success(approved?"Changes submitted for this product. Its listing is paused until admin approval.":"Product changes resubmitted for review.");void navigate({to:"/seller/products",replace:true});
   }catch(err){
    const paths=[newMain,newPreview].filter((v):v is string=>!!v);if(paths.length)await supabase.storage.from("product-files").remove(paths).catch(()=>undefined);
    if(uploadedImages.length)await supabase.storage.from("product-covers").remove(uploadedImages).catch(()=>undefined);
@@ -97,7 +97,7 @@ function ProductEditForm({product}:{product:Product}){
  };
  const onSubmit=(event:React.FormEvent)=>{event.preventDefault();if(approved)setConfirm(true);else void save()};
  return <>
-  {approved&&<div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-800 dark:text-amber-200">Changes to this live product will be reviewed before they replace the current listing. The live version remains available until approval.</div>}
+  {approved&&<div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-sm text-amber-800 dark:text-amber-200">Your changes will be saved to this product and its listing will be paused until an administrator approves them.</div>}
   <Card className="border-0 shadow-none sm:border sm:shadow-sm"><CardContent className="p-0 sm:p-6"><form onSubmit={onSubmit} className="space-y-4 sm:space-y-6">
    <section className="space-y-4 rounded-xl border border-border p-4"><div><h3 className="text-sm font-semibold">Product information</h3><p className="mt-1 text-xs text-muted-foreground">The details customers see in the store.</p></div><div className="space-y-2"><Label htmlFor="edit-title">Product title</Label><Input id="edit-title" value={title} maxLength={120} onChange={e=>setTitle(e.target.value)} required/></div>
    <div className="space-y-2"><Label htmlFor="edit-description">Description</Label><Textarea id="edit-description" rows={3} value={description} maxLength={2000} onChange={e=>setDescription(e.target.value)} required/></div>
@@ -114,6 +114,6 @@ function ProductEditForm({product}:{product:Product}){
    {error&&<p role="alert" className="rounded-lg bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
    <div className="sticky bottom-0 z-10 flex flex-col-reverse gap-2 border-t border-border bg-background/95 pt-3 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] backdrop-blur sm:static sm:flex-row sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0"><Button variant="outline" asChild disabled={busy}><Link to="/seller/products">Cancel</Link></Button><Button type="submit" disabled={busy}>{busy&&<Loader2 className="size-4 animate-spin"/>}{busy?"Saving…":"Save changes"}</Button></div>
   </form></CardContent></Card>
-  <AlertDialog open={confirm} onOpenChange={open=>!open&&!busy&&setConfirm(false)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Send this note for review again?</AlertDialogTitle><AlertDialogDescription>The current live listing stays available while your changes are reviewed.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={busy}>Continue editing</AlertDialogCancel><AlertDialogAction disabled={busy} onClick={event=>{event.preventDefault();setConfirm(false);void save()}}>Save and resubmit</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+  <AlertDialog open={confirm} onOpenChange={open=>!open&&!busy&&setConfirm(false)}><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Send this note for review again?</AlertDialogTitle><AlertDialogDescription>This same product will be marked pending while your changes are reviewed. It will not create a second product.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel disabled={busy}>Continue editing</AlertDialogCancel><AlertDialogAction disabled={busy} onClick={event=>{event.preventDefault();setConfirm(false);void save()}}>Save and resubmit</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
  </>;
 }
