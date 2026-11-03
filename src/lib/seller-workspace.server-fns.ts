@@ -199,12 +199,24 @@ export const sellerListProducts = createServerFn({ method: "POST" })
   .handler(async ({data}) => {
     try {
       const {userId,client}=await requireSeller(data.accessToken);
-      let query=client.from("products").select("id,title,slug,course_label,subject_label,price,description,pdf_file,preview_file,status,is_archived,is_active,review_feedback,rejection_reason,submitted_at,published_at,revision_of,created_at")
+      let query=client.from("products").select("id,title,slug,course_label,subject_label,price,discounted_price,description,pdf_file,preview_file,status,is_archived,is_active,review_feedback,rejection_reason,submitted_at,published_at,revision_of,created_at")
         .eq("seller_id",userId).is("deleted_at",null).order("submitted_at",{ascending:false,nullsFirst:false});
       if(data.status!=="all") query=query.eq("status",data.status);
       const {data:rows,error}=await query;
       if(error) throw error;
-      return rows ?? [];
+      const products=rows??[];
+      if(data.status!=="all") return products;
+
+      // Present a live listing and its pending edit as one seller-owned product.
+      const pendingParents=new Set(products
+        .filter(row=>row.status==="pending"&&row.revision_of)
+        .map(row=>row.revision_of as string));
+      return products.filter(row=>!row.revision_of || !pendingParents.has(row.revision_of))
+        .filter(row=>row.revision_of || !pendingParents.has(row.id))
+        .map(row=>({
+          ...row,
+          has_pending_revision:row.status==="published"&&pendingParents.has(row.id),
+        }));
     } catch(error) { throw new Error(safeMessage(error,"Could not load your products.")); }
   });
 
