@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { ArrowLeft, ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
@@ -110,11 +110,12 @@ export function StorefrontHero() {
   }, [heroSlides.length, interval, paused]);
 
   const goTo = (index: number) => setActive((index + heroSlides.length) % heroSlides.length);
-  const handlePointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handlePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse") return;
+    event.currentTarget.setPointerCapture(event.pointerId);
     touchStart.current = { x: event.clientX, y: event.clientY };
   };
-  const handlePointerUp = (event: React.PointerEvent<HTMLDivElement>) => {
+  const handlePointerUp = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse" || !touchStart.current) return;
     const dx = event.clientX - touchStart.current.x;
     const dy = event.clientY - touchStart.current.y;
@@ -136,14 +137,14 @@ export function StorefrontHero() {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
       }}
     >
-      {slide.imageUrl && <h1 className="sr-only">Exam study notes, PDFs and solved papers for NEET, JEE, UPSC, SSC CGL, Banking and CLAT</h1>}
+      {(slide.imageUrl || slide.mobileImageUrl) && <h1 className="sr-only">Exam study notes, PDFs and solved papers for NEET, JEE, UPSC, SSC CGL, Banking and CLAT</h1>}
       <div
         className={cn("relative isolate mx-auto w-full max-w-[1920px] overflow-hidden border-y border-border/70 bg-gradient-to-br shadow-sm sm:rounded-2xl sm:border", slide.accent || "from-primary/10 via-background to-background")}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerCancel={() => { touchStart.current = null; }}
       >
-        {!slide.imageUrl ? (
+        {!(slide.imageUrl || slide.mobileImageUrl) ? (
           <div className="relative z-10 grid min-h-[340px] items-center gap-8 px-6 py-12 sm:px-10 lg:min-h-[390px] lg:grid-cols-[1.1fr_.9fr] lg:px-14">
             <div className="max-w-2xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold tracking-wide text-muted-foreground">
@@ -180,8 +181,8 @@ export function StorefrontHero() {
             <picture>
               {slide.mobileImageUrl && <source media="(max-width: 639px)" srcSet={bannerSrcSet(slide.mobileImageUrl, [640, 900, 1080]) ?? slide.mobileImageUrl} />}
               <img
-                src={resizedBannerUrl(slide.imageUrl, 1920)}
-                srcSet={bannerSrcSet(slide.imageUrl, [960, 1280, 1600, 1920])}
+                src={resizedBannerUrl(slide.imageUrl || slide.mobileImageUrl || "", 1920)}
+                srcSet={bannerSrcSet(slide.imageUrl || slide.mobileImageUrl || "", [960, 1280, 1600, 1920])}
                 sizes="100vw"
                 alt={slide.alt || `EduWallet study resources banner, slide ${active + 1}`}
                 width="1920"
