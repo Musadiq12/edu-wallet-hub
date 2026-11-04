@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { ArrowRight, BookOpen, CheckCircle2 } from "lucide-react";
 import { Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useSiteSettings } from "@/lib/settings";
@@ -99,11 +98,29 @@ export function StorefrontHero() {
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const slide = heroSlides[active] ?? heroSlides[0];
   const firstSlide = heroSlides[0];
+  const nextSlide = heroSlides.length > 1 ? heroSlides[(active + 1) % heroSlides.length] : undefined;
   const interval = DEFAULT_INTERVAL;
 
   useEffect(() => {
     setActive((current) => Math.min(current, heroSlides.length - 1));
   }, [heroSlides.length]);
+
+  useEffect(() => {
+    if (!nextSlide) return;
+
+    // Decode the next banner before the carousel switches to it. This avoids
+    // replacing a visible image with one that the browser has not decoded yet.
+    [nextSlide.mobileImageUrl, nextSlide.imageUrl]
+      .filter((source): source is string => Boolean(source))
+      .forEach((source) => {
+        const image = new Image();
+        image.decoding = "async";
+        image.src = source === nextSlide.imageUrl ? resizedBannerUrl(source, 1920) : source;
+        if (typeof image.decode === "function") {
+          void image.decode().catch(() => undefined);
+        }
+      });
+  }, [nextSlide?.imageUrl, nextSlide?.mobileImageUrl]);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -198,7 +215,7 @@ export function StorefrontHero() {
           </div>
         ) : (
           <div className="group/banner relative z-10 w-full">
-            <motion.div key={active} initial={reducedMotion ? false : { opacity: 0.35 }} animate={{ opacity: 1 }} transition={{ duration: reducedMotion ? 0 : 0.5, ease: "easeOut" }} className="h-full w-full">
+            <div className="h-full w-full">
             <picture className="block w-full">
               {slide.mobileImageUrl && <source media="(max-width: 767px)" srcSet={bannerSrcSet(slide.mobileImageUrl, [640, 768, 1080]) ?? slide.mobileImageUrl} width="1080" height="1350" />}
               <img
@@ -210,12 +227,12 @@ export function StorefrontHero() {
                 height="640"
                 className="block h-auto w-full max-w-full select-none object-contain transition-[filter] duration-200 group-hover/banner:brightness-[1.04] motion-reduce:transition-none"
                 fetchPriority={active === 0 ? "high" : "auto"}
-                loading={active === 0 ? "eager" : "lazy"}
+                loading="eager"
                 decoding="async"
                 draggable={false}
               />
             </picture>
-            </motion.div>
+            </div>
             <Link
               to={slide.to}
               aria-label={slide.cta}
